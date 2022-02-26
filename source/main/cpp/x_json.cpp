@@ -28,25 +28,25 @@ namespace xcore
 
             char*       m_BasePointer; // allocated pointer
             char*       m_Pointer;     // aligned pointer
-            int         m_Size;
-            int         m_Offset;
+            s32         m_Size;
+            s32         m_Offset;
             const char* m_DebugName;
             ThreadId    m_OwnerThread;
 
-            void  Init(int max_size, const char* debug_name);
+            void  Init(s32 max_size, const char* debug_name);
             void  Destroy();
             void  SetOwner(ThreadId thread_id);
-            void* Allocate(int size, int align);
+            void* Allocate(s32 size, s32 align);
             void  Reset();
 
             template <typename T> T* Allocate() { return static_cast<T*>(Allocate(sizeof(T), ALIGNOF(T))); }
-            template <typename T> T* AllocateArray(int count) { return static_cast<T*>(Allocate(sizeof(T) * count, ALIGNOF(T))); }
+            template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>(Allocate(sizeof(T) * count, ALIGNOF(T))); }
         };
 
         class MemAllocLinearScope
         {
             MemAllocLinear* m_Allocator;
-            int             m_Offset;
+            s32             m_Offset;
 
         public:
             explicit MemAllocLinearScope(MemAllocLinear* a)
@@ -62,9 +62,9 @@ namespace xcore
             MemAllocLinearScope& operator=(const MemAllocLinearScope&);
         };
 
-        inline char* StrDupN(MemAllocLinear* allocator, const char* str, int len)
+        inline char* StrDupN(MemAllocLinear* allocator, const char* str, s32 len)
         {
-            int   sz     = len + 1;
+            s32   sz     = len + 1;
             char* buffer = static_cast<char*>(allocator->Allocate(sz, 1));
             memcpy(buffer, str, sz - 1);
             buffer[sz - 1] = '\0';
@@ -75,9 +75,9 @@ namespace xcore
 
 #define CHECK_THREAD_OWNERSHIP(alloc) ASSERT(context_t::thread_index() == alloc->m_OwnerThread)
 
-        void MemAllocLinear::Init(int max_size, const char* debug_name)
+        void MemAllocLinear::Init(s32 max_size, const char* debug_name)
         {
-            int alloc_size      = max_size + MemAllocLinear::kMaxAlignment - 1;
+            s32 alloc_size      = max_size + MemAllocLinear::kMaxAlignment - 1;
             this->m_BasePointer = static_cast<char*>(context_t::system_alloc()->allocate(alloc_size));
             this->m_Pointer     = nullptr;
             this->m_Size        = max_size;
@@ -100,7 +100,7 @@ namespace xcore
         }
 
         void  MemAllocLinear::SetOwner(ThreadId thread_id) { this->m_OwnerThread = thread_id; }
-        void* MemAllocLinear::Allocate(int size, int align)
+        void* MemAllocLinear::Allocate(s32 size, s32 align)
         {
             CHECK_THREAD_OWNERSHIP(this);
 
@@ -111,12 +111,12 @@ namespace xcore
             ASSERT(align > 0);
 
             // Compute aligned offset.
-            int offset = (this->m_Offset + align - 1) & ~(align - 1);
+            s32 offset = (this->m_Offset + align - 1) & ~(align - 1);
 
             ASSERT(0 == (offset & (align - 1)));
 
             // See if we have space.
-            if (offset + size <= this->m_Size)
+            if ((offset + size) <= this->m_Size)
             {
                 char* ptr      = this->m_Pointer + offset;
                 this->m_Offset = offset + size;
@@ -180,6 +180,49 @@ namespace xcore
             return c;
         }
 
+        bool WriteChar(u32 ch, char* cursor, char const* end)
+        {
+            if (ch < 0x80)
+            { // one octet
+                if (cursor < end)
+                {
+                    *(cursor++) = static_cast<uchar8>(ch);
+                    return true;
+                }
+            }
+            else if (ch < 0x800)
+            { // two octets
+                if ((cursor + 1) < end)
+                {
+                    *(cursor++) = static_cast<uchar8>((ch >> 6) | 0xc0);
+                    *(cursor++) = static_cast<uchar8>((ch & 0x3f) | 0x80);
+                    return true;
+                }
+            }
+            else if (ch < 0x10000)
+            { // three octets
+                if ((cursor + 2) < end)
+                {
+                    *(cursor++) = static_cast<uchar8>((ch >> 12) | 0xe0);
+                    *(cursor++) = static_cast<uchar8>(((ch >> 6) & 0x3f) | 0x80);
+                    *(cursor++) = static_cast<uchar8>((ch & 0x3f) | 0x80);
+                    return true;
+                }
+            }
+            else
+            { // four octets
+                if ((cursor + 3) < end)
+                {
+                    *(cursor++) = static_cast<uchar8>((ch >> 18) | 0xf0);
+                    *(cursor++) = static_cast<uchar8>(((ch >> 12) & 0x3f) | 0x80);
+                    *(cursor++) = static_cast<uchar8>(((ch >> 6) & 0x3f) | 0x80);
+                    *(cursor++) = static_cast<uchar8>((ch & 0x3f) | 0x80);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         static char* ParseNumber(char* str, char const* end, f64* out_number)
         {
             f64 number = 0.0;
@@ -231,8 +274,8 @@ namespace xcore
             {
                 str += c.l;
 
-                int sign     = 1;
-                int exponent = 0;
+                s32 sign     = 1;
+                s32 exponent = 0;
                 c            = PeekChar(str, end);
                 if (str < end && (c.c == '+' || c.c == '-'))
                 {
@@ -306,7 +349,7 @@ namespace xcore
         {
             char*       m_Cursor;
             char const* m_End;
-            int         m_LineNumber;
+            s32         m_LineNumber;
             JsonLexeme  m_Lexeme;
             char        m_Error[1024];
             JsonLexeme  m_ValueSeparatorLexeme;
@@ -322,9 +365,10 @@ namespace xcore
             JsonLexeme  m_FalseLexeme;
         };
 
-        static void JsonLexerStateInit(JsonLexerState* self, char* buffer)
+        static void JsonLexerStateInit(JsonLexerState* self, char* buffer, char const* end)
         {
             self->m_Cursor               = buffer;
+            self->m_End                  = end;
             self->m_LineNumber           = 1;
             self->m_Lexeme.m_Type        = kJsonLexInvalid;
             self->m_Error[0]             = '\0';
@@ -343,22 +387,22 @@ namespace xcore
 
         static char* SkipWhitespace(JsonLexerState* state)
         {
-            // char* ptr = state->m_Cursor;
-            uchar8_t ch = PeekChar(state->m_Cursor, nullptr);
-
+            uchar8_t ch = PeekChar(state->m_Cursor, state->m_End);
             while (ch.c != 0)
             {
-                if ('\n' == ch.c)
+                if (is_whitespace(ch.c))
                 {
-                    ++state->m_LineNumber;
-                }
-
-                if (isspace(ch.c))
+                    if ('\n' == ch.c)
+                    {
+                        ++state->m_LineNumber;
+                    }
                     state->m_Cursor += ch.l;
+                }
                 else
+                {
                     break;
+                }
             }
-
             return state->m_Cursor;
         }
 
@@ -370,7 +414,7 @@ namespace xcore
 
         static JsonLexeme GetNumberLexeme(JsonLexerState* state)
         {
-            char* start = state->m_Cursor;
+            char*       start = state->m_Cursor;
             char const* end   = state->m_End;
 
             f64   number;
@@ -398,11 +442,11 @@ namespace xcore
 
             for (;;)
             {
-                //char ch = *rptr++;
+                // char ch = *rptr++;
                 ch = PeekChar(rptr, state->m_End);
                 if (0 == ch.c)
                     return JsonLexerError(state, "end of file inside string");
-                
+
                 rptr += ch.l;
 
                 if ('"' == ch.c)
@@ -414,7 +458,7 @@ namespace xcore
                 {
                     uchar8_t next = PeekChar(rptr, state->m_End);
                     rptr += next.l;
-                    //char next = *rptr++;
+                    // char next = *rptr++;
                     switch (next.c)
                     {
                         case '\\': *wptr++ = '\\'; break;
@@ -427,10 +471,10 @@ namespace xcore
                         case 't': *wptr++ = '\t'; break;
                         case 'u':
                         {
-                            uint32_t hex_code = 0;
-                            for (int i = 0; i < 4; ++i)
+                            u32 hex_code = 0;
+                            for (s32 i = 0; i < 4; ++i)
                             {
-                                //char code = *rptr++;
+                                // char code = *rptr++;
                                 uchar8_t code = PeekChar(rptr, state->m_End);
                                 if (0 == code.c)
                                 {
@@ -450,9 +494,10 @@ namespace xcore
                                     return JsonLexerError(state, "expected hex number in \\u escape");
                                 }
                             }
-                            
+
                             // Write UTF-8
-                            *wptr++ = (char)hex_code;
+                            // *wptr++ = (char)hex_code;
+                            WriteChar(hex_code, wptr, state->m_End);
                             break;
                         }
 
@@ -462,7 +507,8 @@ namespace xcore
                 else
                 {
                     // Write UTF-8
-                    *wptr++ = ch.c;
+                    //*wptr++ = ch.c;
+                    WriteChar(ch.c, wptr, state->m_End);
                 }
             }
 
@@ -474,12 +520,16 @@ namespace xcore
         {
             char* rptr = state->m_Cursor;
             char* eptr = rptr;
-            while (isalnum(*eptr))
-            {
-                eptr++;
-            }
 
-            int kwlen = (eptr - rptr);
+            s32 kwlen = 0;
+
+            uchar8_t ch = PeekChar(eptr, state->m_End);
+            while (is_alpha(ch.c) || is_digit(ch.c))
+            {
+                eptr += ch.l;
+                kwlen += 1;
+                ch = PeekChar(eptr, state->m_End);
+            }
 
             if (4 == kwlen)
             {
@@ -495,7 +545,6 @@ namespace xcore
                     return state->m_NullLexeme;
                 }
             }
-
             else if (5 == kwlen)
             {
                 if (0 == strncmp("false", rptr, 5))
@@ -510,10 +559,9 @@ namespace xcore
 
         static JsonLexeme JsonLexerFetchNext(JsonLexerState* state)
         {
-            char* p  = SkipWhitespace(state);
-            char  ch = *p;
-
-            switch (ch)
+            char*    p  = SkipWhitespace(state);
+            uchar8_t ch = PeekChar(p, state->m_End);
+            switch (ch.c)
             {
                 case '-':
                 case '0':
@@ -588,7 +636,7 @@ namespace xcore
         struct JsonState
         {
             JsonLexerState    m_Lexer;
-            char              m_ErrorMessage[1024];
+            char*             m_ErrorMessage;
             MemAllocLinear*   m_Allocator;
             MemAllocLinear*   m_Scratch;
             JsonBooleanValue* m_TrueValue;
@@ -596,10 +644,10 @@ namespace xcore
             JsonValue*        m_NullValue;
         };
 
-        static void JsonStateInit(JsonState* state, MemAllocLinear* alloc, MemAllocLinear* scratch, char* buffer)
+        static void JsonStateInit(JsonState* state, MemAllocLinear* alloc, MemAllocLinear* scratch, char* buffer, char const* end)
         {
-            JsonLexerStateInit(&state->m_Lexer, buffer);
-            state->m_ErrorMessage[0]       = '\0';
+            JsonLexerStateInit(&state->m_Lexer, buffer, end);
+            state->m_ErrorMessage          = nullptr;
             state->m_Allocator             = alloc;
             state->m_Scratch               = scratch;
             state->m_TrueValue             = alloc->Allocate<JsonBooleanValue>();
@@ -614,7 +662,8 @@ namespace xcore
 
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
-            snprintf(state->m_ErrorMessage, sizeof state->m_ErrorMessage, "line %d: %s", state->m_Lexer.m_LineNumber, error);
+            state->m_ErrorMessage = state->m_Allocator->Allocate<char>(1024);
+            snprintf(state->m_ErrorMessage, 1024, "line %d: %s", state->m_Lexer.m_LineNumber, error);
             return nullptr;
         }
 
@@ -644,7 +693,7 @@ namespace xcore
                 MemAllocLinear* m_Scratch;
                 KvPair*         m_Head;
                 KvPair*         m_Tail;
-                int             m_Count;
+                s32             m_Count;
 
                 void Init(MemAllocLinear* scratch)
                 {
@@ -676,7 +725,6 @@ namespace xcore
             };
 
             KvPairList kv_pairs;
-
             kv_pairs.Init(json_state->m_Scratch);
 
             bool done = false;
@@ -727,11 +775,11 @@ namespace xcore
 
             MemAllocLinear* alloc = json_state->m_Allocator;
 
-            int               count  = kv_pairs.m_Count;
+            s32               count  = kv_pairs.m_Count;
             const char**      names  = alloc->AllocateArray<const char*>(kv_pairs.m_Count);
             const JsonValue** values = alloc->AllocateArray<const JsonValue*>(kv_pairs.m_Count);
 
-            int index = 0;
+            s32 index = 0;
             for (KvPair* p = kv_pairs.m_Head; p; p = p->m_Next, ++index)
             {
                 names[index]  = p->m_Key;
@@ -767,7 +815,7 @@ namespace xcore
                 MemAllocLinear* m_Scratch;
                 ListElem*       m_Head;
                 ListElem*       m_Tail;
-                int             m_Count;
+                s32             m_Count;
 
                 void Init(MemAllocLinear* scratch)
                 {
@@ -829,10 +877,10 @@ namespace xcore
 
             MemAllocLinear* alloc = json_state->m_Allocator;
 
-            int               count  = value_list.m_Count;
+            s32               count  = value_list.m_Count;
             const JsonValue** values = alloc->AllocateArray<const JsonValue*>(count);
 
-            int index = 0;
+            s32 index = 0;
             for (ListElem* p = value_list.m_Head; p; p = p->m_Next, ++index)
             {
                 values[index] = p->m_Value;
@@ -895,27 +943,28 @@ namespace xcore
             return result;
         }
 
-        const JsonValue* JsonParse(char* buffer, MemAllocLinear* allocator, MemAllocLinear* scratch, char (&error_message)[1024])
+        const JsonValue* JsonParse(char* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message)
         {
-            // Setup statics. Harmless to do multiple times.
+            error_message = nullptr;
+
             JsonState* json_state = allocator->Allocate<JsonState>();
-            JsonStateInit(json_state, allocator, scratch, buffer);
+            JsonStateInit(json_state, allocator, scratch, str, end);
 
             const JsonValue* root = JsonParseValue(json_state);
-
             if (root && !JsonLexerExpect(&json_state->m_Lexer, kJsonLexEof))
             {
                 root = JsonError(json_state, "data after document");
             }
 
-            if (root)
+            scratch->Reset();
+
+            if (!root)
             {
-                error_message[0] = '\0';
-            }
-            else
-            {
-                strncpy(error_message, json_state->m_ErrorMessage, sizeof(error_message));
-                error_message[sizeof(error_message) - 1] = '\0';
+                s32 const len = strlen(json_state->m_Lexer.m_ErrorMessage);
+                char* errmsg = scratch->Allocate<char>(len + 1);
+                strncpy(errmsg, json_state->m_ErrorMessage, len);
+                errmsg[len] = '\0';
+                error_message = errmsg;
             }
 
             return root;

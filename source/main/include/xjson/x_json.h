@@ -155,7 +155,9 @@ namespace xcore
             return b->m_Boolean;
         }
 
-        const JsonValue* JsonParse(char* buffer, MemAllocLinear* allocator, MemAllocLinear* scratch, char (&error_message)[1024]);
+        // Parse JSON text into a JsonValue document, when an error occurs the return value is nullptr and the error description is set in error_message
+        // which is allocated from 'scratch'.
+        const JsonValue* JsonParse(char* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message);
 
     } // namespace json
 } // namespace xcore
