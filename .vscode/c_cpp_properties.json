@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/obnosis1/dev.go/src/github.com/jurgen-kluft/xbase/source/main/include",
+                "/Users/obnosis1/dev.go/src/github.com/jurgen-kluft/xunittest/source/main/include",
+                "/Users/obnosis1/dev.go/src/github.com/jurgen-kluft/xjson/source/main/include",
+            ],
+            "defines": [
+                "TARGET_MAC"
+            ],
+            "macFrameworkPath": [
+            ],
+            "compilerPath": "/usr/local/opt/llvm/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}

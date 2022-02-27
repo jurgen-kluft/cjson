@@ -36,41 +36,54 @@ namespace xcore
 
         struct MemAllocLinear
         {
-            enum
-            {
-                kMaxAlignment = 64
-            };
-
-            char*       m_BasePointer; // allocated pointer
-            char*       m_Pointer;     // aligned pointer
+            char*       m_Pointer; // allocated pointer
+            char*       m_Cursor;  // current pointer
             s32         m_Size;
-            s32         m_Offset;
-            const char* m_DebugName;
             ThreadId    m_OwnerThread;
+            const char* m_DebugName;
 
             void  Init(s32 max_size, const char* debug_name);
             void  Destroy();
             void  SetOwner(ThreadId thread_id);
-            void* Allocate(s32 size, s32 align);
-            void  Reset();
+            char* Allocate(s32 size, s32 align);
 
-            template <typename T> T* Allocate() { return static_cast<T*>(Allocate(sizeof(T), ALIGNOF(T))); }
-            template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>(Allocate(sizeof(T) * count, ALIGNOF(T))); }
+            char* CheckOut(char*& end, s32 align = 4);
+            void  Commit(char* ptr);
+
+            void Reset();
+
+            XCORE_CLASS_PLACEMENT_NEW_DELETE
+
+            template <typename T> T* Allocate() { return static_cast<T*>((void*)Allocate(sizeof(T), ALIGNOF(T))); }
+            template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>((void*)Allocate(sizeof(T) * count, ALIGNOF(T))); }
         };
+
+        MemAllocLinear* CreateMemAllocLinear(u32 size, const char* name)
+        {
+            MemAllocLinear* alloc = context_t::system_alloc()->construct<MemAllocLinear>();
+            alloc->Init(size, name);
+            return alloc;
+        }
+
+        void DestroyMemAllocLinear(MemAllocLinear* alloc)
+        {
+            alloc->Destroy();
+            context_t::system_alloc()->destruct(alloc);
+        }
 
         class MemAllocLinearScope
         {
             MemAllocLinear* m_Allocator;
-            s32             m_Offset;
+            char*           m_Pointer;
 
         public:
             explicit MemAllocLinearScope(MemAllocLinear* a)
                 : m_Allocator(a)
-                , m_Offset(a->m_Offset)
+                , m_Pointer(a->m_Pointer)
             {
             }
 
-            ~MemAllocLinearScope() { m_Allocator->m_Offset = m_Offset; }
+            ~MemAllocLinearScope() { m_Allocator->m_Pointer = m_Pointer; }
 
         private:
             MemAllocLinearScope(const MemAllocLinearScope&);
@@ -92,49 +105,38 @@ namespace xcore
 
         void MemAllocLinear::Init(s32 max_size, const char* debug_name)
         {
-            s32 alloc_size      = max_size + MemAllocLinear::kMaxAlignment - 1;
-            this->m_BasePointer = static_cast<char*>(context_t::system_alloc()->allocate(alloc_size));
-            this->m_Pointer     = nullptr;
+            this->m_Pointer     = static_cast<char*>(context_t::system_alloc()->allocate(max_size));
+            this->m_Cursor      = this->m_Pointer;
             this->m_Size        = max_size;
-            this->m_Offset      = 0;
-            this->m_DebugName   = debug_name;
-
-            uintptr_t aligned_base = uintptr_t(this->m_BasePointer + MemAllocLinear::kMaxAlignment - 1) & ~(MemAllocLinear::kMaxAlignment - 1);
-            uintptr_t delta        = aligned_base - uintptr_t(this->m_BasePointer);
-
-            this->m_Pointer = this->m_BasePointer + delta;
-            this->m_Size -= (delta);
-
             this->m_OwnerThread = context_t::thread_index();
+            this->m_DebugName   = debug_name;
         }
 
         void MemAllocLinear::Destroy()
         {
-            context_t::system_alloc()->deallocate(this->m_BasePointer);
-            this->m_BasePointer = nullptr;
+            context_t::system_alloc()->deallocate(this->m_Pointer);
+            this->m_Pointer = nullptr;
+            this->m_Cursor  = nullptr;
         }
 
         void  MemAllocLinear::SetOwner(ThreadId thread_id) { this->m_OwnerThread = thread_id; }
-        void* MemAllocLinear::Allocate(s32 size, s32 align)
+        char* MemAllocLinear::Allocate(s32 size, s32 align)
         {
             CHECK_THREAD_OWNERSHIP(this);
 
-            // Alignment must be power of two
-            ASSERT(0 == (align & (align - 1)));
-
-            // Alignment must be non-zero
-            ASSERT(align > 0);
+            ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
+            ASSERT(align > 0);                  // Alignment must be non-zero
 
             // Compute aligned offset.
-            s32 offset = (this->m_Offset + align - 1) & ~(align - 1);
+            s32 const cursor = (s32)(this->m_Cursor - this->m_Pointer);
+            s32 const offset = (cursor + align - 1) & ~(align - 1);
 
             ASSERT(0 == (offset & (align - 1)));
 
-            // See if we have space.
-            if ((offset + size) <= this->m_Size)
+            if ((offset + size) <= this->m_Size) // See if we have space.
             {
                 char* ptr      = this->m_Pointer + offset;
-                this->m_Offset = offset + size;
+                this->m_Cursor = ptr + size;
                 return ptr;
             }
             else
@@ -144,10 +146,36 @@ namespace xcore
             }
         }
 
+        char* MemAllocLinear::CheckOut(char*& end, s32 align)
+        {
+            CHECK_THREAD_OWNERSHIP(this);
+
+            ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
+            ASSERT(align > 0);                  // Alignment must be non-zero
+
+            // Compute aligned offset.
+            s32 const cursor = (s32)(this->m_Cursor - this->m_Pointer);
+            s32 const offset = (cursor + align - 1) & ~(align - 1);
+
+            ASSERT(0 == (offset & (align - 1)));
+
+            char* ptr      = this->m_Pointer + offset;
+            end            = ptr + (this->m_Size - offset);
+            this->m_Cursor = ptr;
+            return ptr;
+        }
+
+        void MemAllocLinear::Commit(char* ptr)
+        {
+            ASSERT((ptr >= this->m_Cursor) && (ptr <= (this->m_Pointer + this->m_Size)));
+            CHECK_THREAD_OWNERSHIP(this);
+            this->m_Cursor = (char*)ptr;
+        }
+
         void MemAllocLinear::Reset()
         {
             CHECK_THREAD_OWNERSHIP(this);
-            this->m_Offset = 0;
+            this->m_Cursor = this->m_Pointer;
         }
 
         // UTF-8; read a character and return the unicode codepoint (UTF-32)
@@ -198,7 +226,28 @@ namespace xcore
             return c;
         }
 
-        bool WriteChar(u32 ch, char* cursor, char const* end)
+        s32 SizeOfChar(u32 ch)
+        {
+            if (ch < 0x80)
+            {
+                return 1;
+            }
+            else if (ch < 0x800)
+            {
+                return 2;
+            }
+            else if (ch < 0x10000)
+            {
+                return 3;
+            }
+            else if (ch < 0x200000)
+            {
+                return 4;
+            }
+            return -1;
+        }
+
+        bool WriteChar(u32 ch, char*& cursor, char const* end)
         {
             if (ch < 0x80)
             { // one octet
@@ -241,7 +290,7 @@ namespace xcore
             return false;
         }
 
-        static char* ParseNumber(char* str, char const* end, f64* out_number)
+        static char const* ParseNumber(char const* str, char const* end, f64* out_number)
         {
             f64 number = 0.0;
 
@@ -365,31 +414,33 @@ namespace xcore
 
         struct JsonLexerState
         {
-            char*       m_Cursor;
-            char const* m_End;
-            s32         m_LineNumber;
-            JsonLexeme  m_Lexeme;
-            char        m_Error[1024];
-            JsonLexeme  m_ValueSeparatorLexeme;
-            JsonLexeme  m_NameSeparatorLexeme;
-            JsonLexeme  m_BeginObjectLexeme;
-            JsonLexeme  m_EndObjectLexeme;
-            JsonLexeme  m_BeginArrayLexeme;
-            JsonLexeme  m_EndArrayLexeme;
-            JsonLexeme  m_NullLexeme;
-            JsonLexeme  m_EofLexeme;
-            JsonLexeme  m_ErrorLexeme;
-            JsonLexeme  m_TrueLexeme;
-            JsonLexeme  m_FalseLexeme;
+            const char*     m_Cursor;
+            char const*     m_End;
+            MemAllocLinear* m_Alloc;
+            s32             m_LineNumber;
+            JsonLexeme      m_Lexeme;
+            char*           m_Error;
+            JsonLexeme      m_ValueSeparatorLexeme;
+            JsonLexeme      m_NameSeparatorLexeme;
+            JsonLexeme      m_BeginObjectLexeme;
+            JsonLexeme      m_EndObjectLexeme;
+            JsonLexeme      m_BeginArrayLexeme;
+            JsonLexeme      m_EndArrayLexeme;
+            JsonLexeme      m_NullLexeme;
+            JsonLexeme      m_EofLexeme;
+            JsonLexeme      m_ErrorLexeme;
+            JsonLexeme      m_TrueLexeme;
+            JsonLexeme      m_FalseLexeme;
         };
 
-        static void JsonLexerStateInit(JsonLexerState* self, char* buffer, char const* end)
+        static void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, MemAllocLinear* alloc)
         {
             self->m_Cursor               = buffer;
             self->m_End                  = end;
+            self->m_Alloc                = alloc;
             self->m_LineNumber           = 1;
             self->m_Lexeme.m_Type        = kJsonLexInvalid;
-            self->m_Error[0]             = '\0';
+            self->m_Error                = nullptr;
             self->m_ValueSeparatorLexeme = {kJsonLexValueSeparator, {0}};
             self->m_NameSeparatorLexeme  = {kJsonLexNameSeparator, {0}};
             self->m_BeginObjectLexeme    = {kJsonLexBeginObject, {0}};
@@ -403,7 +454,7 @@ namespace xcore
             self->m_FalseLexeme          = {kJsonLexBoolean, {false}};
         }
 
-        static char* SkipWhitespace(JsonLexerState* state)
+        static char const* SkipWhitespace(JsonLexerState* state)
         {
             uchar8_t ch = PeekChar(state->m_Cursor, state->m_End);
             while (ch.c != 0)
@@ -420,23 +471,27 @@ namespace xcore
                 {
                     break;
                 }
+
+                ch = PeekChar(state->m_Cursor, state->m_End);
             }
             return state->m_Cursor;
         }
 
         static JsonLexeme JsonLexerError(JsonLexerState* state, const char* error)
         {
+            ASSERT(state->m_Error == nullptr);
+            state->m_Error = (char*)state->m_Alloc->AllocateArray<char>(ascii::strlen(error) + 1);
             snprintf(state->m_Error, sizeof state->m_Error, "%d: %s", state->m_LineNumber, error);
             return state->m_ErrorLexeme;
         }
 
         static JsonLexeme GetNumberLexeme(JsonLexerState* state)
         {
-            char*       start = state->m_Cursor;
+            char const* start = state->m_Cursor;
             char const* end   = state->m_End;
 
-            f64   number;
-            char* cursor = ParseNumber(start, end, &number);
+            f64         number;
+            char const* cursor = ParseNumber(start, end, &number);
 
             JsonLexeme result;
             result.m_Type   = kJsonLexNumber;
@@ -447,60 +502,64 @@ namespace xcore
 
         static JsonLexeme GetStringLexeme(JsonLexerState* state)
         {
-            JsonLexeme result;
-
-            char* rptr = state->m_Cursor;
-            char* wptr = rptr;
+            char const* rptr = state->m_Cursor;
 
             uchar8_t ch = PeekChar(rptr, state->m_End);
-            rptr += ch.l; // skip quote
+            ASSERT(ch.c == '\"');
+            rptr += ch.l;
 
+            char* wend = nullptr;
+            char* wptr = (char*)state->m_Alloc->CheckOut(wend);
+
+            JsonLexeme result;
             result.m_Type   = kJsonLexString;
             result.m_String = wptr;
 
-            for (;;)
+            while (true)
             {
-                // char ch = *rptr++;
                 ch = PeekChar(rptr, state->m_End);
+
                 if (0 == ch.c)
+                {
+                    // Cancel 'CheckOut'
                     return JsonLexerError(state, "end of file inside string");
+                }
 
-                rptr += ch.l;
-
+                ASSERT(ch.l >= 1 && ch.l <= 4);
                 if ('"' == ch.c)
                 {
-                    *wptr = '\0';
+                    rptr += 1;
+                    WriteChar('\0', wptr, wend);
                     break;
                 }
                 else if ('\\' == ch.c)
                 {
-                    uchar8_t next = PeekChar(rptr, state->m_End);
-                    rptr += next.l;
-                    // char next = *rptr++;
-                    switch (next.c)
+                    rptr += 1;
+                    ch = PeekChar(rptr, state->m_End);
+                    rptr += 1;
+
+                    switch (ch.c)
                     {
-                        case '\\': *wptr++ = '\\'; break;
-                        case '"': *wptr++ = '"'; break;
-                        case '/': *wptr++ = '/'; break;
-                        case 'b': *wptr++ = '\b'; break;
-                        case 'f': *wptr++ = '\f'; break;
-                        case 'n': *wptr++ = '\n'; break;
-                        case 'r': *wptr++ = '\r'; break;
-                        case 't': *wptr++ = '\t'; break;
+                        case '\\': WriteChar('\\', wptr, wend); break;
+                        case '"': WriteChar('\"', wptr, wend); break;
+                        case '/': WriteChar('/', wptr, wend); break;
+                        case 'b': WriteChar('\b', wptr, wend); break;
+                        case 'f': WriteChar('\f', wptr, wend); break;
+                        case 'n': WriteChar('\n', wptr, wend); break;
+                        case 'r': WriteChar('\r', wptr, wend); break;
+                        case 't': WriteChar('\t', wptr, wend); break;
                         case 'u':
                         {
                             u32 hex_code = 0;
                             for (s32 i = 0; i < 4; ++i)
                             {
-                                // char code = *rptr++;
-                                uchar8_t code = PeekChar(rptr, state->m_End);
-                                if (0 == code.c)
+                                ch = PeekChar(rptr, state->m_End);
+                                rptr += 1;
+
+                                ASSERT(ch.l == 1);
+                                if (is_hexa(ch.c))
                                 {
-                                    return JsonLexerError(state, "end of file inside escape");
-                                }
-                                else if (is_hexa(code.c))
-                                {
-                                    u32 lc = to_lower(code.c);
+                                    u32 lc = to_lower(ch.c);
                                     hex_code <<= 4;
                                     if (lc >= 'a' && lc <= 'f')
                                         hex_code |= lc - 'a' + 10;
@@ -509,26 +568,30 @@ namespace xcore
                                 }
                                 else
                                 {
-                                    return JsonLexerError(state, "expected hex number in \\u escape");
+                                    if (0 == ch.c)
+                                    {
+                                        return JsonLexerError(state, "end of file inside escape code of json string");
+                                    }
+                                    return JsonLexerError(state, "expected 4 character hex number, e.g. '\\u00004E2D'");
                                 }
                             }
-
-                            // Write UTF-8
-                            // *wptr++ = (char)hex_code;
-                            WriteChar(hex_code, wptr, state->m_End);
-                            break;
+                            WriteChar(hex_code, wptr, wend);
                         }
 
-                        default: return JsonLexerError(state, "unsupported escape code");
+                        default:
+                        {
+                            return JsonLexerError(state, "unexpected character in string");
+                        }
                     }
                 }
                 else
                 {
-                    // Write UTF-8
-                    //*wptr++ = ch.c;
-                    WriteChar(ch.c, wptr, state->m_End);
+                    rptr += ch.l;
+                    WriteChar(ch.c, wptr, wend);
                 }
             }
+
+            state->m_Alloc->Commit(wptr);
 
             state->m_Cursor = rptr;
             return result;
@@ -536,8 +599,8 @@ namespace xcore
 
         static JsonLexeme GetLiteralLexeme(JsonLexerState* state)
         {
-            char* rptr = state->m_Cursor;
-            char* eptr = rptr;
+            char const* rptr = state->m_Cursor;
+            char const* eptr = rptr;
 
             s32 kwlen = 0;
 
@@ -577,8 +640,8 @@ namespace xcore
 
         static JsonLexeme JsonLexerFetchNext(JsonLexerState* state)
         {
-            char*    p  = SkipWhitespace(state);
-            uchar8_t ch = PeekChar(p, state->m_End);
+            char const* p  = SkipWhitespace(state);
+            uchar8_t    ch = PeekChar(p, state->m_End);
             switch (ch.c)
             {
                 case '-':
@@ -657,17 +720,27 @@ namespace xcore
             char*             m_ErrorMessage;
             MemAllocLinear*   m_Allocator;
             MemAllocLinear*   m_Scratch;
+            int               m_NumberOfObjects;
+            int               m_NumberOfNumbers;
+            int               m_NumberOfStrings;
+            int               m_NumberOfArrays;
+            int               m_NumberOfBooleans;
             JsonBooleanValue* m_TrueValue;
             JsonBooleanValue* m_FalseValue;
             JsonValue*        m_NullValue;
         };
 
-        static void JsonStateInit(JsonState* state, MemAllocLinear* alloc, MemAllocLinear* scratch, char* buffer, char const* end)
+        static void JsonStateInit(JsonState* state, MemAllocLinear* alloc, MemAllocLinear* scratch, char const* buffer, char const* end)
         {
-            JsonLexerStateInit(&state->m_Lexer, buffer, end);
+            JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc);
             state->m_ErrorMessage          = nullptr;
             state->m_Allocator             = alloc;
             state->m_Scratch               = scratch;
+            state->m_NumberOfObjects       = 0;
+            state->m_NumberOfNumbers       = 0;
+            state->m_NumberOfStrings       = 0;
+            state->m_NumberOfArrays        = 0;
+            state->m_NumberOfBooleans      = 2;
             state->m_TrueValue             = alloc->Allocate<JsonBooleanValue>();
             state->m_TrueValue->m_Type     = JsonValue::kBoolean;
             state->m_TrueValue->m_Boolean  = true;
@@ -804,6 +877,7 @@ namespace xcore
                 values[index] = p->m_Value;
             }
 
+            json_state->m_NumberOfObjects += 1;
             JsonObjectValue* result = alloc->Allocate<JsonObjectValue>();
             result->m_Type          = JsonValue::kObject;
             result->m_Count         = count;
@@ -904,88 +978,13 @@ namespace xcore
                 values[index] = p->m_Value;
             }
 
+            json_state->m_NumberOfArrays += 1;
             JsonArrayValue* result = alloc->Allocate<JsonArrayValue>();
             result->m_Type         = JsonValue::kArray;
             result->m_Count        = count;
             result->m_Values       = values;
 
             return result;
-        }
-
-        static const JsonValue* JsonParseValue(JsonState* json_state)
-        {
-            MemAllocLinear* alloc = json_state->m_Allocator;
-            JsonLexerState* lexer = &json_state->m_Lexer;
-            JsonLexeme      l     = JsonLexerPeek(lexer);
-
-            const JsonValue* result = nullptr;
-
-            switch (l.m_Type)
-            {
-                case kJsonLexBeginObject: result = JsonParseObject(json_state); break;
-                case kJsonLexBeginArray: result = JsonParseArray(json_state); break;
-
-                case kJsonLexString:
-                {
-                    JsonStringValue* sv = alloc->Allocate<JsonStringValue>();
-                    sv->m_Type          = JsonValue::kString;
-                    sv->m_String        = l.m_String;
-                    result              = sv;
-                    JsonLexerSkip(lexer);
-                    break;
-                }
-
-                case kJsonLexNumber:
-                {
-                    JsonNumberValue* nv = alloc->Allocate<JsonNumberValue>();
-                    nv->m_Type          = JsonValue::kNumber;
-                    nv->m_Number        = l.m_Number;
-                    result              = nv;
-                    JsonLexerSkip(lexer);
-                    break;
-                }
-
-                case kJsonLexBoolean:
-                    result = l.m_Boolean ? json_state->m_TrueValue : json_state->m_FalseValue;
-                    JsonLexerSkip(lexer);
-                    break;
-
-                case kJsonLexNull:
-                    result = json_state->m_NullValue;
-                    JsonLexerSkip(lexer);
-                    break;
-
-                default: result = JsonError(json_state, "invalid document"); break;
-            }
-
-            return result;
-        }
-
-        const JsonValue* JsonParse(char* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message)
-        {
-            error_message = nullptr;
-
-            JsonState* json_state = allocator->Allocate<JsonState>();
-            JsonStateInit(json_state, allocator, scratch, str, end);
-
-            const JsonValue* root = JsonParseValue(json_state);
-            if (root && !JsonLexerExpect(&json_state->m_Lexer, kJsonLexEof))
-            {
-                root = JsonError(json_state, "data after document");
-            }
-
-            scratch->Reset();
-
-            if (!root)
-            {
-                s32 const len    = strlen(json_state->m_ErrorMessage);
-                char*     errmsg = scratch->AllocateArray<char>(len + 1);
-                strncpy(errmsg, json_state->m_ErrorMessage, len);
-                errmsg[len]   = '\0';
-                error_message = errmsg;
-            }
-
-            return root;
         }
 
         bool JsonValue::GetColor(u32& out_color) const
@@ -1004,9 +1003,9 @@ namespace xcore
             ch = PeekChar(str, end);
 
             u8 color[4] = {0, 0, 0, 0xff};
-            s8 c = 0;
-            s8 n = 0;
-            u8 v = 0;
+            s8 c        = 0;
+            s8 n        = 0;
+            u8 v        = 0;
             while (ch.c != '\0')
             {
                 if (ch.c >= '0' && ch.c <= '9')
@@ -1020,7 +1019,7 @@ namespace xcore
                     {
                         v |= (ch.c - '0');
                         color[c++] = v;
-                        n = 0;
+                        n          = 0;
                     }
                 }
                 else
@@ -1036,6 +1035,83 @@ namespace xcore
 
             out_color = (color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3];
             return true;
+        }
+
+        static const JsonValue* JsonParseValue(JsonState* json_state)
+        {
+            const JsonValue* result = nullptr;
+            JsonLexeme       l      = JsonLexerPeek(&json_state->m_Lexer);
+            switch (l.m_Type)
+            {
+                case kJsonLexBeginObject: result = JsonParseObject(json_state); break;
+                case kJsonLexBeginArray: result = JsonParseArray(json_state); break;
+
+                case kJsonLexString:
+                {
+            json_state->m_NumberOfStrings += 1;
+                    JsonStringValue* sv = json_state->m_Allocator->Allocate<JsonStringValue>();
+                    sv->m_Type          = JsonValue::kString;
+                    sv->m_String        = l.m_String;
+                    result              = sv;
+                    JsonLexerSkip(&json_state->m_Lexer);
+                    break;
+                }
+
+                case kJsonLexNumber:
+                {
+            json_state->m_NumberOfNumbers += 1;
+                    JsonNumberValue* nv = json_state->m_Allocator->Allocate<JsonNumberValue>();
+                    nv->m_Type          = JsonValue::kNumber;
+                    nv->m_Number        = l.m_Number;
+                    result              = nv;
+                    JsonLexerSkip(&json_state->m_Lexer);
+                    break;
+                }
+
+                case kJsonLexBoolean:
+                    result = l.m_Boolean ? json_state->m_TrueValue : json_state->m_FalseValue;
+                    JsonLexerSkip(&json_state->m_Lexer);
+                    break;
+
+                case kJsonLexNull:
+                    result = json_state->m_NullValue;
+                    JsonLexerSkip(&json_state->m_Lexer);
+                    break;
+
+                default: result = JsonError(json_state, "invalid document"); break;
+            }
+
+            return result;
+        }
+
+        const JsonValue* JsonParse(char const* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message)
+        {
+            JsonState* json_state = scratch->Allocate<JsonState>();
+            JsonStateInit(json_state, allocator, scratch, str, end);
+
+            const JsonValue* root = JsonParseValue(json_state);
+            if (root && !JsonLexerExpect(&json_state->m_Lexer, kJsonLexEof))
+            {
+                root = JsonError(json_state, "data after document");
+            }
+
+            // Mainly to reduce the duplication of keys (strings) but in some way also string values.
+            // We could benefit from an additional 2 allocators that are used for:
+            // - [Hash 32-bit, String Offset 32-bit] pairs (sorted)
+            // - Strings (UTF-8 strings)
+            // The user could even pre-warm these with known strings and even reuse them between different JSON documents.
+
+            error_message = nullptr;
+            if (!root)
+            {
+                s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
+                char*     errmsg = scratch->AllocateArray<char>(len + 1);
+                strncpy(errmsg, json_state->m_ErrorMessage, len);
+                errmsg[len]   = '\0';
+                error_message = errmsg;
+            }
+
+            return root;
         }
 
     } // namespace json

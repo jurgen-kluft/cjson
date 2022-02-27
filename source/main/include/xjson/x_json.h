@@ -13,22 +13,22 @@ namespace xcore
     {
         struct MemAllocLinear;
 
-        MemAllocLinear* CreateMemAllocLinear(u32 size);
+        MemAllocLinear* CreateMemAllocLinear(u32 size, const char* name="MemAllocLinear");
         void            DestroyMemAllocLinear(MemAllocLinear* alloc);
 
         struct JsonValue
         {
             enum Type
             {
-                kNull,
-                kBoolean,
-                kObject,
-                kArray,
-                kString,
-                kNumber
+                kNull = 1,
+                kBoolean = 2,
+                kObject = 3,
+                kArray = 4,
+                kString = 5,
+                kNumber = 6,
             };
 
-            Type m_Type;
+            u16 m_Type;
 
             const struct JsonObjectValue*  AsObject() const;
             const struct JsonNumberValue*  AsNumber() const;
@@ -47,7 +47,7 @@ namespace xcore
 
         struct JsonBooleanValue : JsonValue
         {
-            bool m_Boolean;
+            u16 m_Boolean;
         };
 
         struct JsonNumberValue : JsonValue
@@ -143,7 +143,9 @@ namespace xcore
 
         // Parse JSON text into a JsonValue document, when an error occurs the return value is nullptr and the error description is set in error_message
         // which is allocated from 'scratch'.
-        const JsonValue* JsonParse(char* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message);
+        // All necessary JSON values and their properties are allocated from 'allocator', you can thus free str/end as well as 'scratch' after calling
+        // this function.
+        const JsonValue* JsonParse(char const* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message);
 
     } // namespace json
 } // namespace xcore
