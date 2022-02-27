@@ -1,6 +1,6 @@
 # json parser
 
-A simple json token parser based on jsmn.
+A simple json token parser.
 
 - Can read UTF-8
 

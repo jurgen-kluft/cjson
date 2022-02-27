@@ -17,6 +17,21 @@ namespace xcore
 {
     namespace json
     {
+        const JsonValue* JsonValue::Find(const char* key) const
+        {
+            const JsonObjectValue* obj = AsObject();
+            for (int i = 0, count = obj->m_Count; i < count; ++i)
+            {
+                const char* cmp_key = key;
+                const char* obj_key = obj->m_Names[i];
+                while (*cmp_key != 0 && *obj_key != 0 && *cmp_key == *obj_key)
+                    ++cmp_key, ++obj_key;
+                if (*cmp_key == 0 && *obj_key == 0)
+                    return obj->m_Values[i];
+            }
+            return nullptr;
+        }
+
         typedef s32 ThreadId;
 
         struct MemAllocLinear
@@ -144,6 +159,9 @@ namespace xcore
 
         static uchar8_t PeekChar(const char* str, const char* end)
         {
+            if (str >= end)
+                return {0, 0};
+
             uchar8_t c;
             c.c = (unsigned char)*str;
             c.l = 0;
@@ -662,7 +680,7 @@ namespace xcore
 
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
-            state->m_ErrorMessage = state->m_Allocator->Allocate<char>(1024);
+            state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
             snprintf(state->m_ErrorMessage, 1024, "line %d: %s", state->m_Lexer.m_LineNumber, error);
             return nullptr;
         }
@@ -960,14 +978,64 @@ namespace xcore
 
             if (!root)
             {
-                s32 const len = strlen(json_state->m_Lexer.m_ErrorMessage);
-                char* errmsg = scratch->Allocate<char>(len + 1);
+                s32 const len    = strlen(json_state->m_ErrorMessage);
+                char*     errmsg = scratch->AllocateArray<char>(len + 1);
                 strncpy(errmsg, json_state->m_ErrorMessage, len);
-                errmsg[len] = '\0';
+                errmsg[len]   = '\0';
                 error_message = errmsg;
             }
 
             return root;
+        }
+
+        bool JsonValue::GetColor(u32& out_color) const
+        {
+            if (m_Type != kString)
+                return false;
+
+            const char* str = this->AsString()->m_String;
+            const char* end = str + 9;
+
+            uchar8_t ch = PeekChar(str, end);
+            if (ch.c != '#')
+                return false;
+
+            str += ch.l;
+            ch = PeekChar(str, end);
+
+            u8 color[4] = {0, 0, 0, 0xff};
+            s8 c = 0;
+            s8 n = 0;
+            u8 v = 0;
+            while (ch.c != '\0')
+            {
+                if (ch.c >= '0' && ch.c <= '9')
+                {
+                    if (n == 0)
+                    {
+                        v = (ch.c - '0') << 4;
+                        n = 1;
+                    }
+                    else if (n == 1)
+                    {
+                        v |= (ch.c - '0');
+                        color[c++] = v;
+                        n = 0;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+
+                str += ch.l;
+            }
+
+            if (c != 4)
+                return false;
+
+            out_color = (color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3];
+            return true;
         }
 
     } // namespace json

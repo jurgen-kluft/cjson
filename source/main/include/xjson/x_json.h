@@ -38,6 +38,7 @@ namespace xcore
 
             double      GetNumber() const;
             const char* GetString() const;
+            bool        GetColor(u32& color) const;
             bool        GetBoolean() const;
 
             const JsonValue* Elem(int index) const;
@@ -117,21 +118,6 @@ namespace xcore
             const JsonArrayValue* array = AsArray();
             ASSERT(index < array->m_Count);
             return array->m_Values[index];
-        }
-
-        inline const JsonValue* JsonValue::Find(const char* key) const
-        {
-            const JsonObjectValue* obj = AsObject();
-            for (int i = 0, count = obj->m_Count; i < count; ++i)
-            {
-                const char* cmp_key = key;
-                const char* obj_key = obj->m_Names[i];
-                while (*cmp_key != 0 && *obj_key != 0 && *cmp_key == *obj_key)
-                    ++cmp_key, ++obj_key;
-                if (*cmp_key == 0 && *obj_key == 0)
-                    return obj->m_Values[i];
-            }
-            return nullptr;
         }
 
         inline double JsonValue::GetNumber() const
