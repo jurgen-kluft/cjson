@@ -1,17 +1,9 @@
 #include "xbase/x_allocator.h"
 #include "xbase/x_context.h"
+#include "xbase/x_printf.h"
 #include "xbase/x_runes.h"
 #include "xjson/x_json.h"
 
-#include <stddef.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#ifdef _MSC_VER
-#define snprintf _snprintf
-#endif
 
 namespace xcore
 {
@@ -89,17 +81,6 @@ namespace xcore
             MemAllocLinearScope(const MemAllocLinearScope&);
             MemAllocLinearScope& operator=(const MemAllocLinearScope&);
         };
-
-        inline char* StrDupN(MemAllocLinear* allocator, const char* str, s32 len)
-        {
-            s32   sz     = len + 1;
-            char* buffer = static_cast<char*>(allocator->Allocate(sz, 1));
-            memcpy(buffer, str, sz - 1);
-            buffer[sz - 1] = '\0';
-            return buffer;
-        }
-
-        inline char* StrDup(MemAllocLinear* allocator, const char* str) { return StrDupN(allocator, str, strlen(str)); }
 
 #define CHECK_THREAD_OWNERSHIP(alloc) ASSERT(context_t::thread_index() == alloc->m_OwnerThread)
 
@@ -370,12 +351,12 @@ namespace xcore
                 // Adjust result on exponent sign
                 if (sign > 0)
                 {
-                    for (u32 i = 0; i < exponent; i++)
+                    for (s32 i = 0; i < exponent; i++)
                         number *= 10.0;
                 }
                 else
                 {
-                    for (u32 i = 0; i < exponent; i++)
+                    for (s32 i = 0; i < exponent; i++)
                         number /= 10.0;
                 }
             }
@@ -419,7 +400,7 @@ namespace xcore
             MemAllocLinear* m_Alloc;
             s32             m_LineNumber;
             JsonLexeme      m_Lexeme;
-            char*           m_Error;
+            char*           m_ErrorMessage;
             JsonLexeme      m_ValueSeparatorLexeme;
             JsonLexeme      m_NameSeparatorLexeme;
             JsonLexeme      m_BeginObjectLexeme;
@@ -440,7 +421,7 @@ namespace xcore
             self->m_Alloc                = alloc;
             self->m_LineNumber           = 1;
             self->m_Lexeme.m_Type        = kJsonLexInvalid;
-            self->m_Error                = nullptr;
+            self->m_ErrorMessage         = nullptr;
             self->m_ValueSeparatorLexeme = {kJsonLexValueSeparator, {0}};
             self->m_NameSeparatorLexeme  = {kJsonLexNameSeparator, {0}};
             self->m_BeginObjectLexeme    = {kJsonLexBeginObject, {0}};
@@ -479,9 +460,12 @@ namespace xcore
 
         static JsonLexeme JsonLexerError(JsonLexerState* state, const char* error)
         {
-            ASSERT(state->m_Error == nullptr);
-            state->m_Error = (char*)state->m_Alloc->AllocateArray<char>(ascii::strlen(error) + 1);
-            snprintf(state->m_Error, sizeof state->m_Error, "%d: %s", state->m_LineNumber, error);
+            ASSERT(state->m_ErrorMessage == nullptr);
+			int const len = ascii::strlen(error) + 32;
+			state->m_ErrorMessage = state->m_Alloc->AllocateArray<char>(len + 1);
+			runes_t errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
+			crunes_t fmt("line %d: %s");
+			xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
             return state->m_ErrorLexeme;
         }
 
@@ -614,13 +598,13 @@ namespace xcore
 
             if (4 == kwlen)
             {
-                if (0 == strncmp("true", rptr, 4))
+                if (0 == x_memcmp("true", rptr, 4))
                 {
                     state->m_Cursor = eptr;
                     return state->m_TrueLexeme;
                 }
 
-                else if (0 == strncmp("null", rptr, 4))
+                else if (0 == x_memcmp("null", rptr, 4))
                 {
                     state->m_Cursor = eptr;
                     return state->m_NullLexeme;
@@ -628,7 +612,7 @@ namespace xcore
             }
             else if (5 == kwlen)
             {
-                if (0 == strncmp("false", rptr, 5))
+                if (0 == x_memcmp("false", rptr, 5))
                 {
                     state->m_Cursor = eptr;
                     return state->m_FalseLexeme;
@@ -754,7 +738,9 @@ namespace xcore
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
-            snprintf(state->m_ErrorMessage, 1024, "line %d: %s", state->m_Lexer.m_LineNumber, error);
+			runes_t errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+			crunes_t fmt("line %d: %s");
+			xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
 
@@ -1048,7 +1034,7 @@ namespace xcore
 
                 case kJsonLexString:
                 {
-            json_state->m_NumberOfStrings += 1;
+                    json_state->m_NumberOfStrings += 1;
                     JsonStringValue* sv = json_state->m_Allocator->Allocate<JsonStringValue>();
                     sv->m_Type          = JsonValue::kString;
                     sv->m_String        = l.m_String;
@@ -1059,7 +1045,7 @@ namespace xcore
 
                 case kJsonLexNumber:
                 {
-            json_state->m_NumberOfNumbers += 1;
+                    json_state->m_NumberOfNumbers += 1;
                     JsonNumberValue* nv = json_state->m_Allocator->Allocate<JsonNumberValue>();
                     nv->m_Type          = JsonValue::kNumber;
                     nv->m_Number        = l.m_Number;
@@ -1106,7 +1092,7 @@ namespace xcore
             {
                 s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
                 char*     errmsg = scratch->AllocateArray<char>(len + 1);
-                strncpy(errmsg, json_state->m_ErrorMessage, len);
+				x_memcopy(errmsg, json_state->m_ErrorMessage, len);
                 errmsg[len]   = '\0';
                 error_message = errmsg;
             }
