@@ -5,6 +5,7 @@
 #include "xjson/x_json.h"
 #include "xjson/x_json_utils.h"
 #include "xjson/x_json_allocator.h"
+#include "xjson/x_json_decode.h"
 
 namespace xcore
 {
@@ -24,7 +25,7 @@ namespace xcore
             }
             return nullptr;
         }
-
+				
         enum JsonLexemeType
         {
             kJsonLexString,
@@ -57,7 +58,7 @@ namespace xcore
         {
             const char*     m_Cursor;
             char const*     m_End;
-            allocator_t*    m_Alloc;
+            allocator_t* m_Alloc;
             s32             m_LineNumber;
             JsonLexeme      m_Lexeme;
             char*           m_ErrorMessage;
@@ -471,7 +472,9 @@ namespace xcore
 
                 switch (l.m_Type)
                 {
-                    case kJsonLexString:
+					case kJsonLexEndObject: done = true; break;
+
+					case kJsonLexString:
                     {
                         if (seen_value && !seen_comma)
                             return JsonError(json_state, "expected ','");
@@ -490,8 +493,6 @@ namespace xcore
                         seen_comma = false;
                     }
                     break;
-
-                    case kJsonLexEndObject: done = true; break;
 
                     case kJsonLexValueSeparator:
                     {
@@ -540,7 +541,7 @@ namespace xcore
             if (!JsonLexerExpect(lexer, kJsonLexBeginArray))
                 return JsonError(json_state, "expected '['");
 
-			allocator_scope_t scratch_scope(json_state->m_Scratch);
+            allocator_scope_t scratch_scope(json_state->m_Scratch);
 
             struct ListElem
             {
