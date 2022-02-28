@@ -1,6 +1,7 @@
 #include "xbase/x_target.h"
 #include "xbase/x_runes.h"
 #include "xjson/x_json.h"
+#include "xjson/x_json_allocator.h"
 #include "xjson/x_json_decode.h"
 
 #include "xunittest/xunittest.h"
@@ -53,7 +54,7 @@ static jsonvalue_t s_members_key[] = {
 // clang-format on
 
 // implementation of the constructor for the key object
-static void* json_construct_key(json_allocator_t* alloc) { return alloc->construct<key_t>(); }
+static void* json_construct_key(json::JsonAllocator* alloc) { return alloc->Allocate<key_t>(); }
 
 // clang-format off
 static jsonobject_t json_key = 
@@ -110,7 +111,7 @@ static jsonvalue_t s_members_keygroup[] = {
 // clang-format on
 
 // implementation of the constructor for the keygroup object
-static void* json_construct_keygroup(json_allocator_t* alloc) { return alloc->construct<keygroup_t>(); }
+static void* json_construct_keygroup(json::JsonAllocator* alloc) { return alloc->Allocate<keygroup_t>(); }
 
 // clang-format off
 static jsonobject_t json_keygroup = 
@@ -176,7 +177,7 @@ static jsonvalue_t s_members_keyboard[] = {
 // clang-format on
 
 // implementation of the constructor for the keygroup object
-static void* json_construct_keyboard(json_allocator_t* alloc) { return alloc->construct<keyboard_t>(); }
+static void* json_construct_keyboard(json::JsonAllocator* alloc) { return alloc->Allocate<keyboard_t>(); }
 
 // clang-format off
 static jsonobject_t json_keyboard = 
@@ -229,8 +230,8 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
             keyboard_root_t root;
             jsonobject_t* json_root = &json_keyboard_root;
 
-			json::MemAllocLinear* alloc = json::CreateMemAllocLinear(1024 * 1024);
-			json::MemAllocLinear* scratch = json::CreateMemAllocLinear(16 * 1024);
+            json::JsonAllocator* alloc = json::CreateAllocator(1024 * 1024);
+            json::JsonAllocator* scratch = json::CreateAllocator(64 * 1024);
             
             char const* error_message = nullptr;
             json_decode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, &root, alloc, scratch, error_message);

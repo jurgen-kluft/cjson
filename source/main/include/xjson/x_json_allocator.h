@@ -5,51 +5,54 @@
 #pragma once
 #endif
 
+#include "xbase/x_allocator.h"
 #include "xbase/x_debug.h"
 
 namespace xcore
 {
     namespace json
     {
-		struct allocator_t
-		{
-			void  Init(s32 max_size, const char* debug_name);
-			void  Destroy();
-			void  SetOwner(ThreadId thread_id);
-			char* Allocate(s32 size, s32 align);
+		typedef s32 ThreadId;
 
-			char* CheckOut(char*& end, s32 align = 4);
-			void  Commit(char* ptr);
+        struct JsonAllocator
+        {
+            void  Init(s32 max_size, const char* debug_name);
+            void  Destroy();
+            void  SetOwner(ThreadId thread_id);
+            char* Allocate(s32 size, s32 align);
 
-			void Reset();
+            char* CheckOut(char*& end, s32 align = 4);
+            void  Commit(char* ptr);
 
-			template <typename T> T* Allocate() { return static_cast<T*>((void*)Allocate(sizeof(T), ALIGNOF(T))); }
-			template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>((void*)Allocate(sizeof(T) * count, ALIGNOF(T))); }
+            void Reset();
 
-			XCORE_CLASS_PLACEMENT_NEW_DELETE
+            template <typename T> T* Allocate() { return static_cast<T*>((void*)Allocate(sizeof(T), ALIGNOF(T))); }
+            template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>((void*)Allocate(sizeof(T) * count, ALIGNOF(T))); }
 
-			char*       m_Pointer; // allocated pointer
-			char*       m_Cursor;  // current pointer
-			s32         m_Size;
-			ThreadId    m_OwnerThread;
-			const char* m_DebugName;
-		};
+            XCORE_CLASS_PLACEMENT_NEW_DELETE
 
-        class allocator_scope_t
+            char*       m_Pointer; // allocated pointer
+            char*       m_Cursor;  // current pointer
+            s32         m_Size;
+            ThreadId    m_OwnerThread;
+            const char* m_DebugName;
+        };
+
+        class JsonAllocatorScope
         {
         public:
-            explicit allocator_scope_t(allocator_t* a);
-            ~allocator_scope_t();
+            explicit JsonAllocatorScope(JsonAllocator* a);
+            ~JsonAllocatorScope();
 
         private:
-            allocator_scope_t(const allocator_scope_t&);
-            allocator_scope_t& operator=(const allocator_scope_t&);
-            allocator_t*       m_Allocator;
+            JsonAllocatorScope(const JsonAllocatorScope&);
+            JsonAllocatorScope& operator=(const JsonAllocatorScope&);
+            JsonAllocator*     m_Allocator;
             char*              m_Pointer;
         };
 
-        allocator_t* CreateAllocator(u32 size, const char* name = "JSON Allocator");
-        void         DestroyAllocator(allocator_t* alloc);
+        JsonAllocator* CreateAllocator(u32 size, const char* name = "JSON Allocator");
+        void           DestroyAllocator(JsonAllocator* alloc);
 
     } // namespace json
 } // namespace xcore

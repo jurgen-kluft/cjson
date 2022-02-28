@@ -222,8 +222,13 @@ namespace xcore
 		void* allocate(xcore::u32 size, xcore::u32 alignment);
 	};
 
+	namespace json
+	{
+		struct JsonAllocator;
+	}
+
 	// typedef function that returns a pointer to a new instance of an object
-	typedef void* (*json_construct_fn)(json_allocator_t* alloc);
+	typedef void* (*json_construct_fn)(json::JsonAllocator* alloc);
 
 	struct jsonobject_t
 	{
@@ -234,12 +239,8 @@ namespace xcore
 		jsonvalue_t*      m_members; // Sorted by name
 	};
 
-	namespace json
-	{
-		struct MemAllocLinear;
-	}
 
-	bool json_decode(char const* json, char const* json_end, jsonobject_t* json_root, void* root, json::MemAllocLinear* allocator, json::MemAllocLinear* scratch, char const*& error_message);
+	bool json_decode(char const* json, char const* json_end, jsonobject_t* json_root, void* root, json::JsonAllocator* allocator, json::JsonAllocator* scratch, char const*& error_message);
 
 } // namespace xcore
 

@@ -11,10 +11,7 @@ namespace xcore
 {
     namespace json
     {
-        struct MemAllocLinear;
-
-        MemAllocLinear* CreateMemAllocLinear(u32 size, const char* name="MemAllocLinear");
-        void            DestroyMemAllocLinear(MemAllocLinear* alloc);
+        struct JsonAllocator;
 
         struct JsonValue
         {
@@ -145,7 +142,7 @@ namespace xcore
         // which is allocated from 'scratch'.
         // All necessary JSON values and their properties are allocated from 'allocator', you can thus free str/end as well as 'scratch' after calling
         // this function.
-        const JsonValue* JsonParse(char const* str, char const* end, MemAllocLinear* allocator, MemAllocLinear* scratch, char const*& error_message);
+        const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
 
     } // namespace json
 } // namespace xcore

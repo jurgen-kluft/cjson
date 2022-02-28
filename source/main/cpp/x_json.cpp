@@ -55,26 +55,26 @@ namespace xcore
 
         struct JsonLexerState
         {
-            const char*     m_Cursor;
-            char const*     m_End;
-            allocator_t*    m_Alloc;
-            s32             m_LineNumber;
-            JsonLexeme      m_Lexeme;
-            char*           m_ErrorMessage;
-            JsonLexeme      m_ValueSeparatorLexeme;
-            JsonLexeme      m_NameSeparatorLexeme;
-            JsonLexeme      m_BeginObjectLexeme;
-            JsonLexeme      m_EndObjectLexeme;
-            JsonLexeme      m_BeginArrayLexeme;
-            JsonLexeme      m_EndArrayLexeme;
-            JsonLexeme      m_NullLexeme;
-            JsonLexeme      m_EofLexeme;
-            JsonLexeme      m_ErrorLexeme;
-            JsonLexeme      m_TrueLexeme;
-            JsonLexeme      m_FalseLexeme;
+            const char*    m_Cursor;
+            char const*    m_End;
+            JsonAllocator* m_Alloc;
+            s32            m_LineNumber;
+            JsonLexeme     m_Lexeme;
+            char*          m_ErrorMessage;
+            JsonLexeme     m_ValueSeparatorLexeme;
+            JsonLexeme     m_NameSeparatorLexeme;
+            JsonLexeme     m_BeginObjectLexeme;
+            JsonLexeme     m_EndObjectLexeme;
+            JsonLexeme     m_BeginArrayLexeme;
+            JsonLexeme     m_EndArrayLexeme;
+            JsonLexeme     m_NullLexeme;
+            JsonLexeme     m_EofLexeme;
+            JsonLexeme     m_ErrorLexeme;
+            JsonLexeme     m_TrueLexeme;
+            JsonLexeme     m_FalseLexeme;
         };
 
-        static void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, allocator_t* alloc)
+        static void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc)
         {
             self->m_Cursor               = buffer;
             self->m_End                  = end;
@@ -121,11 +121,11 @@ namespace xcore
         static JsonLexeme JsonLexerError(JsonLexerState* state, const char* error)
         {
             ASSERT(state->m_ErrorMessage == nullptr);
-			int const len = ascii::strlen(error) + 32;
-			state->m_ErrorMessage = state->m_Alloc->AllocateArray<char>(len + 1);
-			runes_t errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
-			crunes_t fmt("line %d: %s");
-			xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
+            int const len         = ascii::strlen(error) + 32;
+            state->m_ErrorMessage = state->m_Alloc->AllocateArray<char>(len + 1);
+            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
+            crunes_t fmt("line %d: %s");
+            xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
             return state->m_ErrorLexeme;
         }
 
@@ -249,7 +249,7 @@ namespace xcore
             s32 kwlen = 0;
 
             uchar8_t ch = PeekChar(eptr, state->m_End);
-            while (is_alpha(ch.c) || is_digit(ch.c))
+            while (is_alpha(ch.c))
             {
                 eptr += ch.l;
                 kwlen += 1;
@@ -258,13 +258,12 @@ namespace xcore
 
             if (4 == kwlen)
             {
-                if (0 == x_memcmp("true", rptr, 4))
+                if (rptr[0] == 't' && rptr[1] == 'r' && rptr[2] == 'u' && rptr[3] == 'e')
                 {
                     state->m_Cursor = eptr;
                     return state->m_TrueLexeme;
                 }
-
-                else if (0 == x_memcmp("null", rptr, 4))
+                else if (rptr[0] == 'n' && rptr[1] == 'u' && rptr[2] == 'l' && rptr[3] == 'l')
                 {
                     state->m_Cursor = eptr;
                     return state->m_NullLexeme;
@@ -272,7 +271,7 @@ namespace xcore
             }
             else if (5 == kwlen)
             {
-                if (0 == x_memcmp("false", rptr, 5))
+                if (rptr[0] == 'f' && rptr[1] == 'a' && rptr[2] == 'l' && rptr[3] == 's' && rptr[4] == 'e')
                 {
                     state->m_Cursor = eptr;
                     return state->m_FalseLexeme;
@@ -300,6 +299,9 @@ namespace xcore
                 case '8':
                 case '9': return GetNumberLexeme(state);
                 case '"': return GetStringLexeme(state);
+                case 't':
+                case 'f':
+                case 'n': return GetLiteralLexeme(state);
                 case '{': state->m_Cursor = p + 1; return state->m_BeginObjectLexeme;
                 case '}': state->m_Cursor = p + 1; return state->m_EndObjectLexeme;
                 case '[': state->m_Cursor = p + 1; return state->m_BeginArrayLexeme;
@@ -308,7 +310,8 @@ namespace xcore
                 case ':': state->m_Cursor = p + 1; return state->m_NameSeparatorLexeme;
                 case '\0': return state->m_EofLexeme;
 
-                default: return GetLiteralLexeme(state);
+                default: // very likely an error
+                    return GetLiteralLexeme(state);
             }
         }
 
@@ -362,8 +365,8 @@ namespace xcore
         {
             JsonLexerState    m_Lexer;
             char*             m_ErrorMessage;
-            allocator_t*   m_Allocator;
-            allocator_t*   m_Scratch;
+            JsonAllocator*    m_Allocator;
+            JsonAllocator*    m_Scratch;
             int               m_NumberOfObjects;
             int               m_NumberOfNumbers;
             int               m_NumberOfStrings;
@@ -374,7 +377,7 @@ namespace xcore
             JsonValue*        m_NullValue;
         };
 
-        static void JsonStateInit(JsonState* state, allocator_t* alloc, allocator_t* scratch, char const* buffer, char const* end)
+        static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
         {
             JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc);
             state->m_ErrorMessage          = nullptr;
@@ -398,9 +401,9 @@ namespace xcore
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
-			runes_t errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
-			crunes_t fmt("line %d: %s");
-			xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
+            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+            crunes_t fmt("line %d: %s");
+            xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
 
@@ -413,7 +416,7 @@ namespace xcore
             if (!JsonLexerExpect(lexer, kJsonLexBeginObject))
                 return JsonError(json_state, "expected '{'");
 
-            allocator_scope_t scratch_scope(json_state->m_Scratch);
+            JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
             bool seen_value = false;
             bool seen_comma = false;
@@ -427,12 +430,12 @@ namespace xcore
 
             struct KvPairList
             {
-                allocator_t* m_Scratch;
-                KvPair*         m_Head;
-                KvPair*         m_Tail;
-                s32             m_Count;
+                JsonAllocator* m_Scratch;
+                KvPair*        m_Head;
+                KvPair*        m_Tail;
+                s32            m_Count;
 
-                void Init(allocator_t* scratch)
+                void Init(JsonAllocator* scratch)
                 {
                     m_Scratch = scratch;
                     m_Head    = nullptr;
@@ -510,7 +513,7 @@ namespace xcore
                 }
             }
 
-            allocator_t* alloc = json_state->m_Allocator;
+            JsonAllocator* alloc = json_state->m_Allocator;
 
             s32               count  = kv_pairs.m_Count;
             const char**      names  = alloc->AllocateArray<const char*>(kv_pairs.m_Count);
@@ -540,7 +543,7 @@ namespace xcore
             if (!JsonLexerExpect(lexer, kJsonLexBeginArray))
                 return JsonError(json_state, "expected '['");
 
-			allocator_scope_t scratch_scope(json_state->m_Scratch);
+            JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
             struct ListElem
             {
@@ -550,12 +553,12 @@ namespace xcore
 
             struct ValueList
             {
-                allocator_t* m_Scratch;
-                ListElem*       m_Head;
-                ListElem*       m_Tail;
-                s32             m_Count;
+                JsonAllocator* m_Scratch;
+                ListElem*      m_Head;
+                ListElem*      m_Tail;
+                s32            m_Count;
 
-                void Init(allocator_t* scratch)
+                void Init(JsonAllocator* scratch)
                 {
                     m_Scratch = scratch;
                     m_Head    = nullptr;
@@ -613,7 +616,7 @@ namespace xcore
                 value_list.Add(value);
             }
 
-            allocator_t* alloc = json_state->m_Allocator;
+            JsonAllocator* alloc = json_state->m_Allocator;
 
             s32               count  = value_list.m_Count;
             const JsonValue** values = alloc->AllocateArray<const JsonValue*>(count);
@@ -730,7 +733,7 @@ namespace xcore
             return result;
         }
 
-        const JsonValue* JsonParse(char const* str, char const* end, allocator_t* allocator, allocator_t* scratch, char const*& error_message)
+        const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
         {
             JsonState* json_state = scratch->Allocate<JsonState>();
             JsonStateInit(json_state, allocator, scratch, str, end);
@@ -752,7 +755,7 @@ namespace xcore
             {
                 s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
                 char*     errmsg = scratch->AllocateArray<char>(len + 1);
-				x_memcopy(errmsg, json_state->m_ErrorMessage, len);
+                x_memcopy(errmsg, json_state->m_ErrorMessage, len);
                 errmsg[len]   = '\0';
                 error_message = errmsg;
             }
