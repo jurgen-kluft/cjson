@@ -134,12 +134,29 @@ namespace xcore
             char const* start = state->m_Cursor;
             char const* end   = state->m_End;
 
-            f64         number;
-            char const* cursor = ParseNumber(start, end, &number);
+			JsonNumber number;
+            char const* cursor = ParseNumber(start, end, number);
 
             JsonLexeme result;
             result.m_Type   = kJsonLexNumber;
-            result.m_Number = number;
+			switch (number.m_Type)
+            {
+                case (kJsonNumber_u8|kJsonNumber_s8):
+                case kJsonNumber_u8: result.m_Number = number.m_U8; break;
+                case (kJsonNumber_u16|kJsonNumber_s16):
+                case kJsonNumber_u16: result.m_Number = number.m_U16; break;
+                case (kJsonNumber_u32|kJsonNumber_s32):
+                case kJsonNumber_u32: result.m_Number = number.m_U32; break;
+                case (kJsonNumber_u64|kJsonNumber_s64):
+                case kJsonNumber_u64: result.m_Number = number.m_U64; break;
+                case kJsonNumber_s8: result.m_Number = number.m_S8; break;
+                case kJsonNumber_s16: result.m_Number = number.m_S16; break;
+                case kJsonNumber_s32: result.m_Number = number.m_S32; break;
+                case kJsonNumber_s64: result.m_Number = number.m_S64; break;
+                case kJsonNumber_f32: result.m_Number = number.m_F32; break;
+                case kJsonNumber_f64: result.m_Number = number.m_F64; break;
+                default: return JsonLexerError(state, "illegal number");
+            }
             state->m_Cursor = cursor;
             return start != cursor ? result : JsonLexerError(state, "bad number");
         }

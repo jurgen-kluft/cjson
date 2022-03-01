@@ -13,36 +13,21 @@ namespace xcore
     {
         using namespace json;
 
-        const JsonValue* JsonValue::Find(const char* key) const
-        {
-            const JsonObjectValue* obj = AsObject();
-            for (int i = 0, count = obj->m_Count; i < count; ++i)
-            {
-                const char* cmp_key = key;
-                const char* obj_key = obj->m_Names[i];
-                while (*cmp_key != 0 && *obj_key != 0 && *cmp_key == *obj_key)
-                    ++cmp_key, ++obj_key;
-                if (*cmp_key == 0 && *obj_key == 0)
-                    return obj->m_Values[i];
-            }
-            return nullptr;
-        }
-
         enum JsonLexemeType
         {
-            kJsonLexString,
-            kJsonLexNumber,
-            kJsonLexValueSeparator,
-            kJsonLexNameSeparator,
-            kJsonLexBeginObject,
-            kJsonLexBeginArray,
-            kJsonLexEndObject,
-            kJsonLexEndArray,
-            kJsonLexBoolean,
-            kJsonLexNull,
-            kJsonLexEof,
-            kJsonLexError,
-            kJsonLexInvalid
+            kJsonLexError = -1,
+            kJsonLexInvalid = 0,
+            kJsonLexString = 1,
+            kJsonLexValueSeparator = 3,
+            kJsonLexNameSeparator = 4,
+            kJsonLexBeginObject = 5,
+            kJsonLexBeginArray = 6,
+            kJsonLexEndObject = 7,
+            kJsonLexEndArray = 8,
+            kJsonLexBoolean = 9,
+            kJsonLexNull = 10,
+            kJsonLexEof = 11,
+            kJsonLexNumber = 12,
         };
 
         struct JsonLexeme
@@ -50,9 +35,9 @@ namespace xcore
             JsonLexemeType m_Type;
             union
             {
-                bool   m_Boolean;
-                double m_Number;
-                char*  m_String;
+                bool       m_Boolean;
+				JsonNumber m_Number;
+                char*      m_String;
             };
         };
 
@@ -114,13 +99,14 @@ namespace xcore
             char const* start = state->m_Cursor;
             char const* end   = state->m_End;
 
-            f64         number;
-            char const* cursor = ParseNumber(start, end, &number);
+			JsonLexeme result;
+			result.m_Type   = kJsonLexNumber;
+			char const* cursor = ParseNumber(start, end, result.m_Number);
 
-            JsonLexeme result;
-            result.m_Type   = kJsonLexNumber;
-            result.m_Number = number;
-            state->m_Cursor = cursor;
+			if (result.m_Number.m_Type == kJsonNumber_unknown)
+				return JsonLexerError(state, "illegal number");
+			
+			state->m_Cursor = cursor;
             return start != cursor ? result : JsonLexerError(state, "bad number");
         }
 
@@ -401,7 +387,12 @@ namespace xcore
             state->m_NullValue->m_Type     = JsonValue::kNull;
         }
 
-        static JsonValue* JsonError(JsonState* state, const char* error)
+		struct JsonError
+		{
+			const char* m_ErrorMessage;
+		};
+
+        static JsonError* MakeJsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
@@ -410,65 +401,24 @@ namespace xcore
             return nullptr;
         }
 
-        static const JsonValue* JsonParseValue(JsonState* json_state);
+		static void* JsonGetMemberPtr(JsonObject* object, void* object_instance, JsonMember* member)
+		{
+			return nullptr;
+		}
 
-        static const JsonValue* JsonParseObject(JsonState* json_state)
+        static JsonError* JsonDecodeValue(JsonState* json_state, JsonObject* object, void* object_instance, JsonMember* member, void*& member_data);
+
+        static JsonError* JsonDecodeObject(JsonState* json_state, JsonObject* object, void* object_instance)
         {
             JsonLexerState* lexer = &json_state->m_Lexer;
 
             if (!JsonLexerExpect(lexer, kJsonLexBeginObject))
-                return JsonError(json_state, "expected '{'");
+                return MakeJsonError(json_state, "expected '{'");
 
             JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
             bool seen_value = false;
             bool seen_comma = false;
-
-            struct KvPair
-            {
-                const char*      m_Key;
-                const JsonValue* m_Value;
-                KvPair*          m_Next;
-            };
-
-            struct KvPairList
-            {
-                JsonAllocator* m_Scratch;
-                KvPair*        m_Head;
-                KvPair*        m_Tail;
-                s32            m_Count;
-
-                void Init(JsonAllocator* scratch)
-                {
-                    m_Scratch = scratch;
-                    m_Head    = nullptr;
-                    m_Tail    = nullptr;
-                    m_Count   = 0;
-                }
-
-                void Add(const char* key, const JsonValue* value)
-                {
-                    if (1 == ++m_Count)
-                    {
-                        m_Head = m_Tail = m_Scratch->Allocate<KvPair>();
-                        m_Head->m_Key   = key;
-                        m_Head->m_Value = value;
-                        m_Head->m_Next  = nullptr;
-                    }
-                    else
-                    {
-                        KvPair* tail    = m_Tail;
-                        m_Tail          = m_Scratch->Allocate<KvPair>();
-                        m_Tail->m_Key   = key;
-                        m_Tail->m_Value = value;
-                        m_Tail->m_Next  = nullptr;
-                        tail->m_Next    = m_Tail;
-                    }
-                }
-            };
-
-            KvPairList kv_pairs;
-            kv_pairs.Init(json_state->m_Scratch);
 
             bool done = false;
             while (!done)
@@ -482,17 +432,16 @@ namespace xcore
                     case kJsonLexString:
                     {
                         if (seen_value && !seen_comma)
-                            return JsonError(json_state, "expected ','");
+                            return MakeJsonError(json_state, "expected ','");
 
                         if (!JsonLexerExpect(lexer, kJsonLexNameSeparator))
-                            return JsonError(json_state, "expected ':'");
+                            return MakeJsonError(json_state, "expected ':'");
 
-                        const JsonValue* value = JsonParseValue(json_state);
-
-                        if (value == nullptr)
-                            return nullptr;
-
-                        kv_pairs.Add(l.m_String, value);
+                        JsonMember* member = JsonFindMember(object, l.m_String);
+						void* member_ptr = JsonGetMemberPtr(object, object_instance, member);
+                        JsonError* err = JsonDecodeValue(json_state, object, object_instance, member, member_ptr);
+                        if (err != nullptr)
+                            return err;
 
                         seen_value = true;
                         seen_comma = false;
@@ -502,56 +451,37 @@ namespace xcore
                     case kJsonLexValueSeparator:
                     {
                         if (!seen_value)
-                            return JsonError(json_state, "expected key name");
+                            return MakeJsonError(json_state, "expected key name");
 
                         if (seen_comma)
-                            return JsonError(json_state, "duplicate comma");
+                            return MakeJsonError(json_state, "duplicate comma");
 
                         seen_value = false;
                         seen_comma = true;
                         break;
                     }
 
-                    default: return JsonError(json_state, "expected object to continue");
+                    default: return MakeJsonError(json_state, "expected object to continue");
                 }
             }
 
-            JsonAllocator* alloc = json_state->m_Allocator;
-
-            s32               count  = kv_pairs.m_Count;
-            const char**      names  = alloc->AllocateArray<const char*>(kv_pairs.m_Count);
-            const JsonValue** values = alloc->AllocateArray<const JsonValue*>(kv_pairs.m_Count);
-
-            s32 index = 0;
-            for (KvPair* p = kv_pairs.m_Head; p; p = p->m_Next, ++index)
-            {
-                names[index]  = p->m_Key;
-                values[index] = p->m_Value;
-            }
-
-            json_state->m_NumberOfObjects += 1;
-            JsonObjectValue* result = alloc->Allocate<JsonObjectValue>();
-            result->m_Type          = JsonValue::kObject;
-            result->m_Count         = count;
-            result->m_Names         = names;
-            result->m_Values        = values;
-
-            return result;
+            return nullptr;
         }
 
-        static const JsonValue* JsonParseArray(JsonState* json_state)
+        static JsonError* JsonDecodeArray(JsonState* json_state, JsonObject* object, void* object_instance, JsonMember* member)
         {
             JsonLexerState* lexer = &json_state->m_Lexer;
 
             if (!JsonLexerExpect(lexer, kJsonLexBeginArray))
-                return JsonError(json_state, "expected '['");
+                return MakeJsonError(json_state, "expected '['");
 
             JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
             struct ListElem
             {
-                const JsonValue* m_Value;
-                ListElem*        m_Next;
+                const JsonMember* m_Member;
+				void*             m_MemberValue;
+                ListElem*         m_Next;
             };
 
             struct ValueList
@@ -569,20 +499,22 @@ namespace xcore
                     m_Count   = 0;
                 }
 
-                void Add(const JsonValue* value)
+                void Add(const JsonMember* member, void* value)
                 {
                     if (1 == ++m_Count)
                     {
                         m_Head = m_Tail = m_Scratch->Allocate<ListElem>();
-                        m_Head->m_Value = value;
-                        m_Head->m_Next  = nullptr;
+						m_Head->m_Member = member;
+						m_Head->m_MemberValue = value;
+						m_Head->m_Next  = nullptr;
                     }
                     else
                     {
                         ListElem* tail  = m_Tail;
                         m_Tail          = m_Scratch->Allocate<ListElem>();
-                        m_Tail->m_Value = value;
-                        m_Tail->m_Next  = nullptr;
+						m_Tail->m_Member = member;
+						m_Tail->m_MemberValue = value;
+						m_Tail->m_Next  = nullptr;
                         tail->m_Next    = m_Tail;
                     }
                 }
@@ -606,146 +538,173 @@ namespace xcore
                 {
                     if (kJsonLexValueSeparator != l.m_Type)
                     {
-                        return JsonError(json_state, "expected ','");
+                        return MakeJsonError(json_state, "expected ','");
                     }
 
                     JsonLexerSkip(lexer);
                 }
 
-                const JsonValue* value = JsonParseValue(json_state);
-                if (!value)
-                    return nullptr;
+				// The size of a member cannot be larger than a pointer.
+				// f64, f32, u8/s8, u16/s16, u32/s32, u64/s64 as well as pointers to those types
+				void* member_value = nullptr;
 
-                value_list.Add(value);
+				void* member_value_ptr = &member_value;
+                JsonError* err = JsonDecodeValue(json_state, object, object_instance, member, member_value_ptr);
+                if (err != nullptr)
+                    return err;
+
+                value_list.Add(member, member_value);
             }
 
             JsonAllocator* alloc = json_state->m_Allocator;
 
             s32               count  = value_list.m_Count;
-            const JsonValue** values = alloc->AllocateArray<const JsonValue*>(count);
 
-            s32 index = 0;
-            for (ListElem* p = value_list.m_Head; p; p = p->m_Next, ++index)
-            {
-                values[index] = p->m_Value;
-            }
+			// Allocate the correct type of array and populate it
+			// then set the member on the object to the array
 
-            json_state->m_NumberOfArrays += 1;
-            JsonArrayValue* result = alloc->Allocate<JsonArrayValue>();
-            result->m_Type         = JsonValue::kArray;
-            result->m_Count        = count;
-            result->m_Values       = values;
-
-            return result;
+            return nullptr;
         }
 
-        bool JsonValue::GetColor(u32& out_color) const
+		bool MemberIsObject(JsonMember* m) { return false; }
+		bool MemberIsArray(JsonMember* m) { return false; }
+		bool MemberIsString(JsonMember* m) { return false; }
+		bool MemberIsNumber(JsonMember* m) { return false; }
+
+        JsonError* JsonDecodeValue(JsonState* json_state, JsonObject* object, void* object_instance, JsonMember* member, void*& member_value_instance)
         {
-            if (m_Type != kString)
-                return false;
-
-            const char* str = this->AsString()->m_String;
-            const char* end = str + 9;
-
-            uchar8_t ch = PeekChar(str, end);
-            if (ch.c != '#')
-                return false;
-
-            str += ch.l;
-            ch = PeekChar(str, end);
-
-            u8 color[4] = {0, 0, 0, 0xff};
-            s8 c        = 0;
-            s8 n        = 0;
-            u8 v        = 0;
-            while (ch.c != '\0')
-            {
-                if (ch.c >= '0' && ch.c <= '9')
-                {
-                    if (n == 0)
-                    {
-                        v = (ch.c - '0') << 4;
-                        n = 1;
-                    }
-                    else if (n == 1)
-                    {
-                        v |= (ch.c - '0');
-                        color[c++] = v;
-                        n          = 0;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-
-                str += ch.l;
-            }
-
-            if (c != 4)
-                return false;
-
-            out_color = (color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3];
-            return true;
-        }
-
-        static const JsonValue* JsonParseValue(JsonState* json_state)
-        {
-            const JsonValue* result = nullptr;
+            JsonError* err = nullptr;
             JsonLexeme       l      = JsonLexerPeek(&json_state->m_Lexer);
             switch (l.m_Type)
             {
-                case kJsonLexBeginObject: result = JsonParseObject(json_state); break;
-                case kJsonLexBeginArray: result = JsonParseArray(json_state); break;
+                case kJsonLexBeginObject:
+				{
+					if (!MemberIsObject(member))
+						return MakeJsonError(json_state, "encountered json object but class member is not the same type");
+
+					JsonObject* member_object = member->m_type->m_object;
+
+					if (member_value_instance == nullptr)
+					{
+						if (member->m_type->is_pointer())
+							member->m_type->m_calloc(json_state->m_Allocator, 1, member_value_instance);
+						else
+							member_value_instance = JsonGetMemberPtr(object, object_instance, member);
+					}
+					else 
+					{
+						// The member value is part of something else, like an array element
+					}
+
+					err = JsonDecodeObject(json_state, member_object, member_value_instance);
+				} break;
+                case kJsonLexBeginArray: 
+                    if (!MemberIsArray(member))
+                        return MakeJsonError(json_state, "encountered json array but class member is not the same type");
+					
+					// Two ways an array can be a member:
+					// 1) float* m_floats;
+					// 2) float  m_floats[4];
+					// One needs to be constructed and has a dynamic size, the second one does not need to be constructed
+					// and the size is known beforehand.
+                    err = JsonDecodeArray(json_state, object, object_instance, member);
+                    break;
 
                 case kJsonLexString:
                 {
+                    if (!MemberIsString(member))
+                        return MakeJsonError(json_state, "encountered json string but class member is not the same type");
+
                     json_state->m_NumberOfStrings += 1;
-                    JsonStringValue* sv = json_state->m_Allocator->Allocate<JsonStringValue>();
-                    sv->m_Type          = JsonValue::kString;
-                    sv->m_String        = l.m_String;
-                    result              = sv;
+
+					if (member_value_instance == nullptr)
+					{
+						member_value_instance = JsonGetMemberPtr(object, object_instance, member);
+					}
+					else 
+					{
+						// The member value is part of something else, like an array element
+					}
+
+                    const char** string_data = (const char**)member_value_instance;
+                    *string_data = l.m_String;
+
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
                 }
 
                 case kJsonLexNumber:
                 {
+                    if (!MemberIsNumber(member))
+                        return MakeJsonError(json_state, "encountered json number but class member is not the same type");
+                    
                     json_state->m_NumberOfNumbers += 1;
-                    JsonNumberValue* nv = json_state->m_Allocator->Allocate<JsonNumberValue>();
-                    nv->m_Type          = JsonValue::kNumber;
-                    nv->m_Number        = l.m_Number;
-                    result              = nv;
+					JsonNumber const& number = l.m_Number;
+
+					if (member_value_instance == nullptr)
+					{
+						if (member->m_type->is_pointer())
+						{
+                            void** member_value_ptr = (void**)JsonGetMemberPtr(object, object_instance, member);
+							void* value_ptr;
+                            member->m_type->m_calloc(json_state->m_Allocator, 1, value_ptr);
+							*member_value_ptr = value_ptr;
+							member_value_instance = value_ptr;
+						}
+						else
+						{
+							member_value_instance = JsonGetMemberPtr(object, object_instance, member);
+							// Write the number to the correct member type
+						}
+					}
+					else 
+					{
+						// The member value is part of something else, like an array element
+					}
+
+
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
                 }
 
                 case kJsonLexBoolean:
-                    result = l.m_Boolean ? json_state->m_TrueValue : json_state->m_FalseValue;
+					if (!MemberIsNumber(member))
+						return MakeJsonError(json_state, "encountered json boolean but class member is not the same type");
+
+					// Set the boolean value on the object member
+                    
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
 
                 case kJsonLexNull:
-                    result = json_state->m_NullValue;
+
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
 
-                default: result = JsonError(json_state, "invalid document"); break;
+                default: 
+					return MakeJsonError(json_state, "invalid document");
             }
 
-            return result;
+			return nullptr;
         }
 
-        const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
+        bool JsonDecode(char const* str, char const* end, JsonObject* json_root, void* root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
         {
             JsonState* json_state = scratch->Allocate<JsonState>();
             JsonStateInit(json_state, allocator, scratch, str, end);
 
-            const JsonValue* root = JsonParseValue(json_state);
-            if (root && !JsonLexerExpect(&json_state->m_Lexer, kJsonLexEof))
-            {
-                root = JsonError(json_state, "data after document");
-            }
+            JsonError* error = JsonDecodeValue(json_state, json_root, root, nullptr, nullptr );
+			if (error == nullptr)
+			{
+				if (!JsonLexerExpect(&json_state->m_Lexer, kJsonLexEof))
+				{
+					error = MakeJsonError(json_state, "data after document");
+				}
+				else
+				{
+					return true;
+				}
+			}
 
             // Mainly to reduce the duplication of keys (strings) but in some way also string values.
             // We could benefit from an additional 2 allocators that are used for:
@@ -754,16 +713,12 @@ namespace xcore
             // The user could even pre-warm these with known strings and even reuse them between different JSON documents.
 
             error_message = nullptr;
-            if (!root)
-            {
-                s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
-                char*     errmsg = scratch->AllocateArray<char>(len + 1);
-                x_memcopy(errmsg, json_state->m_ErrorMessage, len);
-                errmsg[len]   = '\0';
-                error_message = errmsg;
-            }
-
-            return root;
+            s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
+            char*     errmsg = scratch->AllocateArray<char>(len + 1);
+            x_memcopy(errmsg, json_state->m_ErrorMessage, len);
+            errmsg[len]   = '\0';
+            error_message = errmsg;
+            return false;
         }
 
     } // namespace json_decoder

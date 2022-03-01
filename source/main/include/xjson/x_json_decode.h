@@ -7,241 +7,357 @@
 
 namespace xcore
 {
-	enum jsonvalue_type
-	{
-		jsonvalue_type_null     = 0x0000,
-		jsonvalue_type_bool     = 0x0001,
-		jsonvalue_type_int8     = 0x0002,
-		jsonvalue_type_int16    = 0x0003,
-		jsonvalue_type_int32    = 0x0004,
-		jsonvalue_type_int64    = 0x0005,
-		jsonvalue_type_f32      = 0x0006,
-		jsonvalue_type_f64      = 0x0007,
-		jsonvalue_type_string   = 0x0008,
-		jsonvalue_type_object   = 0x0009,
-		jsonvalue_type_pointer  = 0x0200,
-		jsonvalue_type_array    = 0x0400,
-		jsonvalue_type_size_s8  = 0x0800,
-		jsonvalue_type_size_s16 = 0x1000,
-	};
+    namespace json
+    {
+        struct JsonAllocator;
 
-	struct jsonobject_t;
+        typedef void (*JsonCAlloc)(JsonAllocator* alloc, s32 count, void*& p);
 
-	struct jsonvalue_t
-	{
-		jsonvalue_t(const char* name, bool* value)
-			: type(jsonvalue_type_bool)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
-		jsonvalue_t(const char* name, bool** value)
-			: type(jsonvalue_type_bool | jsonvalue_type_pointer)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+        struct JsonObject;
 
-		jsonvalue_t(const char* name, xcore::s8* value)
-			: type(jsonvalue_type_int8)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+        struct JsonMemberType
+        {
+            enum
+            {
+                TypeNull    = 0x00000,
+                TypeBool    = 0x00001,
+                TypeInt8    = 0x00002,
+                TypeInt16   = 0x00003,
+                TypeInt32   = 0x00004,
+                TypeInt64   = 0x00005,
+                TypeF32     = 0x00006,
+                TypeF64     = 0x00007,
+                TypeString  = 0x00008,
+                TypeObject  = 0x00009,
+                TypePointer = 0x00200,
+                TypeVector  = 0x00400,
+                TypeCarray  = 0x02000,
+            };
 
-		jsonvalue_t(const char* name, xcore::s16* value)
-			: type(jsonvalue_type_int16)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+            xcore::u32 m_type;
+            xcore::u32 m_size_type; // If type == TypeVector, this is the size type (TypeInt8, TypeInt16, TypeInt32) of the vector.
 
-		jsonvalue_t(const char* name, xcore::s32* value)
-			: type(jsonvalue_type_int32)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+            inline bool is_bool() const { return (m_type & TypeBool) == TypeBool; }
+            inline bool is_int8() const { return (m_type & TypeInt8) == TypeInt8; }
+            inline bool is_int16() const { return (m_type & TypeInt16) == TypeInt16; }
+            inline bool is_int32() const { return (m_type & TypeInt32) == TypeInt32; }
+            inline bool is_int64() const { return (m_type & TypeInt64) == TypeInt64; }
+            inline bool is_f32() const { return (m_type & TypeF32) == TypeF32; }
+            inline bool is_f64() const { return (m_type & TypeF64) == TypeF64; }
+            inline bool is_string() const { return (m_type & TypeString) == TypeString; }
+            inline bool is_object() const { return (m_type & TypeObject) == TypeObject; }
+            inline bool is_pointer() const { return (m_type & TypePointer) == TypePointer; }
+            inline bool is_vector() const { return (m_type & TypeVector) == TypeVector; }
+            inline bool is_carray() const { return (m_type & TypeCarray) == TypeCarray; }
 
-		jsonvalue_t(const char* name, xcore::s64* value)
-			: type(jsonvalue_type_int64)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+            JsonCAlloc  m_calloc;
+            JsonObject* m_object;
+        };
 
-		jsonvalue_t(const char* name, xcore::f32* value)
-			: type(jsonvalue_type_f32)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+        JsonMemberType const* JsonTypeBool;
+        JsonMemberType const* JsonTypeBoolPtr;
+        JsonMemberType const* JsonTypeBoolVector;
+        JsonMemberType const* JsonTypeBoolCArray;
 
-		jsonvalue_t(const char* name, xcore::f32** value, xcore::s8* count)
-			: type(jsonvalue_type_f32 | jsonvalue_type_size_s8 | jsonvalue_type_array)
-			, count8(count)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+        JsonMemberType const* JsonTypeInt8;
+        JsonMemberType const* JsonTypeInt8Ptr;
+        JsonMemberType const* JsonTypeInt8Vector;
+        JsonMemberType const* JsonTypeInt8CArray;
 
-		jsonvalue_t(const char* name, xcore::f32** value, xcore::s32* count)
-			: type(jsonvalue_type_f32 | jsonvalue_type_array)
-			, count(count)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-		}
+        JsonMemberType const* JsonTypeInt16;
+        JsonMemberType const* JsonTypeInt16Ptr;
+        JsonMemberType const* JsonTypeInt16Vector;
+        JsonMemberType const* JsonTypeInt16CArray;
 
-		jsonvalue_t(const char* name, xcore::f64* value)
-			: type(jsonvalue_type_f64)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-			// e.g. f64 m_width;
-		}
+        JsonMemberType const* JsonTypeInt32;
+        JsonMemberType const* JsonTypeInt32Ptr;
+        JsonMemberType const* JsonTypeInt32Vector;
+        JsonMemberType const* JsonTypeInt32CArray;
 
-		jsonvalue_t(const char* name, xcore::f64** value)
-			: type(jsonvalue_type_f64 | jsonvalue_type_pointer)
-			, count(nullptr)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-			// e.g. f64* m_width;
-		}
+        JsonMemberType const* JsonTypeInt64;
+        JsonMemberType const* JsonTypeInt64Ptr;
+        JsonMemberType const* JsonTypeInt64Vector;
+        JsonMemberType const* JsonTypeInt64CArray;
 
-		jsonvalue_t(const char* name, xcore::f64** value, xcore::s32* count)
-			: type(jsonvalue_type_f64 | jsonvalue_type_array)
-			, count(count)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-			// e.g.
-			// f64* m_width;
-		}
+        JsonMemberType const* JsonTypeFloat32;
+        JsonMemberType const* JsonTypeFloat32Ptr;
+        JsonMemberType const* JsonTypeFloat32Vector;
+        JsonMemberType const* JsonTypeFloat32Vector8;
+        JsonMemberType const* JsonTypeFloat32CArray;
 
-		jsonvalue_t(const char* name, const char** value)
-			: type(jsonvalue_type_string)
-			, count(0)
-			, name(name)
-			, value((void*)value)
-			, object(nullptr)
-		{
-			// e.g. const char* m_label;
-		}
+        JsonMemberType const* JsonTypeFloat64;
+        JsonMemberType const* JsonTypeFloat64Ptr;
+        JsonMemberType const* JsonTypeFloat64Vector;
+        JsonMemberType const* JsonTypeFloat64CArray;
 
-		jsonvalue_t(const char* name, void* value, jsonobject_t* obj)
-			: type(jsonvalue_type_object)
-			, count(0)
-			, name(name)
-			, value(value)
-			, object(nullptr)
-		{
-			// e.g. key_t m_key;
-		}
+        JsonMemberType const* JsonTypeString;
+        JsonMemberType const* JsonTypeStringPtr;
+        JsonMemberType const* JsonTypeStringVector;
+        JsonMemberType const* JsonTypeStringCArray;
 
-		jsonvalue_t(const char* name, void** value, jsonobject_t* obj)
-			: type(jsonvalue_type_object | jsonvalue_type_pointer)
-			, name(name)
-			, count(0)
-			, value(value)
-			, object(nullptr)
-		{
-			// e.g. key_t* m_key;
-		}
+        struct JsonMember
+        {
+            JsonMember(const char* name, bool* member)
+                : m_type(JsonTypeBool)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+            JsonMember(const char* name, bool** member)
+                : m_type(JsonTypeBoolPtr)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-		template <typename T>
-		jsonvalue_t(const char* _name, T** _value, xcore::s16* _count, jsonobject_t* _obj)
-			: type(jsonvalue_type_object | jsonvalue_type_array | jsonvalue_type_size_s16)
-			, name(_name)
-			, count16(_count)
-			, value(_value)
-			, object(_obj)
-		{
-			// e.g.
-			//  - key_t* m_keys; // array of keys
-		}
+            JsonMember(const char* name, bool** member, s32 count)
+                : m_type(JsonTypeBoolCArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-		template <typename T>
-		jsonvalue_t(const char* _name, T** _value, xcore::s32* _count, jsonobject_t* _obj)
-			: type(jsonvalue_type_object | jsonvalue_type_array)
-			, name(_name)
-			, count(_count)
-			, value(_value)
-			, object(_obj)
-		{
-			// e.g.
-			//  - key_t* m_keys; // array of keys
-		}
+            JsonMember(const char* name, bool** member, s32* count)
+                : m_type(JsonTypeBoolVector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-		xcore::u32  type;
-		const char* name;
-		union
-		{
-			xcore::s8*  count8;
-			xcore::s16* count16;
-			xcore::s32* count;
-		};
-		void*         value;
-		jsonobject_t* object;
-	};
+            JsonMember(const char* name, xcore::s8* member)
+                : m_type(JsonTypeInt8)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-	class json_allocator_t
-	{
-	public:
-		template <typename T> inline T* new_instance() { return (T*)allocate(sizeof(T), ALIGNOF(T)); }
-		template <typename T> inline T* new_array(u32 size) { return (T*)allocate(sizeof(T) * size, ALIGNOF(T)); }
+            JsonMember(const char* name, xcore::s8** member)
+                : m_type(JsonTypeInt8Ptr)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-		void* scope_begin();
-		void  scope_end(void*);
+            JsonMember(const char* name, xcore::s8** member, s32 count)
+                : m_type(JsonTypeInt8CArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-		void* checkout();
-		void  commmit(void*);
+            JsonMember(const char* name, xcore::s8** member, s32* count)
+                : m_type(JsonTypeInt8Vector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-	protected:
-		void* allocate(xcore::u32 size, xcore::u32 alignment);
-	};
+            JsonMember(const char* name, xcore::s16* member)
+                : m_type(JsonTypeInt16)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-	namespace json
-	{
-		struct JsonAllocator;
-	}
+            JsonMember(const char* name, xcore::s16** member)
+                : m_type(JsonTypeInt16Ptr)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-	// typedef function that returns a pointer to a new instance of an object
-	typedef void* (*json_construct_fn)(json::JsonAllocator* alloc);
+            JsonMember(const char* name, xcore::s16** member, s32 count)
+                : m_type(JsonTypeInt16CArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
-	struct jsonobject_t
-	{
-		const char*       m_name;
-		void*             m_default;
-		json_construct_fn m_constructor;
-		int               m_member_count;
-		jsonvalue_t*      m_members; // Sorted by name
-	};
+            JsonMember(const char* name, xcore::s16** member, s32* count)
+                : m_type(JsonTypeInt16Vector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
 
-	bool json_decode(char const* json, char const* json_end, jsonobject_t* json_root, void* root, json::JsonAllocator* allocator, json::JsonAllocator* scratch, char const*& error_message);
+            JsonMember(const char* name, xcore::s32* member)
+                : m_type(JsonTypeInt32)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
 
+            JsonMember(const char* name, xcore::s32** member)
+                : m_type(JsonTypeInt32Ptr)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, xcore::s32** member, s32 count)
+                : m_type(JsonTypeInt32CArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, xcore::s32** member, s32* count)
+                : m_type(JsonTypeInt32Vector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, float* member)
+                : m_type(JsonTypeFloat32)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+			template<s32 N>
+            JsonMember(const char* name, float (*member)[N], s32 count)
+                : m_type(JsonTypeFloatCArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, float** member)
+                : m_type(JsonTypeFloat32Ptr)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, float** member, s32 count)
+                : m_type(JsonTypeFloat32CArray)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, float** member, s32* count)
+                : m_type(JsonTypeFloat32Vector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, float** member, s8* count)
+                : m_type(JsonTypeFloat32Vector8)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+			template<s32 N>
+            JsonMember(const char* name, float* (*member)[N], s32 count = N)
+                : m_type(JsonTypeFloat32Vector)
+                , m_size32(count)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+
+            JsonMember(const char* name, const char** member)
+                : m_type(JsonTypeString)
+                , m_size32(nullptr)
+                , m_name(name)
+                , m_member(member)
+            {
+            }
+			
+
+
+            JsonMember(const char* name, void* member, JsonMemberType* objectType)
+                : m_type(objectType)
+                , m_name(name)
+                , m_size32(nullptr)
+                , m_member(member)
+            {
+                // e.g. key_t m_key;
+            }
+
+            JsonMember(const char* name, void** member, JsonMemberType* objectType)
+                : m_type(objectType)
+                , m_name(name)
+                , m_size32(nullptr)
+                , m_member(member)
+            {
+                // e.g. key_t* m_key;
+            }
+
+            template <typename T>
+            JsonMember(const char* name, T** member, xcore::s16* count, JsonMemberType* objectType)
+                : m_type(objectType)
+                , m_name(name)
+                , m_size16(count)
+                , m_member(member)
+            {
+                // e.g.
+                //  - key_t* m_keys; // array of keys (size<32768)
+            }
+
+            template <typename T>
+            JsonMember(const char* name, T** member, xcore::s32* count, JsonMemberType* objectType)
+                : m_type(objectType)
+                , m_name(name)
+                , m_size32(count)
+                , m_member(member)
+            {
+                // e.g.
+                //  - key_t* m_keys; // array of keys (size<2147483647)
+            }
+
+            JsonMemberType const* m_type;
+            const char*           m_name;
+            void*                 m_member;
+            union
+            {
+                xcore::s32  m_csize;
+                xcore::s8*  m_size8;
+                xcore::s16* m_size16;
+                xcore::s32* m_size32;
+            };
+        };
+
+        // Defines a custom JSON object type
+        struct JsonObject
+        {
+            const char* m_name;
+            void*       m_default;
+            int         m_member_count;
+            JsonMember* m_members; // Sorted by name
+        };
+        JsonMember* JsonFindMember(JsonObject* object, const char* name);
+
+        bool JsonDecode(char const* json, char const* json_end, JsonObject* json_root, void* root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
+
+    } // namespace json
 } // namespace xcore
 
 #endif // __XBASE_JSON_H__

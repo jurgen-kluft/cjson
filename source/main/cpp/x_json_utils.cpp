@@ -4,7 +4,6 @@
 #include "xbase/x_runes.h"
 #include "xjson/x_json_utils.h"
 
-
 namespace xcore
 {
     namespace json
@@ -71,7 +70,7 @@ namespace xcore
             return -1;
         }
 
-		bool WriteChar(u32 ch, char*& cursor, char const* end)
+        bool WriteChar(u32 ch, char*& cursor, char const* end)
         {
             if (ch < 0x80)
             { // one octet
@@ -114,15 +113,19 @@ namespace xcore
             return false;
         }
 
-        char const* ParseNumber(char const* str, char const* end, f64* out_number)
+        char const* ParseNumber(char const* str, char const* end, JsonNumber& out_number)
         {
-            f64 number = 0.0;
+            out_number.m_Type = kJsonNumber_unknown;
+
+            u64 integer = 0;
+            f64 number  = 0.0;
 
             // If the number is negative
-            uchar8_t c = PeekChar(str, end);
+            s8       sign = 1;
+            uchar8_t c    = PeekChar(str, end);
             if (c.c == '-')
             {
-                number = -1.0;
+                sign = -1;
                 str += c.l;
             }
 
@@ -134,9 +137,12 @@ namespace xcore
                 {
                     break;
                 }
-                number = number * 10.0 + (c.c - '0');
+                integer = integer * 10.0 + (c.c - '0');
                 str += c.l;
             }
+
+            number = integer;
+            number *= sign;
 
             // Parse the decimal part.
             c = PeekChar(str, end);
@@ -156,7 +162,10 @@ namespace xcore
                     div *= 10.0;
                     str += c.l;
                 }
-                number += decimal / div;
+                number = decimal / div;
+
+                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_F64 = number;
             }
 
             // Parse the exponent part.
@@ -165,14 +174,14 @@ namespace xcore
             {
                 str += c.l;
 
-                s32 sign     = 1;
+                s32 esign    = 1;
                 s32 exponent = 0;
                 c            = PeekChar(str, end);
                 if (str < end && (c.c == '+' || c.c == '-'))
                 {
                     if (c.c == '-')
                     {
-                        sign = -1;
+                        esign = -1;
                     }
                     str += c.l;
                 }
@@ -191,8 +200,8 @@ namespace xcore
                     exponent = 308;
                 }
 
-                // Adjust result on exponent sign
-                if (sign > 0)
+                // Adjust result on exponent esign
+                if (esign > 0)
                 {
                     for (s32 i = 0; i < exponent; i++)
                         number *= 10.0;
@@ -202,10 +211,248 @@ namespace xcore
                     for (s32 i = 0; i < exponent; i++)
                         number /= 10.0;
                 }
+
+                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_F64 = number;
             }
 
-            *out_number = number;
+            if (out_number.m_Type == kJsonNumber_unknown)
+            {
+                if (integer <= 127)
+                {
+                    out_number.m_Type |= kJsonNumber_s8;
+					if (sign == 1)
+						out_number.m_Type |= kJsonNumber_u8;
+					out_number.m_S8 = (s8)(sign * integer);
+                }
+                else if (integer <= 32767)
+                {
+                    out_number.m_Type |= kJsonNumber_s16;
+                    if (sign == 1)
+                        out_number.m_Type |= kJsonNumber_u16;
+                    out_number.m_S16 = (s16)(sign * integer);
+                }
+                else if (integer <= 2147483647)
+                {
+                    out_number.m_Type |= kJsonNumber_s32;
+                    if (sign == 1)
+                        out_number.m_Type |= kJsonNumber_u32;
+                    out_number.m_S32 = (s32)(sign * integer);
+                }
+                else if (integer <= 9223372036854775807ul)
+                {
+                    out_number.m_Type |= kJsonNumber_s64;
+                    if (sign == 1)
+                        out_number.m_Type |= kJsonNumber_u64;
+                    out_number.m_S64 = (s64)(sign * integer);
+                }
+
+                if (sign == 1)
+                {
+                    if (integer <= 255)
+                    {
+                        out_number.m_Type |= kJsonNumber_u8;
+                        if (integer <= 127)
+                            out_number.m_Type |= kJsonNumber_s8;
+                        out_number.m_U8 = (u8)integer;
+                    }
+                    else if (integer <= 65535)
+                    {
+                        out_number.m_Type |= kJsonNumber_u16;
+                        if (integer <= 32767)
+                            out_number.m_Type |= kJsonNumber_s16;
+                        out_number.m_U16 = (u16)integer;
+                    }
+                    else if (integer <= 4294967295)
+                    {
+                        out_number.m_Type |= kJsonNumber_u32;
+                        if (integer <= 2147483647)
+                            out_number.m_Type |= kJsonNumber_s32;
+                        out_number.m_U32 = (u32)integer;
+                    }
+                    else if (integer <= 18446744073709551615ul)
+                    {
+                        out_number.m_Type |= kJsonNumber_u64;
+                        if (integer <= 9223372036854775807ul)
+                            out_number.m_Type |= kJsonNumber_s64;
+                        out_number.m_U64 = (u64)integer;
+                    }
+                }
+            }
+
             return str;
+        }
+
+        s64         JsonNumberAsInt64(JsonNumber const& number)
+        {
+            if (number.m_Type & kJsonNumber_s8)
+            {
+                return number.m_S8;
+            }
+            else if (number.m_Type & kJsonNumber_s16)
+            {
+                return number.m_S16;
+            }
+            else if (number.m_Type & kJsonNumber_s32)
+            {
+                return number.m_S32;
+            }
+            else if (number.m_Type & kJsonNumber_s64)
+            {
+                return number.m_S64;
+            }
+            else if (number.m_Type & kJsonNumber_u8)
+            {
+                return number.m_U8;
+            }
+            else if (number.m_Type & kJsonNumber_u16)
+            {
+                return number.m_U16;
+            }
+            else if (number.m_Type & kJsonNumber_u32)
+            {
+                return number.m_U32;
+            }
+            else if (number.m_Type & kJsonNumber_u64)
+            {
+                return number.m_U64;
+            }
+            else if (number.m_Type & kJsonNumber_f32)
+            {
+                return (s64)number.m_F32;
+            }
+            else if (number.m_Type & kJsonNumber_f64)
+            {
+                return (s64)number.m_F64;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        u64         JsonNumberAsUInt64(JsonNumber const& number)
+        {
+            if (number.m_Type & kJsonNumber_s8)
+            {
+                return (u64)(s8)number.m_S8;
+            }
+            else if (number.m_Type & kJsonNumber_s16)
+            {
+                return (u64)(s16)number.m_S16;
+            }
+            else if (number.m_Type & kJsonNumber_s32)
+            {
+                return (u64)(s32)number.m_S32;
+            }
+            else if (number.m_Type & kJsonNumber_s64)
+            {
+                return (u64)(s64)number.m_S64;
+            }
+            else if (number.m_Type & kJsonNumber_u8)
+            {
+                return number.m_U8;
+            }
+            else if (number.m_Type & kJsonNumber_u16)
+            {
+                return number.m_U16;
+            }
+            else if (number.m_Type & kJsonNumber_u32)
+            {
+                return number.m_U32;
+            }
+            else if (number.m_Type & kJsonNumber_u64)
+            {
+                return number.m_U64;
+            }
+            else if (number.m_Type & kJsonNumber_f32)
+            {
+                return (u64)number.m_F32;
+            }
+            else if (number.m_Type & kJsonNumber_f64)
+            {
+                return (u64)number.m_F64;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        s32         JsonNumberAsInt32(JsonNumber const& number)
+        {
+            return (s32)JsonNumberAsInt64(number);
+        }
+        u32         JsonNumberAsUInt32(JsonNumber const& number)
+        {
+            return (u32)JsonNumberAsUInt64(number);
+        }
+        s16         JsonNumberAsInt16(JsonNumber const& number)
+        {
+            return (s16)JsonNumberAsInt64(number);
+        }
+        u16         JsonNumberAsUInt16(JsonNumber const& number)
+        {
+            return (u16)JsonNumberAsUInt64(number);
+        }
+        s8          JsonNumberAsInt8(JsonNumber const& number)
+        {
+            return (s8)JsonNumberAsInt64(number);
+        }
+        u8          JsonNumberAsUInt8(JsonNumber const& number)
+        {
+            return (u8)JsonNumberAsUInt64(number);
+        }
+        f64         JsonNumberAsFloat64(JsonNumber const& number)
+        {
+            if (number.m_Type & kJsonNumber_s8)
+            {
+                return (f64)number.m_S8;
+            }
+            else if (number.m_Type & kJsonNumber_s16)
+            {
+                return (f64)number.m_S16;
+            }
+            else if (number.m_Type & kJsonNumber_s32)
+            {
+                return (f64)number.m_S32;
+            }
+            else if (number.m_Type & kJsonNumber_s64)
+            {
+                return (f64)number.m_S64;
+            }
+            else if (number.m_Type & kJsonNumber_u8)
+            {
+                return (f64)number.m_U8;
+            }
+            else if (number.m_Type & kJsonNumber_u16)
+            {
+                return (f64)number.m_U16;
+            }
+            else if (number.m_Type & kJsonNumber_u32)
+            {
+                return (f64)number.m_U32;
+            }
+            else if (number.m_Type & kJsonNumber_u64)
+            {
+                return (f64)number.m_U64;
+            }
+            else if (number.m_Type & kJsonNumber_f32)
+            {
+                return (f64)number.m_F32;
+            }
+            else if (number.m_Type & kJsonNumber_f64)
+            {
+                return number.m_F64;
+            }
+            else
+            {
+                return 0.0;
+            }
+        }
+        f32         JsonNumberAsFloat32(JsonNumber const& number)
+        {
+            return (f32)JsonNumberAsFloat64(number);
         }
 
     } // namespace json
