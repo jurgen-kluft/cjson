@@ -176,9 +176,9 @@ static json::JsonFieldDescr s_members_keyboard[] = {
     json::JsonFieldDescr("key_height", s_default_keyboard.m_h), 
     json::JsonFieldDescr("key_spacing_x", s_default_keyboard.m_sw), 
     json::JsonFieldDescr("key_spacing_y", s_default_keyboard.m_sh), 
-    json::JsonFieldDescr("capcolor", s_default_keyboard.m_capcolor, 4), 
-    json::JsonFieldDescr("txtcolor", s_default_keyboard.m_txtcolor, 4), 
-    json::JsonFieldDescr("ledcolor", s_default_keyboard.m_ledcolor, 4), 
+    json::JsonFieldDescr("cap_color", s_default_keyboard.m_capcolor, 4), 
+    json::JsonFieldDescr("txt_color", s_default_keyboard.m_txtcolor, 4), 
+    json::JsonFieldDescr("led_color", s_default_keyboard.m_ledcolor, 4), 
     json::JsonFieldDescr("keygroups", s_default_keyboard.m_keygroups, s_default_keyboard.m_nb_keygroups, json_keygroup_funcs, json_keygroup), 
 };
 // clang-format on

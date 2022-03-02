@@ -425,7 +425,7 @@ namespace xcore
             inline bool is_uint64() const { return (m_descr->m_type & JsonType::TypeUInt64) == JsonType::TypeUInt64; }
             inline bool is_f32() const { return (m_descr->m_type & JsonType::TypeF32) == JsonType::TypeF32; }
             inline bool is_f64() const { return (m_descr->m_type & JsonType::TypeF64) == JsonType::TypeF64; }
-            inline bool is_number() const { return (m_descr->m_type & JsonType::TypeNumber) == JsonType::TypeNumber; }
+            inline bool is_number() const { return (m_descr->m_type & JsonType::TypeNumber) != 0; }
             inline bool is_string() const { return (m_descr->m_type & JsonType::TypeString) == JsonType::TypeString; }
             inline bool is_object() const { return (m_descr->m_type & JsonType::TypeObject) == JsonType::TypeObject; }
             inline bool is_pointer() const { return (m_descr->m_type & JsonType::TypePointer) == JsonType::TypePointer; }
