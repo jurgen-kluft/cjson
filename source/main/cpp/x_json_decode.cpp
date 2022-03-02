@@ -551,24 +551,30 @@ namespace xcore
                     JsonLexerSkip(lexer);
                 }
 
-                // The size of a member cannot be larger than a pointer.
-                // f64, f32, u8/s8, u16/s16, u32/s32, u64/s64 as well as pointers to those types
-                void* member_value = nullptr;
+                // member should be an array element
+                JsonMember array_element = member;
 
-                void*      member_value_ptr = &member_value;
-                JsonError* err              = JsonDecodeValue(json_state, object, member);
+                // Need to allocate the actual array element, can be any type, from the normal
+                // system types and pointers to an object.
+                // Allocate it from the scratch allocator, and then add it to the list.
+                array_element.m_instance = nullptr; 
+
+
+                JsonError* err              = JsonDecodeValue(json_state, object, array_element);
                 if (err != nullptr)
                     return err;
 
-                value_list.Add(member);
+                value_list.Add(array_element);
             }
 
             JsonAllocator* alloc = json_state->m_Allocator;
 
             s32 count = value_list.m_Count;
 
-            // Allocate the correct type of array and populate it
-            // then set the member on the object to the array
+            // If this array is a vector we should allocate the correct type of vector and populate it.
+            // Then set the member on the object to point to the vector.
+            
+            // If this array is a carray we can just copy the array elements into the carray.
 
             return nullptr;
         }
