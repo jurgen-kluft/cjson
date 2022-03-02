@@ -8,6 +8,7 @@
 
 UNITTEST_SUITE_LIST(xJsmnUnitTest);
 UNITTEST_SUITE_DECLARE(xJsmnUnitTest, xjson);
+UNITTEST_SUITE_DECLARE(xJsmnUnitTest, xjson_decode);
 
 namespace xcore
 {

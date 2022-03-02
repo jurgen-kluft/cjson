@@ -45,6 +45,7 @@ namespace xcore
         };
 
         char const* ParseNumber(char const* str, char const* end, JsonNumber& out_number);
+		bool        JsonNumberIsValid(JsonNumber const& number);
         s64         JsonNumberAsInt64(JsonNumber const& number);
         u64         JsonNumberAsUInt64(JsonNumber const& number);
         s32         JsonNumberAsInt32(JsonNumber const& number);

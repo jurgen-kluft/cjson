@@ -45,8 +45,8 @@ namespace xcore
             ~JsonAllocatorScope();
 
         private:
-            JsonAllocatorScope(const JsonAllocatorScope&);
-            JsonAllocatorScope& operator=(const JsonAllocatorScope&);
+            JsonAllocatorScope(const JsonAllocatorScope& o) {}
+			JsonAllocatorScope& operator=(const JsonAllocatorScope&) { return *this; }
             JsonAllocator*     m_Allocator;
             char*              m_Pointer;
         };

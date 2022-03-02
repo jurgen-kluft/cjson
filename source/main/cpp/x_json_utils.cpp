@@ -137,11 +137,11 @@ namespace xcore
                 {
                     break;
                 }
-                integer = integer * 10.0 + (c.c - '0');
+                integer = integer * 10 + (c.c - '0');
                 str += c.l;
             }
 
-            number = integer;
+            number = (f64)integer;
             number *= sign;
 
             // Parse the decimal part.
@@ -218,70 +218,69 @@ namespace xcore
 
             if (out_number.m_Type == kJsonNumber_unknown)
             {
-                if (integer <= 127)
-                {
-                    out_number.m_Type |= kJsonNumber_s8;
-					if (sign == 1)
-						out_number.m_Type |= kJsonNumber_u8;
-					out_number.m_S8 = (s8)(sign * integer);
-                }
-                else if (integer <= 32767)
-                {
-                    out_number.m_Type |= kJsonNumber_s16;
-                    if (sign == 1)
-                        out_number.m_Type |= kJsonNumber_u16;
-                    out_number.m_S16 = (s16)(sign * integer);
-                }
-                else if (integer <= 2147483647)
-                {
-                    out_number.m_Type |= kJsonNumber_s32;
-                    if (sign == 1)
-                        out_number.m_Type |= kJsonNumber_u32;
-                    out_number.m_S32 = (s32)(sign * integer);
-                }
-                else if (integer <= 9223372036854775807ul)
-                {
-                    out_number.m_Type |= kJsonNumber_s64;
-                    if (sign == 1)
-                        out_number.m_Type |= kJsonNumber_u64;
-                    out_number.m_S64 = (s64)(sign * integer);
-                }
-
                 if (sign == 1)
                 {
                     if (integer <= 255)
                     {
-                        out_number.m_Type |= kJsonNumber_u8;
+                        out_number.m_Type = kJsonNumber_u8;
                         if (integer <= 127)
                             out_number.m_Type |= kJsonNumber_s8;
                         out_number.m_U8 = (u8)integer;
                     }
                     else if (integer <= 65535)
                     {
-                        out_number.m_Type |= kJsonNumber_u16;
+                        out_number.m_Type = kJsonNumber_u16;
                         if (integer <= 32767)
                             out_number.m_Type |= kJsonNumber_s16;
                         out_number.m_U16 = (u16)integer;
                     }
                     else if (integer <= 4294967295)
                     {
-                        out_number.m_Type |= kJsonNumber_u32;
+                        out_number.m_Type = kJsonNumber_u32;
                         if (integer <= 2147483647)
                             out_number.m_Type |= kJsonNumber_s32;
                         out_number.m_U32 = (u32)integer;
                     }
                     else if (integer <= 18446744073709551615ul)
                     {
-                        out_number.m_Type |= kJsonNumber_u64;
+                        out_number.m_Type = kJsonNumber_u64;
                         if (integer <= 9223372036854775807ul)
                             out_number.m_Type |= kJsonNumber_s64;
                         out_number.m_U64 = (u64)integer;
                     }
-                }
+				}
+				else
+				{
+					if (integer <= 127)
+					{
+						out_number.m_Type = kJsonNumber_s8;
+						out_number.m_S8 = (s8)(sign * integer);
+					}
+					else if (integer <= 32767)
+					{
+						out_number.m_Type = kJsonNumber_s16;
+						out_number.m_S16 = (s16)(sign * integer);
+					}
+					else if (integer <= 2147483647)
+					{
+						out_number.m_Type = kJsonNumber_s32;
+						out_number.m_S32 = (s32)(sign * integer);
+					}
+					else if (integer <= 9223372036854775807ul)
+					{
+						out_number.m_Type = kJsonNumber_s64;
+						out_number.m_S64 = (s64)(sign * integer);
+					}
+				}
             }
 
             return str;
         }
+
+		bool        JsonNumberIsValid(JsonNumber const& number)
+		{
+			return number.m_Type != kJsonNumber_unknown;
+		}
 
         s64         JsonNumberAsInt64(JsonNumber const& number)
         {
