@@ -716,7 +716,7 @@ namespace xcore
 
             struct ListElem
             {
-                JsonMember m_Member;
+                void*      m_ElemData;
                 ListElem*  m_Next;
             };
 
@@ -735,19 +735,19 @@ namespace xcore
                     m_Count   = 0;
                 }
 
-                void Add(const JsonMember& member)
+                void Add(void* dataptr)
                 {
                     if (1 == ++m_Count)
                     {
                         m_Head = m_Tail  = m_Scratch->Allocate<ListElem>();
-                        m_Head->m_Member = member;
+                        m_Head->m_ElemData = dataptr;
                         m_Head->m_Next   = nullptr;
                     }
                     else
                     {
                         ListElem* tail   = m_Tail;
                         m_Tail           = m_Scratch->Allocate<ListElem>();
-                        m_Tail->m_Member = member;
+                        m_Tail->m_ElemData = dataptr;
                         m_Tail->m_Next   = nullptr;
                         tail->m_Next     = m_Tail;
                     }
@@ -779,21 +779,21 @@ namespace xcore
                     JsonLexerSkip(lexer);
                 }
 
-                // member should be an array element
-                JsonMember array_element = member;
-                member.m_descr->m_funcs->m_alloc(scratch, 1, array_element.m_data_ptr);
-
                 // Need to allocate the actual array element, can be any type, from the normal
                 // system types and pointers to an object.
+                // We allocate it with the scratch allocator, and then copy it later into the
+                // array element.
+                
+                // Do we really need to allocate the type if it is a pointer?
 
-                // Allocate it from the scratch allocator, and then add it to the list.
-                array_element.m_data_ptr = nullptr;
+                JsonMember array_element = member;
+                member.m_descr->m_funcs->m_alloc(scratch, 1, array_element.m_data_ptr);
 
                 JsonError* err = JsonDecodeValue(json_state, object, array_element);
                 if (err != nullptr)
                     return err;
 
-                value_list.Add(array_element);
+                value_list.Add(array_element.m_data_ptr);
             }
 
             JsonAllocator* alloc = json_state->m_Allocator;
@@ -831,7 +831,7 @@ namespace xcore
                     bool* carray = (bool*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((bool*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((bool*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -840,7 +840,7 @@ namespace xcore
                     s8* carray = (s8*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((s8*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((s8*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -849,7 +849,7 @@ namespace xcore
                     u8* carray = (u8*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((u8*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((u8*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -858,7 +858,7 @@ namespace xcore
                     s16* carray = (s16*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((s16*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((s16*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -867,7 +867,7 @@ namespace xcore
                     u16* carray = (u16*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((u16*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((u16*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -876,7 +876,7 @@ namespace xcore
                     s32* carray = (s32*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((s32*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((s32*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -885,7 +885,7 @@ namespace xcore
                     u32* carray = (u32*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((u32*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((u32*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -894,7 +894,7 @@ namespace xcore
                     f32* carray = (f32*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((f32*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((f32*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -903,7 +903,7 @@ namespace xcore
                     f64* carray = (f64*)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((f64*)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((f64*)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -912,7 +912,7 @@ namespace xcore
                     const char** carray = (char const **)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *carray++ = *((const char**)(value_list.m_Head->m_Member.m_data_ptr));
+                        *carray++ = *((const char**)(value_list.m_Head->m_ElemData));
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
                 }
@@ -920,7 +920,7 @@ namespace xcore
                 {
                     for (s32 i = 0; i < count; ++i)
                     {
-                        void* src = value_list.m_Head->m_Member.m_data_ptr;
+                        void* src = value_list.m_Head->m_ElemData;
 						member.m_descr->m_funcs->m_copy(array, i, src);
                         value_list.m_Head = value_list.m_Head->m_Next;
                     }
@@ -936,7 +936,7 @@ namespace xcore
                 void** parray = (void**)array;
                 for (s32 i = 0; i < count; ++i)
                 {
-                    *parray++ = *((void**)(value_list.m_Head->m_Member.m_data_ptr));
+                    *parray++ = *((void**)(value_list.m_Head->m_ElemData));
                     value_list.m_Head = value_list.m_Head->m_Next;
                 }
             }
