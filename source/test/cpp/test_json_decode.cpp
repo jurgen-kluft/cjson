@@ -52,9 +52,7 @@ static json::JsonFieldDescr s_members_key[] = {
     json::JsonFieldDescr("txt_color", s_default_key.m_txtcolor, s_default_key.m_txtcolor_size),
     json::JsonFieldDescr("led_color", s_default_key.m_ledcolor, s_default_key.m_ledcolor_size),
 };
-// clang-format on
 
-// clang-format off
 static void json_alloc_key(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<key_t>(n); }
 static void json_copy_key(void* dst, s32 dst_index, void* src ) { ((key_t*)dst)[dst_index] = *(key_t*)src; }
 
@@ -66,12 +64,12 @@ static json::JsonTypeDescr json_key =
 	sizeof(s_members_key) / sizeof(json::JsonFieldDescr), 
 	s_members_key
 };
-// clang-format on
 
 static json::JsonTypeFuncs json_keys_funcs = {
     json_alloc_key,
     json_copy_key,
 };
+// clang-format on
 
 struct keygroup_t
 {
@@ -114,13 +112,10 @@ static json::JsonFieldDescr s_members_keygroup[] = {
     json::JsonFieldDescr("led_color", s_default_keygroup.m_ledcolor, s_default_keygroup.m_ledcolor_size), 
     json::JsonFieldDescr("keys", s_default_keygroup.m_keys, s_default_keygroup.m_nb_keys, json_keys_funcs, json_key), 
 };
-// clang-format on
 
-// implementation of the constructor for the keygroup object
 static void json_alloc_keygroup(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<keygroup_t>(n); }
 static void json_copy_keygroup(void* dst, s32 dst_index, void* src) { ((keygroup_t*)dst)[dst_index] = *(keygroup_t*)src; }
 
-// clang-format off
 static json::JsonTypeDescr json_keygroup = {
 	"keygroup",
 	&s_default_keygroup, 
@@ -203,7 +198,6 @@ static json::JsonTypeFuncs json_keyboard_funcs = {
     json_construct_keyboard,
     json_copy_keyboard,
 };
-// clang-format on
 
 struct keyboard_root_t
 {
@@ -213,13 +207,9 @@ struct keyboard_root_t
 
 static keyboard_root_t s_default_keyboard_root;
 
-// clang-format off
 static json::JsonFieldDescr s_members_keyboard_root[] = {
     json::JsonFieldDescr("keyboard", s_default_keyboard_root.m_keyboard, json_keyboard_funcs, json_keyboard), 
 };
-// clang-format on
-
-// clang-format off
 static json::JsonTypeDescr json_keyboard_root = {
     "root", 
     &s_default_keyboard_root, 

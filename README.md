@@ -1,9 +1,13 @@
 # json parser
 
-A straightforward json parser.
+A JSON parser as well as a JSON decoder that can read directly into C structures.
 
-- Can read UTF-8
-- Pretty fast (not aimed to be the fastest)
+- UTF-8
+- Lexer
+- Parser
+- Decoder
+
+Uses a simple forward/linear allocator.
 
 ## Dependencies
 
