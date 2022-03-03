@@ -754,39 +754,29 @@ namespace xcore
             struct ValueList
             {
                 JsonAllocator* m_Scratch;
-                ListElem*      m_Head;
+                ListElem       m_Head;
                 ListElem*      m_Tail;
                 s32            m_Count;
 
                 void Init(JsonAllocator* scratch)
                 {
                     m_Scratch = scratch;
-                    m_Head    = nullptr;
-                    m_Tail    = nullptr;
+                    m_Tail    = &m_Head;
                     m_Count   = 0;
                 }
 
                 ListElem* NewListItem()
                 {
-                    ListElem* elem = m_Scratch->Allocate<ListElem>();
-                    elem->m_Next   = nullptr;
+                    ListElem* elem     = m_Scratch->Allocate<ListElem>();
+                    elem->m_Next       = nullptr;
+                    elem->m_ElemData64 = 0;
                     return elem;
                 }
 
                 void Add(ListElem* elem)
                 {
-                    if (0 == m_Count)
-                    {
-                        m_Head = m_Tail = elem;
-                        m_Head->m_Next  = nullptr;
-                    }
-                    else
-                    {
-                        ListElem* tail = m_Tail;
-                        m_Tail         = elem;
-                        m_Tail->m_Next = nullptr;
-                        tail->m_Next   = m_Tail;
-                    }
+                    m_Tail->m_Next = elem;
+                    m_Tail         = elem;
                     m_Count += 1;
                 }
             };
@@ -890,6 +880,8 @@ namespace xcore
                     return MakeJsonError(json_state, "expected either a carray or vector");
                 }
 
+                ListElem* elem = value_list.m_Head.m_Next;
+
                 if (!member.is_pointer())
                 {
                     if (member.is_number())
@@ -899,8 +891,8 @@ namespace xcore
                             bool* carray = (bool*)array;
                             for (s32 i = 0; i < count; ++i)
                             {
-                                *carray++         = *((bool*)(&value_list.m_Head->m_ElemData64));
-                                value_list.m_Head = value_list.m_Head->m_Next;
+                                *carray++ = *((bool*)(&elem->m_ElemData64));
+                                elem      = elem->m_Next;
                             }
                         }
                         else if (member.is_int8() || member.is_uint8())
@@ -908,8 +900,8 @@ namespace xcore
                             u8* carray = (u8*)array;
                             for (s32 i = 0; i < count; ++i)
                             {
-                                *carray++         = *((u8*)(&value_list.m_Head->m_ElemData64));
-                                value_list.m_Head = value_list.m_Head->m_Next;
+                                *carray++ = *((u8*)(&elem->m_ElemData64));
+                                elem      = elem->m_Next;
                             }
                         }
                         else if (member.is_int16() || member.is_uint16())
@@ -917,8 +909,8 @@ namespace xcore
                             u16* carray = (u16*)array;
                             for (s32 i = 0; i < count; ++i)
                             {
-                                *carray++         = *((u16*)(&value_list.m_Head->m_ElemData64));
-                                value_list.m_Head = value_list.m_Head->m_Next;
+                                *carray++ = *((u16*)(&elem->m_ElemData64));
+                                elem      = elem->m_Next;
                             }
                         }
                         else if (member.is_int32() || member.is_uint32() || member.is_f32())
@@ -926,8 +918,8 @@ namespace xcore
                             u32* carray = (u32*)array;
                             for (s32 i = 0; i < count; ++i)
                             {
-                                *carray++         = *((u32*)(&value_list.m_Head->m_ElemData64));
-                                value_list.m_Head = value_list.m_Head->m_Next;
+                                *carray++ = *((u32*)(&elem->m_ElemData64));
+                                elem      = elem->m_Next;
                             }
                         }
                         else if (member.is_f64())
@@ -935,8 +927,8 @@ namespace xcore
                             f64* carray = (f64*)array;
                             for (s32 i = 0; i < count; ++i)
                             {
-                                *carray++         = *((f64*)(&value_list.m_Head->m_ElemData64));
-                                value_list.m_Head = value_list.m_Head->m_Next;
+                                *carray++ = *((f64*)(&elem->m_ElemData64));
+                                elem      = elem->m_Next;
                             }
                         }
                     }
@@ -945,17 +937,17 @@ namespace xcore
                         const char** carray = (char const**)array;
                         for (s32 i = 0; i < count; ++i)
                         {
-                            *carray++         = (const char*)(value_list.m_Head->m_ElemData);
-                            value_list.m_Head = value_list.m_Head->m_Next;
+                            *carray++ = (const char*)(elem->m_ElemData);
+                            elem      = elem->m_Next;
                         }
                     }
                     else if (member.is_object())
                     {
                         for (s32 i = 0; i < count; ++i)
                         {
-                            void* src = value_list.m_Head->m_ElemData;
+                            void* src = elem->m_ElemData;
                             member.m_descr->m_funcs->m_copy(array, i, src);
-                            value_list.m_Head = value_list.m_Head->m_Next;
+                            elem = elem->m_Next;
                         }
                     }
                     else
@@ -969,8 +961,8 @@ namespace xcore
                     void** parray = (void**)array;
                     for (s32 i = 0; i < count; ++i)
                     {
-                        *parray++         = *(void**)(&value_list.m_Head->m_ElemData64);
-                        value_list.m_Head = value_list.m_Head->m_Next;
+                        *parray++ = *(void**)(&elem->m_ElemData64);
+                        elem      = elem->m_Next;
                     }
                 }
 
@@ -1056,7 +1048,7 @@ namespace xcore
 
         bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
         {
-			JsonAllocatorScope scratch_scope(scratch);
+            JsonAllocatorScope scratch_scope(scratch);
 
             JsonState* json_state = scratch->Allocate<JsonState>();
             JsonStateInit(json_state, allocator, scratch, str, end);
