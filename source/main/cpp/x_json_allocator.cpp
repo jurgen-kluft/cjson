@@ -1,5 +1,6 @@
 #include "xbase/x_allocator.h"
 #include "xbase/x_context.h"
+#include "xbase/x_memory.h"
 #include "xjson/x_json_allocator.h"
 
 namespace xcore
@@ -23,11 +24,11 @@ namespace xcore
 
         JsonAllocatorScope::JsonAllocatorScope(JsonAllocator* a)
             : m_Allocator(a)
-            , m_Pointer(a->m_Pointer)
+            , m_Cursor(a->m_Cursor)
         {
         }
 
-        JsonAllocatorScope::~JsonAllocatorScope() { m_Allocator->m_Pointer = m_Pointer; }
+        JsonAllocatorScope::~JsonAllocatorScope() { m_Allocator->m_Cursor = m_Cursor ; }
 
 #define CHECK_THREAD_OWNERSHIP(alloc) ASSERT(context_t::thread_index() == alloc->m_OwnerThread)
 
@@ -38,6 +39,7 @@ namespace xcore
             this->m_Size        = max_size;
             this->m_OwnerThread = context_t::thread_index();
             this->m_DebugName   = debug_name;
+			xmem::memset(this->m_Pointer, 0xCD, this->m_Size);
         }
 
         void JsonAllocator::Destroy()
@@ -104,6 +106,7 @@ namespace xcore
         {
             CHECK_THREAD_OWNERSHIP(this);
             this->m_Cursor = this->m_Pointer;
+			xmem::memset(this->m_Pointer, 0xCD, this->m_Size);
         }
 
     } // namespace json

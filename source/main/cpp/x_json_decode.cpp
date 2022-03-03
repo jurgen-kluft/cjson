@@ -1056,6 +1056,8 @@ namespace xcore
 
         bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
         {
+			JsonAllocatorScope scratch_scope(scratch);
+
             JsonState* json_state = scratch->Allocate<JsonState>();
             JsonStateInit(json_state, allocator, scratch, str, end);
 

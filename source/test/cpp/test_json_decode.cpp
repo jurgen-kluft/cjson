@@ -249,6 +249,9 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
 
             char const* error_message = nullptr;
             bool        ok            = json::JsonDecode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, alloc, scratch, error_message);
+			CHECK_TRUE(ok);
+
+			scratch->Reset();
         }
     }
 }

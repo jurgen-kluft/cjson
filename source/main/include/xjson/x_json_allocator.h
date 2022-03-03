@@ -48,7 +48,7 @@ namespace xcore
             JsonAllocatorScope(const JsonAllocatorScope& o) {}
 			JsonAllocatorScope& operator=(const JsonAllocatorScope&) { return *this; }
             JsonAllocator*     m_Allocator;
-            char*              m_Pointer;
+            char*              m_Cursor;
         };
 
         JsonAllocator* CreateAllocator(u32 size, const char* name = "JSON Allocator");
