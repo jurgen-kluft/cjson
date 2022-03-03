@@ -66,7 +66,8 @@ namespace xcore
 		{
 			const char*     m_name;
 			void*           m_default;
-			int             m_member_count;
+			s32				m_size;
+			s32             m_member_count;
 			JsonFieldDescr* m_members; // Sorted by name
 		};
 
@@ -413,6 +414,8 @@ namespace xcore
             }
             JsonFieldDescr const*  m_descr;
             void*                  m_data_ptr;
+				
+			inline bool has_descr() const { return m_descr != nullptr; }
 
             inline bool is_bool() const { return (m_descr->m_type & JsonType::TypeBool) == JsonType::TypeBool; }
             inline bool is_int8() const { return (m_descr->m_type & JsonType::TypeInt8) == JsonType::TypeInt8; }
@@ -429,8 +432,11 @@ namespace xcore
             inline bool is_string() const { return (m_descr->m_type & JsonType::TypeString) == JsonType::TypeString; }
             inline bool is_object() const { return (m_descr->m_type & JsonType::TypeObject) == JsonType::TypeObject; }
             inline bool is_pointer() const { return (m_descr->m_type & JsonType::TypePointer) == JsonType::TypePointer; }
-            inline bool is_vector() const { return (m_descr->m_type & JsonType::TypeVector) == JsonType::TypeVector; }
             inline bool is_carray() const { return (m_descr->m_type & JsonType::TypeCarray) == JsonType::TypeCarray; }
+            inline bool is_vector() const { return (m_descr->m_type & JsonType::TypeVector) == JsonType::TypeVector; }
+            inline bool is_vector_size8() const { return (m_descr->m_type & (JsonType::TypeVector | JsonType::TypeSize8)) == (JsonType::TypeVector | JsonType::TypeSize8); }
+            inline bool is_vector_size16() const { return (m_descr->m_type & (JsonType::TypeVector | JsonType::TypeSize16)) == (JsonType::TypeVector | JsonType::TypeSize16); }
+            inline bool is_vector_size32() const { return (m_descr->m_type & (JsonType::TypeVector | JsonType::TypeSize32)) == (JsonType::TypeVector | JsonType::TypeSize32); }
 
             JsonObject get_object(JsonObject const&, JsonAllocator*);
             void       set_string(JsonObject const&, const char*);
@@ -445,7 +451,7 @@ namespace xcore
                 , m_instance(nullptr)
             {
             }
-            JsonTypeDescr const* m_descr;
+            JsonTypeDescr const*   m_descr;
             void*                  m_instance;
             JsonMember             get_member(const char* name) const;
         };

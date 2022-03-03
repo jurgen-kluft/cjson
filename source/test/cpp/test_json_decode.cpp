@@ -48,9 +48,9 @@ static json::JsonFieldDescr s_members_key[] = {
     json::JsonFieldDescr("label", s_default_key.m_label), 
     json::JsonFieldDescr("w", s_default_key.m_w), 
     json::JsonFieldDescr("h", s_default_key.m_h),
-    json::JsonFieldDescr("capcolor", s_default_key.m_capcolor, s_default_key.m_capcolor_size),
-    json::JsonFieldDescr("txtcolor", s_default_key.m_txtcolor, s_default_key.m_txtcolor_size),
-    json::JsonFieldDescr("ledcolor", s_default_key.m_ledcolor, s_default_key.m_ledcolor_size),
+    json::JsonFieldDescr("cap_color", s_default_key.m_capcolor, s_default_key.m_capcolor_size),
+    json::JsonFieldDescr("txt_color", s_default_key.m_txtcolor, s_default_key.m_txtcolor_size),
+    json::JsonFieldDescr("led_color", s_default_key.m_ledcolor, s_default_key.m_ledcolor_size),
 };
 // clang-format on
 
@@ -62,14 +62,15 @@ static json::JsonTypeDescr json_key =
 {
 	"key",
 	&s_default_key, 
+	sizeof(key_t),
 	sizeof(s_members_key) / sizeof(json::JsonFieldDescr), 
 	s_members_key
 };
 // clang-format on
 
 static json::JsonTypeFuncs json_keys_funcs = {
-	json_alloc_key, 
-	json_copy_key, 
+    json_alloc_key,
+    json_copy_key,
 };
 
 struct keygroup_t
@@ -108,21 +109,22 @@ static json::JsonFieldDescr s_members_keygroup[] = {
 	json::JsonFieldDescr("r", s_default_keygroup.m_r),
     json::JsonFieldDescr("c", s_default_keygroup.m_c),
     json::JsonFieldDescr("a", s_default_keygroup.m_a),
-    json::JsonFieldDescr("capcolor", s_default_keygroup.m_capcolor, s_default_keygroup.m_capcolor_size), 
-    json::JsonFieldDescr("txtcolor", s_default_keygroup.m_txtcolor, s_default_keygroup.m_txtcolor_size), 
-    json::JsonFieldDescr("ledcolor", s_default_keygroup.m_ledcolor, s_default_keygroup.m_ledcolor_size), 
+    json::JsonFieldDescr("cap_color", s_default_keygroup.m_capcolor, s_default_keygroup.m_capcolor_size), 
+    json::JsonFieldDescr("txt_color", s_default_keygroup.m_txtcolor, s_default_keygroup.m_txtcolor_size), 
+    json::JsonFieldDescr("led_color", s_default_keygroup.m_ledcolor, s_default_keygroup.m_ledcolor_size), 
     json::JsonFieldDescr("keys", s_default_keygroup.m_keys, s_default_keygroup.m_nb_keys, json_keys_funcs, json_key), 
 };
 // clang-format on
 
 // implementation of the constructor for the keygroup object
 static void json_alloc_keygroup(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<keygroup_t>(n); }
-static void json_copy_keygroup(void* dst, s32 dst_index, void* src ) { ((keygroup_t*)dst)[dst_index] = *(keygroup_t*)src; }
+static void json_copy_keygroup(void* dst, s32 dst_index, void* src) { ((keygroup_t*)dst)[dst_index] = *(keygroup_t*)src; }
 
 // clang-format off
 static json::JsonTypeDescr json_keygroup = {
 	"keygroup",
 	&s_default_keygroup, 
+	sizeof(keygroup_t),
 	sizeof(s_members_keygroup) / sizeof(json::JsonFieldDescr), 
 	s_members_keygroup
 };
@@ -133,9 +135,9 @@ static json::JsonTypeFuncs json_keygroup_funcs = {
 };
 // clang-format on
 
-static const float sColorDarkGrey[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-static const float sColorWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-static const float sColorBlue[] = { 0.0f, 0.0f, 1.0f, 1.0f };
+static const float sColorDarkGrey[] = {0.1f, 0.1f, 0.1f, 1.0f};
+static const float sColorWhite[]    = {1.0f, 1.0f, 1.0f, 1.0f};
+static const float sColorBlue[]     = {0.0f, 0.0f, 1.0f, 1.0f};
 
 struct keyboard_t
 {
@@ -143,9 +145,9 @@ struct keyboard_t
     {
         m_nb_keygroups = 0;
         m_keygroups    = nullptr;
-		xcore::copy(m_capcolor, sColorDarkGrey);
-		xcore::copy(m_txtcolor, sColorWhite);
-		xcore::copy(m_ledcolor, sColorBlue);
+        xcore::copy(m_capcolor, sColorDarkGrey);
+        xcore::copy(m_txtcolor, sColorWhite);
+        xcore::copy(m_ledcolor, sColorBlue);
         m_scale = 1.0f;
         m_w     = 81.f;
         m_h     = 81.f;
@@ -185,14 +187,15 @@ static json::JsonFieldDescr s_members_keyboard[] = {
 
 // implementation of the constructor for the keygroup object
 static void json_construct_keyboard(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<keyboard_t>(n); }
-static void json_copy_keyboard(void* dst, s32 dst_index, void* src ) { ((keyboard_t*)dst)[dst_index] = *(keyboard_t*)src; }
+static void json_copy_keyboard(void* dst, s32 dst_index, void* src) { ((keyboard_t*)dst)[dst_index] = *(keyboard_t*)src; }
 
 // clang-format off
 static json::JsonTypeDescr json_keyboard = 
 {
 	"keyboard",
 	&s_default_keyboard, 
-    sizeof(s_members_keyboard) / sizeof(json::JsonFieldDescr), 
+	sizeof(keyboard_t),
+	sizeof(s_members_keyboard) / sizeof(json::JsonFieldDescr), 
 	s_members_keyboard
 };
 
@@ -220,6 +223,7 @@ static json::JsonFieldDescr s_members_keyboard_root[] = {
 static json::JsonTypeDescr json_keyboard_root = {
     "root", 
     &s_default_keyboard_root, 
+	sizeof(keyboard_root_t),
     sizeof(s_members_keyboard_root) / sizeof(json::JsonFieldDescr), 
     s_members_keyboard_root
 };

@@ -12,102 +12,101 @@ namespace xcore
     namespace json
     {
         static void          JsonAllocBool(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<bool>(n); }
-        static JsonTypeFuncs sJsonFuncsBool       = {JsonAllocBool, nullptr};
-		JsonTypeFuncs const* JsonFuncsBool        = &sJsonFuncsBool;
+        static JsonTypeFuncs sJsonFuncsBool = {JsonAllocBool, nullptr};
+        JsonTypeFuncs const* JsonFuncsBool  = &sJsonFuncsBool;
 
-		static void          JsonAllocInt8(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s8>(n); }
-		static JsonTypeFuncs sJsonFuncsInt8       = {JsonAllocInt8, nullptr};
-		JsonTypeFuncs const* JsonFuncsInt8        = &sJsonFuncsInt8;
+        static void          JsonAllocInt8(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s8>(n); }
+        static JsonTypeFuncs sJsonFuncsInt8 = {JsonAllocInt8, nullptr};
+        JsonTypeFuncs const* JsonFuncsInt8  = &sJsonFuncsInt8;
 
         static void          JsonAllocInt16(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s16>(n); }
-        static JsonTypeFuncs sJsonFuncsInt16      = {JsonAllocInt16, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt16       = &sJsonFuncsInt16;
-        
+        static JsonTypeFuncs sJsonFuncsInt16 = {JsonAllocInt16, nullptr};
+        JsonTypeFuncs const* JsonFuncsInt16  = &sJsonFuncsInt16;
+
         static void          JsonAllocInt32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s32>(n); }
-        static JsonTypeFuncs sJsonFuncsInt32      = {JsonAllocInt32, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt32       = &sJsonFuncsInt32;
+        static JsonTypeFuncs sJsonFuncsInt32 = {JsonAllocInt32, nullptr};
+        JsonTypeFuncs const* JsonFuncsInt32  = &sJsonFuncsInt32;
 
         static void          JsonAllocInt64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s64>(n); }
-        static JsonTypeFuncs sJsonFuncsInt64      = {JsonAllocInt64, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt64       = &sJsonFuncsInt64;
+        static JsonTypeFuncs sJsonFuncsInt64 = {JsonAllocInt64, nullptr};
+        JsonTypeFuncs const* JsonFuncsInt64  = &sJsonFuncsInt64;
 
         static void          JsonAllocUInt8(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u8>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt8      = {JsonAllocUInt8, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt8       = &sJsonFuncsUInt8;
+        static JsonTypeFuncs sJsonFuncsUInt8 = {JsonAllocUInt8, nullptr};
+        JsonTypeFuncs const* JsonFuncsUInt8  = &sJsonFuncsUInt8;
 
         static void          JsonAllocUInt16(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u16>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt16     = {JsonAllocUInt16, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt16      = &sJsonFuncsUInt16;
+        static JsonTypeFuncs sJsonFuncsUInt16 = {JsonAllocUInt16, nullptr};
+        JsonTypeFuncs const* JsonFuncsUInt16  = &sJsonFuncsUInt16;
 
         static void          JsonAllocUInt32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u32>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt32     = {JsonAllocUInt32, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt32      = &sJsonFuncsUInt32;
+        static JsonTypeFuncs sJsonFuncsUInt32 = {JsonAllocUInt32, nullptr};
+        JsonTypeFuncs const* JsonFuncsUInt32  = &sJsonFuncsUInt32;
 
         static void          JsonAllocUInt64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u64>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt64     = {JsonAllocUInt64, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt64      = &sJsonFuncsUInt64;
+        static JsonTypeFuncs sJsonFuncsUInt64 = {JsonAllocUInt64, nullptr};
+        JsonTypeFuncs const* JsonFuncsUInt64  = &sJsonFuncsUInt64;
 
         static void          JsonAllocFloat32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<f32>(n); }
-        static JsonTypeFuncs sJsonFuncsFloat32    = {JsonAllocFloat32, nullptr};
-        JsonTypeFuncs const* JsonFuncsFloat32     = &sJsonFuncsFloat32;
+        static JsonTypeFuncs sJsonFuncsFloat32 = {JsonAllocFloat32, nullptr};
+        JsonTypeFuncs const* JsonFuncsFloat32  = &sJsonFuncsFloat32;
 
         static void          JsonAllocFloat64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<f64>(n); }
-        static JsonTypeFuncs sJsonFuncsFloat64    = {JsonAllocFloat64, nullptr};
-        JsonTypeFuncs const* JsonFuncsFloat64     = &sJsonFuncsFloat64;
+        static JsonTypeFuncs sJsonFuncsFloat64 = {JsonAllocFloat64, nullptr};
+        JsonTypeFuncs const* JsonFuncsFloat64  = &sJsonFuncsFloat64;
 
-        static void          JsonAllocString(JsonAllocator* alloc, s32 n, void*& ptr) { }
-        static JsonTypeFuncs sJsonFuncsString     = {JsonAllocString, nullptr};
-        JsonTypeFuncs const* JsonFuncsString      = &sJsonFuncsString;
+        static void          JsonAllocString(JsonAllocator* alloc, s32 n, void*& ptr) {}
+        static JsonTypeFuncs sJsonFuncsString = {JsonAllocString, nullptr};
+        JsonTypeFuncs const* JsonFuncsString  = &sJsonFuncsString;
 
-        static bool sDefaultBool = false;
-        static JsonTypeDescr sJsonTypeDescrBool   = {"bool", &sDefaultBool, 0, nullptr};
+        static bool          sDefaultBool       = false;
+        static JsonTypeDescr sJsonTypeDescrBool = {"bool", &sDefaultBool, sizeof(bool), 0, nullptr};
 
-        static s8 sDefaultInt8 = 0;
-        static JsonTypeDescr sJsonTypeDescrInt8   = {"int8", &sDefaultInt8, 0, nullptr};
+        static s8            sDefaultInt8       = 0;
+        static JsonTypeDescr sJsonTypeDescrInt8 = {"int8", &sDefaultInt8, sizeof(s8), 0, nullptr};
 
-        static s16 sDefaultInt16 = 0;
-        static JsonTypeDescr sJsonTypeDescrInt16  = {"int16", &sDefaultInt16, 0, nullptr};
+        static s16           sDefaultInt16       = 0;
+        static JsonTypeDescr sJsonTypeDescrInt16 = {"int16", &sDefaultInt16, sizeof(s16), 0, nullptr};
 
-        static s32 sDefaultInt32 = 0;
-        static JsonTypeDescr sJsonTypeDescrInt32  = {"int32", &sDefaultInt32, 0, nullptr};
+        static s32           sDefaultInt32       = 0;
+        static JsonTypeDescr sJsonTypeDescrInt32 = {"int32", &sDefaultInt32, sizeof(s32), 0, nullptr};
 
-        static s64 sDefaultInt64 = 0;
-        static JsonTypeDescr sJsonTypeDescrInt64  = {"int64", &sDefaultInt64, 0, nullptr};
+        static s64           sDefaultInt64       = 0;
+        static JsonTypeDescr sJsonTypeDescrInt64 = {"int64", &sDefaultInt64, sizeof(s64), 0, nullptr};
 
-        static u8 sDefaultUInt8 = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt8  = {"uint8", &sDefaultUInt8, 0, nullptr};
+        static u8            sDefaultUInt8       = 0;
+        static JsonTypeDescr sJsonTypeDescrUInt8 = {"uint8", &sDefaultUInt8, sizeof(u8), 0, nullptr};
 
-        static u16 sDefaultUInt16 = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt16 = {"uint16", &sDefaultUInt16, 0, nullptr};
+        static u16           sDefaultUInt16       = 0;
+        static JsonTypeDescr sJsonTypeDescrUInt16 = {"uint16", &sDefaultUInt16, sizeof(u16), 0, nullptr};
 
-        static u32 sDefaultUInt32 = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt32 = {"uint32", &sDefaultUInt32, 0, nullptr};
+        static u32           sDefaultUInt32       = 0;
+        static JsonTypeDescr sJsonTypeDescrUInt32 = {"uint32", &sDefaultUInt32, sizeof(u32), 0, nullptr};
 
-        static u64 sDefaultUInt64 = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt64 = {"uint64", &sDefaultUInt64, 0, nullptr};
+        static u64           sDefaultUInt64       = 0;
+        static JsonTypeDescr sJsonTypeDescrUInt64 = {"uint64", &sDefaultUInt64, sizeof(u64), 0, nullptr};
 
-        static f32 sDefaultFloat32 = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat32 = {"float32", &sDefaultFloat32, 0, nullptr};
+        static f32           sDefaultFloat32       = 0.0f;
+        static JsonTypeDescr sJsonTypeDescrFloat32 = {"float32", &sDefaultFloat32, sizeof(f32), 0, nullptr};
 
-        static f64 sDefaultFloat64 = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat64 = {"float64", &sDefaultFloat64, 0, nullptr};
+        static f64           sDefaultFloat64       = 0.0f;
+        static JsonTypeDescr sJsonTypeDescrFloat64 = {"float64", &sDefaultFloat64, sizeof(f64), 0, nullptr};
 
-        static const char* sDefaultString = "";
-        static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, 0, nullptr};
+        static const char*   sDefaultString       = "";
+        static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), 0, nullptr};
 
-		JsonTypeDescr const* JsonTypeDescrBool = &sJsonTypeDescrBool;
-		JsonTypeDescr const* JsonTypeDescrInt8 = &sJsonTypeDescrInt8;
-		JsonTypeDescr const* JsonTypeDescrInt16 = &sJsonTypeDescrInt16;
-		JsonTypeDescr const* JsonTypeDescrInt32 = &sJsonTypeDescrInt32;
-		JsonTypeDescr const* JsonTypeDescrInt64 = &sJsonTypeDescrInt64;
-		JsonTypeDescr const* JsonTypeDescrUInt8 = &sJsonTypeDescrUInt8;
-		JsonTypeDescr const* JsonTypeDescrUInt16 = &sJsonTypeDescrUInt16;
-		JsonTypeDescr const* JsonTypeDescrUInt32 = &sJsonTypeDescrUInt32;
-		JsonTypeDescr const* JsonTypeDescrUInt64 = &sJsonTypeDescrUInt64;
-		JsonTypeDescr const* JsonTypeDescrFloat32 = &sJsonTypeDescrFloat32;
-		JsonTypeDescr const* JsonTypeDescrFloat64 = &sJsonTypeDescrFloat64;
-		JsonTypeDescr const* JsonTypeDescrString = &sJsonTypeDescrString;
-
+        JsonTypeDescr const* JsonTypeDescrBool    = &sJsonTypeDescrBool;
+        JsonTypeDescr const* JsonTypeDescrInt8    = &sJsonTypeDescrInt8;
+        JsonTypeDescr const* JsonTypeDescrInt16   = &sJsonTypeDescrInt16;
+        JsonTypeDescr const* JsonTypeDescrInt32   = &sJsonTypeDescrInt32;
+        JsonTypeDescr const* JsonTypeDescrInt64   = &sJsonTypeDescrInt64;
+        JsonTypeDescr const* JsonTypeDescrUInt8   = &sJsonTypeDescrUInt8;
+        JsonTypeDescr const* JsonTypeDescrUInt16  = &sJsonTypeDescrUInt16;
+        JsonTypeDescr const* JsonTypeDescrUInt32  = &sJsonTypeDescrUInt32;
+        JsonTypeDescr const* JsonTypeDescrUInt64  = &sJsonTypeDescrUInt64;
+        JsonTypeDescr const* JsonTypeDescrFloat32 = &sJsonTypeDescrFloat32;
+        JsonTypeDescr const* JsonTypeDescrFloat64 = &sJsonTypeDescrFloat64;
+        JsonTypeDescr const* JsonTypeDescrString  = &sJsonTypeDescrString;
 
         static void* get_member_ptr(JsonObject const& object, JsonMember const& member)
         {
@@ -115,135 +114,161 @@ namespace xcore
             return (void*)((uptr)object.m_instance + offset);
         }
 
-        JsonObject JsonMember::get_object(JsonObject const& object, JsonAllocator* alloc) 
-		{	
-			JsonObject o;
-			o.m_descr = m_descr->m_typedescr;
-
-			if (is_pointer())
-			{
-				// the instance of the object is not part of the instance of the main object
-				// e.g. as a struct member: 
-				//                           key_t*  m_key;
-				//
-				m_descr->m_funcs->m_alloc(alloc, 1, o.m_instance);
-			}
-			else
-			{
-				// the instance of the object is already part of the instance of the main object
-				// e.g. as a struct member: 
-				//                           key_t  m_key;
-				//
-				o.m_instance = get_member_ptr(object, *this);
-			}
-
-			return o;
-		}
-
-        void JsonMember::set_string(JsonObject const& object, const char* str)
+        JsonObject JsonMember::get_object(JsonObject const& object, JsonAllocator* alloc)
         {
-            // Set the string pointer on the object member
-            if (m_data_ptr == nullptr)
+            JsonObject o;
+            o.m_descr = m_descr->m_typedescr;
+            if (m_data_ptr != nullptr)
             {
-                m_data_ptr = (void*)get_member_ptr(object, *this);
+                o.m_instance = m_data_ptr;
             }
             else
             {
-                // The member value is part of something else, like an array element
-                // The caller has provided a pointer to the member value.
+                if (is_pointer())
+                {
+                    // the instance of the object is not part of the instance of the main object
+                    // e.g. as a struct member:
+                    //                           key_t*  m_key;
+                    //
+                    m_descr->m_funcs->m_alloc(alloc, 1, o.m_instance);
+                }
+                else
+                {
+                    // the instance of the object is already part of the instance of the main object
+                    // e.g. as a struct member:
+                    //                           key_t  m_key;
+                    //
+                    o.m_instance = get_member_ptr(object, *this);
+                }
             }
 
-            *((const char**)m_data_ptr) = str;
+            return o;
+        }
+
+        void JsonMember::set_string(JsonObject const& object, const char* str)
+        {
+            if (has_descr())
+            {
+                // Set the string pointer on the object member
+                if (m_data_ptr == nullptr)
+                {
+                    m_data_ptr = (void*)get_member_ptr(object, *this);
+                }
+                else
+                {
+                    // The member value is part of something else, like an array element
+                    // The caller has provided a pointer to the member value.
+                }
+
+                *((const char**)m_data_ptr) = str;
+            }
         }
 
         void JsonMember::set_number(JsonObject const& object, JsonAllocator* alloc, JsonNumber const& number)
         {
-            // Set the number on the object member
-            if (m_data_ptr == nullptr)
+            if (has_descr())
             {
-                if (is_pointer())
+                // Set the number on the object member
+                if (m_data_ptr == nullptr)
                 {
-                    void** member_value_ptr = (void**)get_member_ptr(object, *this);
-                    void*  value_ptr;
-                    m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
-                    *member_value_ptr = value_ptr;
-                    m_data_ptr        = value_ptr;
+                    if (is_pointer())
+                    {
+                        void** member_value_ptr = (void**)get_member_ptr(object, *this);
+                        void*  value_ptr;
+                        m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
+                        *member_value_ptr = value_ptr;
+                        m_data_ptr        = value_ptr;
+                    }
+                    else
+                    {
+                        m_data_ptr = (void*)get_member_ptr(object, *this);
+                    }
                 }
                 else
                 {
-                    m_data_ptr = (void*)get_member_ptr(object, *this);
+                    // The member value is part of something else, like an array element
+                    // The caller has provided a pointer to the member value.
                 }
-            }
-            else
-            {
-                // The member value is part of something else, like an array element
-                // The caller has provided a pointer to the member value.
-            }
 
-            switch (m_descr->m_type & JsonType::TypeNumber)
-            {
-                case JsonType::TypeInt8: *((s8*)m_data_ptr) = JsonNumberAsInt8(number); break;
-                case JsonType::TypeInt16: *((s16*)m_data_ptr) = JsonNumberAsInt16(number); break;
-                case JsonType::TypeInt32: *((s32*)m_data_ptr) = JsonNumberAsInt32(number); break;
-                case JsonType::TypeInt64: *((s64*)m_data_ptr) = JsonNumberAsInt64(number); break;
-                case JsonType::TypeUInt8: *((u8*)m_data_ptr) = JsonNumberAsUInt8(number); break;
-                case JsonType::TypeUInt16: *((u16*)m_data_ptr) = JsonNumberAsUInt16(number); break;
-                case JsonType::TypeUInt32: *((u32*)m_data_ptr) = JsonNumberAsUInt32(number); break;
-                case JsonType::TypeUInt64: *((u64*)m_data_ptr) = JsonNumberAsUInt64(number); break;
-                case JsonType::TypeF32: *((f32*)m_data_ptr) = JsonNumberAsFloat32(number); break;
-                case JsonType::TypeF64: *((f64*)m_data_ptr) = JsonNumberAsFloat64(number); break;
-                default: break;
+                switch (m_descr->m_type & JsonType::TypeNumber)
+                {
+                    case JsonType::TypeInt8: *((s8*)m_data_ptr) = JsonNumberAsInt8(number); break;
+                    case JsonType::TypeInt16: *((s16*)m_data_ptr) = JsonNumberAsInt16(number); break;
+                    case JsonType::TypeInt32: *((s32*)m_data_ptr) = JsonNumberAsInt32(number); break;
+                    case JsonType::TypeInt64: *((s64*)m_data_ptr) = JsonNumberAsInt64(number); break;
+                    case JsonType::TypeUInt8: *((u8*)m_data_ptr) = JsonNumberAsUInt8(number); break;
+                    case JsonType::TypeUInt16: *((u16*)m_data_ptr) = JsonNumberAsUInt16(number); break;
+                    case JsonType::TypeUInt32: *((u32*)m_data_ptr) = JsonNumberAsUInt32(number); break;
+                    case JsonType::TypeUInt64: *((u64*)m_data_ptr) = JsonNumberAsUInt64(number); break;
+                    case JsonType::TypeF32: *((f32*)m_data_ptr) = JsonNumberAsFloat32(number); break;
+                    case JsonType::TypeF64: *((f64*)m_data_ptr) = JsonNumberAsFloat64(number); break;
+                    default: break;
+                }
             }
         }
 
         void JsonMember::set_bool(JsonObject const& object, JsonAllocator* alloc, bool b)
         {
-            // Set the boolean value on the object member
-            if (m_data_ptr == nullptr)
+            if (has_descr())
             {
-                if (is_pointer())
+                // Set the boolean value on the object member
+                if (m_data_ptr == nullptr)
                 {
-                    void** member_value_ptr = (void**)get_member_ptr(object, *this);
-                    void*  value_ptr;
-                    m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
-                    *member_value_ptr = value_ptr;
-                    m_data_ptr        = value_ptr;
+                    if (is_pointer())
+                    {
+                        void** member_value_ptr = (void**)get_member_ptr(object, *this);
+                        void*  value_ptr;
+                        m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
+                        *member_value_ptr = value_ptr;
+                        m_data_ptr        = value_ptr;
+                    }
+                    else
+                    {
+                        m_data_ptr = (void*)get_member_ptr(object, *this);
+                    }
                 }
                 else
                 {
-                    m_data_ptr = (void*)get_member_ptr(object, *this);
+                    // The member value is part of something else, like an array element
+                    // The caller has provided a pointer to the member value.
                 }
-            }
-            else
-            {
-                // The member value is part of something else, like an array element
-                // The caller has provided a pointer to the member value.
-            }
 
-            *((bool*)m_data_ptr) = b;
+                *((bool*)m_data_ptr) = b;
+            }
         }
 
         JsonMember JsonObject::get_member(const char* name) const
         {
             JsonMember member;
-            member.m_descr    = nullptr;
-            member.m_data_ptr = nullptr;
-
-            for (s32 i = 0; i < m_descr->m_member_count; ++i)
+            if (m_descr != nullptr)
             {
-                const char* n1 = name;
-                const char* n2 = m_descr->m_members[i].m_name;
-                while (*n1 && *n2)
+                member.m_descr    = nullptr;
+                member.m_data_ptr = nullptr;
+
+                for (s32 i = 0; i < m_descr->m_member_count; ++i)
                 {
-                    if (*n1 != *n2)
+                    const char* n1 = name;
+                    const char* n2 = m_descr->m_members[i].m_name;
+                    while (true)
+                    {
+                        if (*n1 != *n2)
+                        {
+                            goto key_not_found;
+                        }
+                        else if (*n1 == 0)
+                        {
+                            break;
+                        }
+                        n1++;
+                        n2++;
+                    }
+                    if (*n1 == *n2)
+                    {
+                        member.m_descr = &m_descr->m_members[i];
                         return member;
-                    n1++;
-                    n2++;
-                }
-                if (*n1 == *n2)
-                {
-                    member.m_descr = &m_descr->m_members[i];
-                    return member;
+                    }
+                key_not_found: // not found, next key
+                    n1 = nullptr;
                 }
             }
             return member;
@@ -645,7 +670,6 @@ namespace xcore
 
         static JsonError* JsonDecodeValue(JsonState* json_state, JsonObject& object, JsonMember& member);
 
-
         static JsonError* JsonDecodeObject(JsonState* json_state, JsonObject& object)
         {
             JsonLexerState* lexer = &json_state->m_Lexer;
@@ -716,8 +740,12 @@ namespace xcore
 
             struct ListElem
             {
-                void*      m_ElemData;
-                ListElem*  m_Next;
+                union
+                {
+                    void* m_ElemData;
+                    u64   m_ElemData64;
+                };
+                ListElem* m_Next;
             };
 
             struct ValueList
@@ -735,22 +763,28 @@ namespace xcore
                     m_Count   = 0;
                 }
 
-                void Add(void* dataptr)
+                ListElem* NewListItem()
                 {
-                    if (1 == ++m_Count)
+                    ListElem* elem = m_Scratch->Allocate<ListElem>();
+                    elem->m_Next   = nullptr;
+                    return elem;
+                }
+
+                void Add(ListElem* elem)
+                {
+                    if (0 == m_Count)
                     {
-                        m_Head = m_Tail  = m_Scratch->Allocate<ListElem>();
-                        m_Head->m_ElemData = dataptr;
-                        m_Head->m_Next   = nullptr;
+                        m_Head = m_Tail = elem;
+                        m_Head->m_Next  = nullptr;
                     }
                     else
                     {
-                        ListElem* tail   = m_Tail;
-                        m_Tail           = m_Scratch->Allocate<ListElem>();
-                        m_Tail->m_ElemData = dataptr;
-                        m_Tail->m_Next   = nullptr;
-                        tail->m_Next     = m_Tail;
+                        ListElem* tail = m_Tail;
+                        m_Tail         = elem;
+                        m_Tail->m_Next = nullptr;
+                        tail->m_Next   = m_Tail;
                     }
+                    m_Count += 1;
                 }
             };
 
@@ -779,173 +813,166 @@ namespace xcore
                     JsonLexerSkip(lexer);
                 }
 
-                // Need to allocate the actual array element, can be any type, from the normal
-                // system types and pointers to an object.
-                // We allocate it with the scratch allocator, and then copy it later into the
-                // array element.
-                
-                // Do we really need to allocate the type if it is a pointer?
+                JsonError* err = nullptr;
+                if (member.has_descr())
+                {
+                    ListElem* elem = value_list.NewListItem();
 
-                JsonMember array_element = member;
-                member.m_descr->m_funcs->m_alloc(scratch, 1, array_element.m_data_ptr);
+                    JsonMember m = member;
+                    if (m.is_pointer() || m.is_string() || m.is_number() || m.is_bool())
+                    {
+                        m.m_data_ptr = &elem->m_ElemData64;
+                    }
+                    else if (m.is_object())
+                    {
+                        void* obj;
+                        m.m_descr->m_funcs->m_alloc(scratch, 1, obj);
+                        elem->m_ElemData = obj;
+                        m.m_data_ptr     = obj;
+                    }
+                    err = JsonDecodeValue(json_state, object, m);
 
-                JsonError* err = JsonDecodeValue(json_state, object, array_element);
+                    value_list.Add(elem);
+                }
+                else
+                {
+                    err = JsonDecodeValue(json_state, object, member);
+                }
                 if (err != nullptr)
                     return err;
-
-                value_list.Add(array_element.m_data_ptr);
             }
 
-            JsonAllocator* alloc = json_state->m_Allocator;
-
-            s32 count = value_list.m_Count;
-
-            // If this array is a vector we should allocate the correct type of vector and populate it.
-            // Then set the member on the object to point to the vector.
-            // If this array is a carray we can just copy the array elements into the carray.
-
-            void* array = nullptr;
-            if (member.is_vector())
+            if (member.has_descr())
             {
-                // allocate the vector through the type of the array element
-                member.m_descr->m_funcs->m_alloc(alloc, count, array);
-            }
-            else if (member.is_carray())
-            {
-                array = member.m_data_ptr;
-            }
-            else
-            {
-                return MakeJsonError(json_state, "expected either a carray or vector");
-            }
+                JsonAllocator* alloc = json_state->m_Allocator;
 
-            if (!member.is_pointer())
-            {
-                s32 const csize = member.m_descr->m_csize;
+                s32   count = value_list.m_Count;
+                void* array = nullptr;
+                if (member.is_vector())
+                {
+                    if (member.is_vector_size8())
+                    {
+                        if (count > 127)
+                            count = 127;
 
-                // limit count to the smallest of the two
-                count = count > csize ? csize : count;
+                        uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)object.m_descr->m_default;
+                        s8*        size8  = (s8*)((uptr)object.m_instance + offset);
+                        *size8            = count;
+                    }
+                    else if (member.is_vector_size16())
+                    {
+                        if (count > 32767)
+                            count = 32767;
+                        *member.m_descr->m_size16 = count;
+                    }
+                    else if (member.is_vector_size32())
+                    {
+                        if (count > 2147483647)
+                            count = 2147483647;
+                        *member.m_descr->m_size32 = count;
+                    }
+                    member.m_descr->m_funcs->m_alloc(alloc, count, array);
+                }
+                else if (member.is_carray())
+                {
+                    array = get_member_ptr(object, member);
+                    count = count > member.m_descr->m_csize ? member.m_descr->m_csize : count;
+                }
+                else
+                {
+                    return MakeJsonError(json_state, "expected either a carray or vector");
+                }
 
-                if (member.is_bool())
+                if (!member.is_pointer())
                 {
-                    bool* carray = (bool*)array;
-                    for (s32 i = 0; i < count; ++i)
+                    if (member.is_number())
                     {
-                        *carray++ = *((bool*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
+                        if (member.is_bool())
+                        {
+                            bool* carray = (bool*)array;
+                            for (s32 i = 0; i < count; ++i)
+                            {
+                                *carray++         = *((bool*)(&value_list.m_Head->m_ElemData64));
+                                value_list.m_Head = value_list.m_Head->m_Next;
+                            }
+                        }
+                        else if (member.is_int8() || member.is_uint8())
+                        {
+                            u8* carray = (u8*)array;
+                            for (s32 i = 0; i < count; ++i)
+                            {
+                                *carray++         = *((u8*)(&value_list.m_Head->m_ElemData64));
+                                value_list.m_Head = value_list.m_Head->m_Next;
+                            }
+                        }
+                        else if (member.is_int16() || member.is_uint16())
+                        {
+                            u16* carray = (u16*)array;
+                            for (s32 i = 0; i < count; ++i)
+                            {
+                                *carray++         = *((u16*)(&value_list.m_Head->m_ElemData64));
+                                value_list.m_Head = value_list.m_Head->m_Next;
+                            }
+                        }
+                        else if (member.is_int32() || member.is_uint32() || member.is_f32())
+                        {
+                            u32* carray = (u32*)array;
+                            for (s32 i = 0; i < count; ++i)
+                            {
+                                *carray++         = *((u32*)(&value_list.m_Head->m_ElemData64));
+                                value_list.m_Head = value_list.m_Head->m_Next;
+                            }
+                        }
+                        else if (member.is_f64())
+                        {
+                            f64* carray = (f64*)array;
+                            for (s32 i = 0; i < count; ++i)
+                            {
+                                *carray++         = *((f64*)(&value_list.m_Head->m_ElemData64));
+                                value_list.m_Head = value_list.m_Head->m_Next;
+                            }
+                        }
                     }
-                }
-                else if (member.is_int8())
-                {
-                    s8* carray = (s8*)array;
-                    for (s32 i = 0; i < count; ++i)
+                    else if (member.is_string())
                     {
-                        *carray++ = *((s8*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
+                        const char** carray = (char const**)array;
+                        for (s32 i = 0; i < count; ++i)
+                        {
+                            *carray++         = (const char*)(value_list.m_Head->m_ElemData);
+                            value_list.m_Head = value_list.m_Head->m_Next;
+                        }
                     }
-                }
-                else if (member.is_uint8())
-                {
-                    u8* carray = (u8*)array;
-                    for (s32 i = 0; i < count; ++i)
+                    else if (member.is_object())
                     {
-                        *carray++ = *((u8*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
+                        for (s32 i = 0; i < count; ++i)
+                        {
+                            void* src = value_list.m_Head->m_ElemData;
+                            member.m_descr->m_funcs->m_copy(array, i, src);
+                            value_list.m_Head = value_list.m_Head->m_Next;
+                        }
                     }
-                }
-                else if (member.is_int16())
-                {
-                    s16* carray = (s16*)array;
-                    for (s32 i = 0; i < count; ++i)
+                    else
                     {
-                        *carray++ = *((s16*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_uint16())
-                {
-                    u16* carray = (u16*)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((u16*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_int32())
-                {
-                    s32* carray = (s32*)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((s32*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_uint32())
-                {
-                    u32* carray = (u32*)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((u32*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_f32())
-                {
-                    f32* carray = (f32*)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((f32*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_f64())
-                {
-                    f64* carray = (f64*)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((f64*)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_string())
-                {
-                    const char** carray = (char const **)array;
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        *carray++ = *((const char**)(value_list.m_Head->m_ElemData));
-                        value_list.m_Head = value_list.m_Head->m_Next;
-                    }
-                }
-                else if (member.is_object())
-                {
-                    for (s32 i = 0; i < count; ++i)
-                    {
-                        void* src = value_list.m_Head->m_ElemData;
-						member.m_descr->m_funcs->m_copy(array, i, src);
-                        value_list.m_Head = value_list.m_Head->m_Next;
+                        return MakeJsonError(json_state, "invalid array element type");
                     }
                 }
                 else
                 {
-                    return MakeJsonError(json_state, "invalid array element type");
+                    // here we have an array of pointers to any of the types we support
+                    void** parray = (void**)array;
+                    for (s32 i = 0; i < count; ++i)
+                    {
+                        *parray++         = *(void**)(&value_list.m_Head->m_ElemData64);
+                        value_list.m_Head = value_list.m_Head->m_Next;
+                    }
                 }
-            }
-            else 
-            {
-                // here we have an array of pointers to any of the types we support
-                void** parray = (void**)array;
-                for (s32 i = 0; i < count; ++i)
-                {
-                    *parray++ = *((void**)(value_list.m_Head->m_ElemData));
-                    value_list.m_Head = value_list.m_Head->m_Next;
-                }
-            }
 
-            if (member.is_vector())
-            {
-                // set the vector pointer correctly for the member
-                void** ptr = (void**)get_member_ptr(object, member);
-                *ptr = array;
+                if (member.is_vector())
+                {
+                    // set the vector pointer correctly for the member
+                    void** ptr = (void**)get_member_ptr(object, member);
+                    *ptr       = array;
+                }
             }
 
             return nullptr;
@@ -959,16 +986,19 @@ namespace xcore
             {
                 case kJsonLexBeginObject:
                 {
-                    if (!member.is_object())
-                        return MakeJsonError(json_state, "encountered json object but class member is not the same type");
-
+                    JsonObject member_object;
+                    if (member.has_descr())
+                    {
+                        if (!member.is_object())
+                            return MakeJsonError(json_state, "encountered json object but class member is not the same type");
+                        member_object = member.get_object(object, json_state->m_Allocator);
+                    }
                     json_state->m_NumberOfObjects += 1;
-                    JsonObject member_object = member.get_object(object, json_state->m_Allocator);
-                    err                      = JsonDecodeObject(json_state, member_object);
+                    err = JsonDecodeObject(json_state, member_object);
                 }
                 break;
                 case kJsonLexBeginArray:
-                    if (!member.is_carray() && !member.is_vector())
+                    if (member.has_descr() && (!member.is_carray() && !member.is_vector()))
                         return MakeJsonError(json_state, "encountered json array but class member is not the same type");
 
                     json_state->m_NumberOfArrays += 1;
@@ -977,7 +1007,7 @@ namespace xcore
 
                 case kJsonLexString:
                 {
-                    if (!member.is_string())
+                    if (member.has_descr() && !member.is_string())
                         return MakeJsonError(json_state, "encountered json string but class member is not the same type");
 
                     json_state->m_NumberOfStrings += 1;
@@ -989,7 +1019,7 @@ namespace xcore
 
                 case kJsonLexNumber:
                 {
-                    if (!member.is_number())
+                    if (member.has_descr() && !member.is_number())
                         return MakeJsonError(json_state, "encountered json number but class member is not the same type");
 
                     json_state->m_NumberOfNumbers += 1;
@@ -1000,7 +1030,7 @@ namespace xcore
                 }
 
                 case kJsonLexBoolean:
-                    if (!member.is_bool())
+                    if (member.has_descr() && !member.is_bool())
                         return MakeJsonError(json_state, "encountered json boolean but class member is not the same type");
 
                     json_state->m_NumberOfBooleans += 1;
@@ -1046,11 +1076,8 @@ namespace xcore
 
     } // namespace json_decoder
 
-	namespace json 
-	{
-		bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
-		{
-			return json_decoder::JsonDecode(str, end, json_root, allocator, scratch, error_message);
-		}
-	}
+    namespace json
+    {
+        bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message) { return json_decoder::JsonDecode(str, end, json_root, allocator, scratch, error_message); }
+    } // namespace json
 } // namespace xcore
