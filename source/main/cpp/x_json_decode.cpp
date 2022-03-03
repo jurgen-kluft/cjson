@@ -130,7 +130,10 @@ namespace xcore
                     // e.g. as a struct member:
                     //                           key_t*  m_key;
                     //
+                    // Once allocated, write the pointer of the object into the member
                     m_descr->m_funcs->m_alloc(alloc, 1, o.m_instance);
+                    void** member_ptr = (void**)get_member_ptr(object, *this);
+                    *member_ptr       = o.m_instance;
                 }
                 else
                 {
@@ -857,19 +860,23 @@ namespace xcore
 
                         uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)object.m_descr->m_default;
                         s8*        size8  = (s8*)((uptr)object.m_instance + offset);
-                        *size8            = count;
+                        *size8            = (s8)count;
                     }
                     else if (member.is_vector_size16())
                     {
                         if (count > 32767)
                             count = 32767;
-                        *member.m_descr->m_size16 = count;
+                        uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)object.m_descr->m_default;
+                        s16*       size16 = (s16*)((uptr)object.m_instance + offset);
+                        *size16           = (s16)count;
                     }
                     else if (member.is_vector_size32())
                     {
                         if (count > 2147483647)
                             count = 2147483647;
-                        *member.m_descr->m_size32 = count;
+                        uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)object.m_descr->m_default;
+                        s32*       size32 = (s32*)((uptr)object.m_instance + offset);
+                        *size32           = count;
                     }
                     member.m_descr->m_funcs->m_alloc(alloc, count, array);
                 }
