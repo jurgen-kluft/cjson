@@ -4,6 +4,7 @@
 #include "xjson/x_json.h"
 #include "xjson/x_json_allocator.h"
 #include "xjson/x_json_decode.h"
+#include "xjson/x_json_encode.h"
 
 #include "xunittest/xunittest.h"
 
@@ -61,6 +62,7 @@ static json::JsonTypeDescr json_key =
 	"key",
 	&s_default_key, 
 	sizeof(key_t),
+	ALIGNOF(key_t),
 	sizeof(s_members_key) / sizeof(json::JsonFieldDescr), 
 	s_members_key
 };
@@ -120,6 +122,7 @@ static json::JsonTypeDescr json_keygroup = {
 	"keygroup",
 	&s_default_keygroup, 
 	sizeof(keygroup_t),
+	ALIGNOF(keygroup_t),
 	sizeof(s_members_keygroup) / sizeof(json::JsonFieldDescr), 
 	s_members_keygroup
 };
@@ -190,6 +193,7 @@ static json::JsonTypeDescr json_keyboard =
 	"keyboard",
 	&s_default_keyboard, 
 	sizeof(keyboard_t),
+	ALIGNOF(keyboard_t),
 	sizeof(s_members_keyboard) / sizeof(json::JsonFieldDescr), 
 	s_members_keyboard
 };
@@ -214,7 +218,8 @@ static json::JsonTypeDescr json_keyboard_root = {
     "root", 
     &s_default_keyboard_root, 
 	sizeof(keyboard_root_t),
-    sizeof(s_members_keyboard_root) / sizeof(json::JsonFieldDescr), 
+	ALIGNOF(keyboard_root_t),
+	sizeof(s_members_keyboard_root) / sizeof(json::JsonFieldDescr), 
     s_members_keyboard_root
 };
 // clang-format on
@@ -242,6 +247,9 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
 			CHECK_TRUE(ok);
 
 			scratch->Reset();
+
+			char* json_text = alloc->m_Cursor;
+			ok = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
         }
     }
 }

@@ -60,40 +60,40 @@ namespace xcore
         JsonTypeFuncs const* JsonFuncsString  = &sJsonFuncsString;
 
         static bool          sDefaultBool       = false;
-        static JsonTypeDescr sJsonTypeDescrBool = {"bool", &sDefaultBool, sizeof(bool), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrBool = {"bool", &sDefaultBool, sizeof(bool), ALIGNOF(bool), 0, nullptr};
 
         static s8            sDefaultInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt8 = {"int8", &sDefaultInt8, sizeof(s8), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt8 = {"int8", &sDefaultInt8, sizeof(s8), ALIGNOF(s8), 0, nullptr};
 
         static s16           sDefaultInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt16 = {"int16", &sDefaultInt16, sizeof(s16), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt16 = {"int16", &sDefaultInt16, sizeof(s16), ALIGNOF(s16), 0, nullptr};
 
         static s32           sDefaultInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt32 = {"int32", &sDefaultInt32, sizeof(s32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt32 = {"int32", &sDefaultInt32, sizeof(s32), ALIGNOF(s32), 0, nullptr};
 
         static s64           sDefaultInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt64 = {"int64", &sDefaultInt64, sizeof(s64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt64 = {"int64", &sDefaultInt64, sizeof(s64), ALIGNOF(s64), 0, nullptr};
 
         static u8            sDefaultUInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt8 = {"uint8", &sDefaultUInt8, sizeof(u8), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt8 = {"uint8", &sDefaultUInt8, sizeof(u8), ALIGNOF(u8), 0, nullptr};
 
         static u16           sDefaultUInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt16 = {"uint16", &sDefaultUInt16, sizeof(u16), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt16 = {"uint16", &sDefaultUInt16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
 
         static u32           sDefaultUInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt32 = {"uint32", &sDefaultUInt32, sizeof(u32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt32 = {"uint32", &sDefaultUInt32, sizeof(u32), ALIGNOF(u32), 0, nullptr};
 
         static u64           sDefaultUInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt64 = {"uint64", &sDefaultUInt64, sizeof(u64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt64 = {"uint64", &sDefaultUInt64, sizeof(u64), ALIGNOF(u64), 0, nullptr};
 
         static f32           sDefaultFloat32       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat32 = {"float32", &sDefaultFloat32, sizeof(f32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrFloat32 = {"float32", &sDefaultFloat32, sizeof(f32), ALIGNOF(f32), 0, nullptr};
 
         static f64           sDefaultFloat64       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat64 = {"float64", &sDefaultFloat64, sizeof(f64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrFloat64 = {"float64", &sDefaultFloat64, sizeof(f64), ALIGNOF(f64), 0, nullptr};
 
         static const char*   sDefaultString       = "";
-        static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), ALIGNOF(const char*), 0, nullptr};
 
         JsonTypeDescr const* JsonTypeDescrBool    = &sJsonTypeDescrBool;
         JsonTypeDescr const* JsonTypeDescrInt8    = &sJsonTypeDescrInt8;
@@ -108,11 +108,11 @@ namespace xcore
         JsonTypeDescr const* JsonTypeDescrFloat64 = &sJsonTypeDescrFloat64;
         JsonTypeDescr const* JsonTypeDescrString  = &sJsonTypeDescrString;
 
-        static void* get_member_ptr(JsonObject const& object, JsonMember const& member)
-        {
-            uptr offset = (uptr)member.m_descr->m_member - (uptr)object.m_descr->m_default;
-            return (void*)((uptr)object.m_instance + offset);
-        }
+		void* JsonMember::get_member_ptr(JsonObject const& object)
+		{
+			uptr offset = (uptr)m_descr->m_member - (uptr)object.m_descr->m_default;
+			return (void*)((uptr)object.m_instance + offset);
+		}
 
         JsonObject JsonMember::get_object(JsonObject const& object, JsonAllocator* alloc)
         {
@@ -132,7 +132,7 @@ namespace xcore
                     //
                     // Once allocated, write the pointer of the object into the member
                     m_descr->m_funcs->m_alloc(alloc, 1, o.m_instance);
-                    void** member_ptr = (void**)get_member_ptr(object, *this);
+                    void** member_ptr = (void**)get_member_ptr(object);
                     *member_ptr       = o.m_instance;
                 }
                 else
@@ -141,7 +141,7 @@ namespace xcore
                     // e.g. as a struct member:
                     //                           key_t  m_key;
                     //
-                    o.m_instance = get_member_ptr(object, *this);
+                    o.m_instance = get_member_ptr(object);
                 }
             }
 
@@ -155,7 +155,7 @@ namespace xcore
                 // Set the string pointer on the object member
                 if (m_data_ptr == nullptr)
                 {
-                    m_data_ptr = (void*)get_member_ptr(object, *this);
+                    m_data_ptr = (void*)get_member_ptr(object);
                 }
                 else
                 {
@@ -176,7 +176,7 @@ namespace xcore
                 {
                     if (is_pointer())
                     {
-                        void** member_value_ptr = (void**)get_member_ptr(object, *this);
+                        void** member_value_ptr = (void**)get_member_ptr(object);
                         void*  value_ptr;
                         m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
                         *member_value_ptr = value_ptr;
@@ -184,7 +184,7 @@ namespace xcore
                     }
                     else
                     {
-                        m_data_ptr = (void*)get_member_ptr(object, *this);
+                        m_data_ptr = (void*)get_member_ptr(object);
                     }
                 }
                 else
@@ -219,7 +219,7 @@ namespace xcore
                 {
                     if (is_pointer())
                     {
-                        void** member_value_ptr = (void**)get_member_ptr(object, *this);
+                        void** member_value_ptr = (void**)get_member_ptr(object);
                         void*  value_ptr;
                         m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
                         *member_value_ptr = value_ptr;
@@ -227,7 +227,7 @@ namespace xcore
                     }
                     else
                     {
-                        m_data_ptr = (void*)get_member_ptr(object, *this);
+                        m_data_ptr = (void*)get_member_ptr(object);
                     }
                 }
                 else
@@ -841,9 +841,9 @@ namespace xcore
 
                 s32   count = value_list.m_Count;
                 void* array = nullptr;
-                if (member.is_vector())
+                if (member.is_array_ptr())
                 {
-                    if (member.is_vector_size8())
+                    if (member.is_array_ptr_size8())
                     {
                         if (count > 127)
                             count = 127;
@@ -852,7 +852,7 @@ namespace xcore
                         s8*        size8  = (s8*)((uptr)object.m_instance + offset);
                         *size8            = (s8)count;
                     }
-                    else if (member.is_vector_size16())
+                    else if (member.is_array_ptr_size16())
                     {
                         if (count > 32767)
                             count = 32767;
@@ -860,7 +860,7 @@ namespace xcore
                         s16*       size16 = (s16*)((uptr)object.m_instance + offset);
                         *size16           = (s16)count;
                     }
-                    else if (member.is_vector_size32())
+                    else if (member.is_array_ptr_size32())
                     {
                         if (count > 2147483647)
                             count = 2147483647;
@@ -870,9 +870,9 @@ namespace xcore
                     }
                     member.m_descr->m_funcs->m_alloc(alloc, count, array);
                 }
-                else if (member.is_carray())
+                else if (member.is_array())
                 {
-                    array = get_member_ptr(object, member);
+                    array = member.get_member_ptr(object);
                     count = count > member.m_descr->m_csize ? member.m_descr->m_csize : count;
                 }
                 else
@@ -966,10 +966,10 @@ namespace xcore
                     }
                 }
 
-                if (member.is_vector())
+                if (member.is_array_ptr())
                 {
                     // set the vector pointer correctly for the member
-                    void** ptr = (void**)get_member_ptr(object, member);
+                    void** ptr = (void**)member.get_member_ptr(object);
                     *ptr       = array;
                 }
             }
@@ -997,7 +997,7 @@ namespace xcore
                 }
                 break;
                 case kJsonLexBeginArray:
-                    if (member.has_descr() && (!member.is_carray() && !member.is_vector()))
+                    if (member.has_descr() && (!member.is_array() && !member.is_array_ptr()))
                         return MakeJsonError(json_state, "encountered json array but class member is not the same type");
 
                     json_state->m_NumberOfArrays += 1;
