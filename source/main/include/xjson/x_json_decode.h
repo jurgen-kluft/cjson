@@ -35,28 +35,28 @@ namespace xcore
         {
             enum
             {
-                TypeNull      = 0x00000,
-                TypeUInt8     = 0x00001,
-                TypeUInt16    = 0x00002,
-                TypeUInt32    = 0x00004,
-                TypeUInt64    = 0x00008,
-                TypeF32       = 0x00010,
-                TypeF64       = 0x00020,
-                TypeBool      = 0x00040,
-                TypeSigned    = 0x00080,
-                TypeInt8      = TypeUInt8 | TypeSigned,
-                TypeInt16     = TypeUInt16 | TypeSigned,
-                TypeInt32     = TypeUInt32 | TypeSigned,
-                TypeInt64     = TypeUInt64 | TypeSigned,
-                TypeNumber    = TypeUInt8 | TypeUInt16 | TypeUInt32 | TypeUInt64 | TypeSigned | TypeF32 | TypeF64,
-                TypeString    = 0x00100,
-                TypeObject    = 0x00200,
-                TypePointer   = 0x00400,
-                TypeArray     = 0x01000,
-                TypeArrayPtr  = 0x02000,
-                TypeSize8     = 0x10000,
-                TypeSize16    = 0x20000,
-                TypeSize32    = 0x40000,
+                TypeNull     = 0x00000,
+                TypeUInt8    = 0x00001,
+                TypeUInt16   = 0x00002,
+                TypeUInt32   = 0x00004,
+                TypeUInt64   = 0x00008,
+                TypeF32      = 0x00010,
+                TypeF64      = 0x00020,
+                TypeBool     = 0x00040,
+                TypeSigned   = 0x00080,
+                TypeInt8     = TypeUInt8 | TypeSigned,
+                TypeInt16    = TypeUInt16 | TypeSigned,
+                TypeInt32    = TypeUInt32 | TypeSigned,
+                TypeInt64    = TypeUInt64 | TypeSigned,
+                TypeNumber   = TypeUInt8 | TypeUInt16 | TypeUInt32 | TypeUInt64 | TypeSigned | TypeF32 | TypeF64,
+                TypeString   = 0x00100,
+                TypeObject   = 0x00200,
+                TypePointer  = 0x00400,
+                TypeArray    = 0x01000,
+                TypeArrayPtr = 0x02000,
+                TypeSize8    = 0x10000,
+                TypeSize16   = 0x20000,
+                TypeSize32   = 0x40000,
             };
         };
 
@@ -430,12 +430,14 @@ namespace xcore
             inline bool is_uint16() const { return (m_descr->m_type & JsonType::TypeUInt16) == JsonType::TypeUInt16; }
             inline bool is_uint32() const { return (m_descr->m_type & JsonType::TypeUInt32) == JsonType::TypeUInt32; }
             inline bool is_uint64() const { return (m_descr->m_type & JsonType::TypeUInt64) == JsonType::TypeUInt64; }
+            inline u32  all_int() const { return (m_descr->m_type & (JsonType::TypeInt8 | JsonType::TypeInt16 | JsonType::TypeInt32 | JsonType::TypeInt64)); }
             inline bool is_f32() const { return (m_descr->m_type & JsonType::TypeF32) == JsonType::TypeF32; }
             inline bool is_f64() const { return (m_descr->m_type & JsonType::TypeF64) == JsonType::TypeF64; }
             inline bool is_number() const { return (m_descr->m_type & JsonType::TypeNumber) != 0; }
             inline bool is_string() const { return (m_descr->m_type & JsonType::TypeString) == JsonType::TypeString; }
             inline bool is_object() const { return (m_descr->m_type & JsonType::TypeObject) == JsonType::TypeObject; }
             inline bool is_pointer() const { return (m_descr->m_type & JsonType::TypePointer) == JsonType::TypePointer; }
+            inline void* get_pointer() const { return *((void**)m_data_ptr); }
             inline bool is_array() const { return (m_descr->m_type & JsonType::TypeArray) == JsonType::TypeArray; }
             inline bool is_array_ptr() const { return (m_descr->m_type & JsonType::TypeArrayPtr) == JsonType::TypeArrayPtr; }
             inline bool is_array_ptr_size8() const { return (m_descr->m_type & (JsonType::TypeArrayPtr | JsonType::TypeSize8)) == (JsonType::TypeArrayPtr | JsonType::TypeSize8); }
@@ -444,7 +446,7 @@ namespace xcore
 
             JsonObject get_object(JsonObject const&, JsonAllocator*);
             void*      get_member_ptr(JsonObject const&);
-			void*      get_value_ptr(JsonObject const&);
+            void*      get_value_ptr(JsonObject const&);
             void       set_string(JsonObject const&, const char*);
             void       set_number(JsonObject const&, JsonAllocator*, JsonNumber const&);
             void       set_bool(JsonObject const&, JsonAllocator*, bool);

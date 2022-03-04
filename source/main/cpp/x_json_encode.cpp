@@ -24,21 +24,13 @@ namespace xcore
             if (member.is_pointer())
                 p = *((void**)p);
 
-            if (member.is_int8())
+            switch (member.all_int())
             {
-                return (s64)(*(s8*)p);
-            }
-            else if (member.is_int16())
-            {
-                return (s64)(*(s16*)p);
-            }
-            else if (member.is_int32())
-            {
-                return (s64)(*(s32*)p);
-            }
-            else if (member.is_int64())
-            {
-                return (s64)(*(s64*)p);
+                case JsonType::TypeUInt8: return (s64)(*(s8*)p);
+                case JsonType::TypeUInt16: return (s64)(*(s16*)p);
+                case JsonType::TypeUInt32: return (s64)(*(s32*)p);
+                case JsonType::TypeUInt64: return (s64)(*(s64*)p);
+                default: break;
             }
             return 0;
         }
@@ -49,21 +41,13 @@ namespace xcore
             if (member.is_pointer())
                 p = *((void**)p);
 
-            if (member.is_uint8())
+            switch (member.all_int())
             {
-                return (u64)(*(u8*)p);
-            }
-            else if (member.is_uint16())
-            {
-                return (u64)(*(u16*)p);
-            }
-            else if (member.is_uint32())
-            {
-                return (u64)(*(u32*)p);
-            }
-            else if (member.is_uint64())
-            {
-                return (u64)(*(u64*)p);
+                case JsonType::TypeUInt8: return (u64)(*(u8*)p);
+                case JsonType::TypeUInt16: return (u64)(*(u16*)p);
+                case JsonType::TypeUInt32: return (u64)(*(u32*)p);
+                case JsonType::TypeUInt64: return (u64)(*(u64*)p);
+                default: break;
             }
             return 0;
         }
@@ -96,52 +80,62 @@ namespace xcore
             char*       m_json_text;
             char const* m_json_text_end;
             s32         m_indent;
+            s32         m_indent_spaces;
+            char        m_indent_str[64 + 1];
+            jsondoc_t()
+            {
+                m_indent_spaces = 2;
+                for (s32 i = 0; i < sizeof(m_indent_str); ++i)
+                    m_indent_str[i] = ' ';
+                m_indent_str[sizeof(m_indent_str) - 1] = '\0';
+            }
 
             inline void writeString(char const* str)
             {
-                while (*str && m_json_text < m_json_text_end)
+                while (m_json_text < m_json_text_end && *str != 0)
                 {
                     *m_json_text++ = *str++;
                 }
             }
 
-			void writeIndent()
+            void writeIndent()
             {
-                for (s32 i = 0; i < m_indent; ++i)
+                s32 n = m_indent >> 6;
+                while (n > 0)
                 {
-                    writeString("  ");
+                    writeString(m_indent_str);
+                    n -= 1;
                 }
+                writeString(m_indent_str + 64 - (m_indent & 0x3F));
             }
 
             void startObject()
             {
-                writeString("{");
-                writeString("\n");
-                ++m_indent;
+                writeString("{\n");
+                m_indent += m_indent_spaces;
             }
 
             void endObject()
             {
-                --m_indent;
+                m_indent -= m_indent_spaces;
                 writeIndent();
                 writeString("}");
-				*m_json_text = '\0';
-			}
+                *m_json_text = '\0';
+            }
 
             void startArray()
             {
-                writeString("[");
-                writeString("\n");
-                ++m_indent;
+                writeString("[\n");
+                m_indent += m_indent_spaces;
             }
 
             void endArray()
             {
-                --m_indent;
+                m_indent -= m_indent_spaces;
                 writeIndent();
                 writeString("]");
-				*m_json_text = '\0';
-			}
+                *m_json_text = '\0';
+            }
 
             void writeValueString(const char* str)
             {
@@ -210,9 +204,9 @@ namespace xcore
                 array_ptr = *((char**)member.m_data_ptr);
             }
 
-            if (array_size > 0)
+            doc.startArray();
+            if (array_size > 0 && array_ptr != nullptr)
             {
-                doc.startArray();
                 u32 const aligned_size = (member.m_descr->m_typedescr->m_sizeof + (member.m_descr->m_typedescr->m_alignof - 1)) & ~(member.m_descr->m_typedescr->m_alignof - 1);
                 for (s32 i = 0; i < array_size; ++i)
                 {
@@ -223,9 +217,8 @@ namespace xcore
                     JsonEncodeValue(e, doc, error_message);
                     doc.end(i == (array_size - 1));
                 }
-                doc.endArray();
             }
-
+            doc.endArray();
             return true;
         }
 
@@ -241,21 +234,25 @@ namespace xcore
                 member.m_descr    = member_descr;
                 member.m_data_ptr = member.get_member_ptr(object);
 
-                doc.startField(member.m_descr->m_name);
-
                 if (member.is_array() || member.is_array_ptr())
                 {
+                    doc.startField(member.m_descr->m_name);
                     if (!JsonEncodeArray(object, member, doc, error_message))
                     {
                         return false;
                     }
+                    doc.end(i == (n - 1));
                 }
                 else
                 {
-                    JsonEncodeValue(member, doc, error_message);
+                    // Do not emit this field if it is a pointer to a type and that pointer is null
+                    if (!member.is_pointer() || member.get_pointer() != nullptr)
+                    {
+                        doc.startField(member.m_descr->m_name);
+                        JsonEncodeValue(member, doc, error_message);
+                        doc.end(i == (n - 1));
+                    }
                 }
-
-                doc.end(i == (n - 1));
             }
 
             doc.endObject();
@@ -319,7 +316,7 @@ namespace xcore
             doc.m_json_text       = json_text;
             doc.m_json_text_end   = json_text_end - 1;
 
-            doc.m_indent          = 0;
+            doc.m_indent = 0;
 
             if (!JsonEncodeObject(root_object, doc, error_message))
             {
