@@ -105,7 +105,7 @@ namespace xcore
                 }
             }
 
-            void writeIndent()
+			void writeIndent()
             {
                 for (s32 i = 0; i < m_indent; ++i)
                 {
@@ -125,7 +125,8 @@ namespace xcore
                 --m_indent;
                 writeIndent();
                 writeString("}");
-            }
+				*m_json_text = '\0';
+			}
 
             void startArray()
             {
@@ -139,7 +140,8 @@ namespace xcore
                 --m_indent;
                 writeIndent();
                 writeString("]");
-            }
+				*m_json_text = '\0';
+			}
 
             void writeValueString(const char* str)
             {
@@ -315,7 +317,8 @@ namespace xcore
             jsondoc_t doc;
             doc.m_json_text_begin = json_text;
             doc.m_json_text       = json_text;
-            doc.m_json_text_end   = json_text_end;
+            doc.m_json_text_end   = json_text_end - 1;
+
             doc.m_indent          = 0;
 
             if (!JsonEncodeObject(root_object, doc, error_message))
