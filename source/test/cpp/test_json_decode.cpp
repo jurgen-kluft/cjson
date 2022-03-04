@@ -59,12 +59,12 @@ static void json_copy_key(void* dst, s32 dst_index, void* src ) { ((key_t*)dst)[
 
 static json::JsonTypeDescr json_key = 
 {
-	"key",
-	&s_default_key, 
-	sizeof(key_t),
-	ALIGNOF(key_t),
-	sizeof(s_members_key) / sizeof(json::JsonFieldDescr), 
-	s_members_key
+    "key",
+    &s_default_key, 
+    sizeof(key_t),
+    ALIGNOF(key_t),
+    sizeof(s_members_key) / sizeof(json::JsonFieldDescr), 
+    s_members_key
 };
 
 static json::JsonTypeFuncs json_keys_funcs = {
@@ -102,11 +102,11 @@ static json::JsonFieldDescr s_members_keygroup[] = {
     json::JsonFieldDescr("name", s_default_keygroup.m_name), 
     json::JsonFieldDescr("x", s_default_keygroup.m_x), 
     json::JsonFieldDescr("y", s_default_keygroup.m_y),
-	json::JsonFieldDescr("w", s_default_keygroup.m_w), 
-	json::JsonFieldDescr("h", s_default_keygroup.m_h), 
-	json::JsonFieldDescr("sw", s_default_keygroup.m_sw), 
-	json::JsonFieldDescr("sh", s_default_keygroup.m_sh), 
-	json::JsonFieldDescr("r", s_default_keygroup.m_r),
+    json::JsonFieldDescr("w", s_default_keygroup.m_w), 
+    json::JsonFieldDescr("h", s_default_keygroup.m_h), 
+    json::JsonFieldDescr("sw", s_default_keygroup.m_sw), 
+    json::JsonFieldDescr("sh", s_default_keygroup.m_sh), 
+    json::JsonFieldDescr("r", s_default_keygroup.m_r),
     json::JsonFieldDescr("c", s_default_keygroup.m_c),
     json::JsonFieldDescr("a", s_default_keygroup.m_a),
     json::JsonFieldDescr("cap_color", s_default_keygroup.m_capcolor, s_default_keygroup.m_capcolor_size), 
@@ -119,12 +119,12 @@ static void json_alloc_keygroup(json::JsonAllocator* alloc, s32 n, void*& ptr) {
 static void json_copy_keygroup(void* dst, s32 dst_index, void* src) { ((keygroup_t*)dst)[dst_index] = *(keygroup_t*)src; }
 
 static json::JsonTypeDescr json_keygroup = {
-	"keygroup",
-	&s_default_keygroup, 
-	sizeof(keygroup_t),
-	ALIGNOF(keygroup_t),
-	sizeof(s_members_keygroup) / sizeof(json::JsonFieldDescr), 
-	s_members_keygroup
+    "keygroup",
+    &s_default_keygroup, 
+    sizeof(keygroup_t),
+    ALIGNOF(keygroup_t),
+    sizeof(s_members_keygroup) / sizeof(json::JsonFieldDescr), 
+    s_members_keygroup
 };
 
 static json::JsonTypeFuncs json_keygroup_funcs = {
@@ -190,12 +190,12 @@ static void json_copy_keyboard(void* dst, s32 dst_index, void* src) { ((keyboard
 // clang-format off
 static json::JsonTypeDescr json_keyboard = 
 {
-	"keyboard",
-	&s_default_keyboard, 
-	sizeof(keyboard_t),
-	ALIGNOF(keyboard_t),
-	sizeof(s_members_keyboard) / sizeof(json::JsonFieldDescr), 
-	s_members_keyboard
+    "keyboard",
+    &s_default_keyboard, 
+    sizeof(keyboard_t),
+    ALIGNOF(keyboard_t),
+    sizeof(s_members_keyboard) / sizeof(json::JsonFieldDescr), 
+    s_members_keyboard
 };
 
 static json::JsonTypeFuncs json_keyboard_funcs = {
@@ -217,9 +217,9 @@ static json::JsonFieldDescr s_members_keyboard_root[] = {
 static json::JsonTypeDescr json_keyboard_root = {
     "root", 
     &s_default_keyboard_root, 
-	sizeof(keyboard_root_t),
-	ALIGNOF(keyboard_root_t),
-	sizeof(s_members_keyboard_root) / sizeof(json::JsonFieldDescr), 
+    sizeof(keyboard_root_t),
+    ALIGNOF(keyboard_root_t),
+    sizeof(s_members_keyboard_root) / sizeof(json::JsonFieldDescr), 
     s_members_keyboard_root
 };
 // clang-format on
@@ -244,12 +244,12 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
 
             char const* error_message = nullptr;
             bool        ok            = json::JsonDecode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, alloc, scratch, error_message);
-			CHECK_TRUE(ok);
+            CHECK_TRUE(ok);
 
-			scratch->Reset();
+            scratch->Reset();
 
-			char* json_text = alloc->m_Cursor;
-			ok = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
+            char* json_text = alloc->m_Cursor;
+            ok = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
         }
     }
 }
