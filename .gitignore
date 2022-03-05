@@ -12,7 +12,7 @@ target/
 !*.c
 !*.h
 !*.inl
-!*.json
+!data/*.json
 !*.go
 !*.md
 
