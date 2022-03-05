@@ -7,8 +7,6 @@ namespace xcore
 {
     namespace json
     {
-        typedef s32 ThreadId;
-
         JsonAllocator* CreateAllocator(u32 size, const char* name)
         {
             JsonAllocator* alloc = context_t::system_alloc()->construct<JsonAllocator>();
@@ -30,16 +28,13 @@ namespace xcore
 
         JsonAllocatorScope::~JsonAllocatorScope() { m_Allocator->m_Cursor = m_Cursor ; }
 
-#define CHECK_THREAD_OWNERSHIP(alloc) ASSERT(context_t::thread_index() == alloc->m_OwnerThread)
-
         void JsonAllocator::Init(s32 max_size, const char* debug_name)
         {
             this->m_Pointer     = static_cast<char*>(context_t::system_alloc()->allocate(max_size));
             this->m_Cursor      = this->m_Pointer;
             this->m_Size        = max_size;
-            this->m_OwnerThread = context_t::thread_index();
             this->m_DebugName   = debug_name;
-			xmem::memset(this->m_Pointer, 0xCD, this->m_Size);
+            Reset();
         }
 
         void JsonAllocator::Destroy()
@@ -49,11 +44,8 @@ namespace xcore
             this->m_Cursor  = nullptr;
         }
 
-        void  JsonAllocator::SetOwner(ThreadId thread_id) { this->m_OwnerThread = thread_id; }
         char* JsonAllocator::Allocate(s32 size, s32 align)
         {
-            CHECK_THREAD_OWNERSHIP(this);
-
             ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
             ASSERT(align > 0);                  // Alignment must be non-zero
 
@@ -78,8 +70,6 @@ namespace xcore
 
         char* JsonAllocator::CheckOut(char*& end, s32 align)
         {
-            CHECK_THREAD_OWNERSHIP(this);
-
             ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
             ASSERT(align > 0);                  // Alignment must be non-zero
 
@@ -98,13 +88,11 @@ namespace xcore
         void JsonAllocator::Commit(char* ptr)
         {
             ASSERT((ptr >= this->m_Cursor) && (ptr <= (this->m_Pointer + this->m_Size)));
-            CHECK_THREAD_OWNERSHIP(this);
             this->m_Cursor = (char*)ptr;
         }
 
         void JsonAllocator::Reset()
         {
-            CHECK_THREAD_OWNERSHIP(this);
             this->m_Cursor = this->m_Pointer;
 			xmem::memset(this->m_Pointer, 0xCD, this->m_Size);
         }

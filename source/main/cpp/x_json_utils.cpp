@@ -220,57 +220,15 @@ namespace xcore
             {
                 if (sign == 1)
                 {
-                    if (integer <= 255)
-                    {
-                        out_number.m_Type = kJsonNumber_u8;
-                        if (integer <= 127)
-                            out_number.m_Type |= kJsonNumber_s8;
-                        out_number.m_U8 = (u8)integer;
-                    }
-                    else if (integer <= 65535)
-                    {
-                        out_number.m_Type = kJsonNumber_u16;
-                        if (integer <= 32767)
-                            out_number.m_Type |= kJsonNumber_s16;
-                        out_number.m_U16 = (u16)integer;
-                    }
-                    else if (integer <= 4294967295)
-                    {
-                        out_number.m_Type = kJsonNumber_u32;
-                        if (integer <= 2147483647)
-                            out_number.m_Type |= kJsonNumber_s32;
-                        out_number.m_U32 = (u32)integer;
-                    }
-                    else if (integer <= 18446744073709551615ul)
-                    {
-                        out_number.m_Type = kJsonNumber_u64;
-                        if (integer <= 9223372036854775807ul)
-                            out_number.m_Type |= kJsonNumber_s64;
-                        out_number.m_U64 = (u64)integer;
-                    }
+                    out_number.m_Type = kJsonNumber_u64;
+                    if (integer <= 9223372036854775807ul)
+                        out_number.m_Type |= kJsonNumber_s64;
+                    out_number.m_U64 = (u64)integer;
 				}
 				else
 				{
-					if (integer <= 127)
-					{
-						out_number.m_Type = kJsonNumber_s8;
-						out_number.m_S8 = (s8)(sign * integer);
-					}
-					else if (integer <= 32767)
-					{
-						out_number.m_Type = kJsonNumber_s16;
-						out_number.m_S16 = (s16)(sign * integer);
-					}
-					else if (integer <= 2147483647)
-					{
-						out_number.m_Type = kJsonNumber_s32;
-						out_number.m_S32 = (s32)(sign * integer);
-					}
-					else if (integer <= 9223372036854775807ul)
-					{
-						out_number.m_Type = kJsonNumber_s64;
-						out_number.m_S64 = (s64)(sign * integer);
-					}
+                    out_number.m_Type = kJsonNumber_s64;
+                    out_number.m_S64 = (s64)(sign * integer);
 				}
             }
 
@@ -284,18 +242,6 @@ namespace xcore
 
         s64         JsonNumberAsInt64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s8)
-            {
-                return number.m_S8;
-            }
-            else if (number.m_Type & kJsonNumber_s16)
-            {
-                return number.m_S16;
-            }
-            else if (number.m_Type & kJsonNumber_s32)
-            {
-                return number.m_S32;
-            }
             else if (number.m_Type & kJsonNumber_s64)
             {
                 return number.m_S64;

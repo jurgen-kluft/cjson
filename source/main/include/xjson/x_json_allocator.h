@@ -12,13 +12,10 @@ namespace xcore
 {
     namespace json
     {
-		typedef s32 ThreadId;
-
         struct JsonAllocator
         {
             void  Init(s32 max_size, const char* debug_name);
             void  Destroy();
-            void  SetOwner(ThreadId thread_id);
             char* Allocate(s32 size, s32 align);
 
             char* CheckOut(char*& end, s32 align = 4);
@@ -34,7 +31,6 @@ namespace xcore
             char*       m_Pointer; // allocated pointer
             char*       m_Cursor;  // current pointer
             s32         m_Size;
-            ThreadId    m_OwnerThread;
             const char* m_DebugName;
         };
 

@@ -31,21 +31,14 @@ namespace xcore
             u32 m_Type;
             union
             {
-                s64    m_S64;
-                s32    m_S32;
-                s16    m_S16;
-                s8     m_S8;
-                u64    m_U64;
-                u32    m_U32;
-                u16    m_U16;
-                u8     m_U8;
-                float  m_F32;
-                double m_F64;
+                s64 m_S64;
+                u64 m_U64;
+                f64 m_F64;
             };
         };
 
         char const* ParseNumber(char const* str, char const* end, JsonNumber& out_number);
-		bool        JsonNumberIsValid(JsonNumber const& number);
+        bool        JsonNumberIsValid(JsonNumber const& number);
         s64         JsonNumberAsInt64(JsonNumber const& number);
         u64         JsonNumberAsUInt64(JsonNumber const& number);
         s32         JsonNumberAsInt32(JsonNumber const& number);

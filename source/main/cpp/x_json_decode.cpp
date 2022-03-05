@@ -245,9 +245,6 @@ namespace xcore
             JsonMember member;
             if (m_descr != nullptr)
             {
-                member.m_descr    = nullptr;
-                member.m_data_ptr = nullptr;
-
                 for (s32 i = 0; i < m_descr->m_member_count; ++i)
                 {
                     const char* n1 = name;
@@ -255,23 +252,16 @@ namespace xcore
                     while (true)
                     {
                         if (*n1 != *n2)
-                        {
-                            goto key_not_found;
-                        }
-                        else if (*n1 == 0)
-                        {
                             break;
+
+                        if (*n1 == 0)
+                        {
+                            member.m_descr = &m_descr->m_members[i];
+                            return member;
                         }
                         n1++;
                         n2++;
                     }
-                    if (*n1 == *n2)
-                    {
-                        member.m_descr = &m_descr->m_members[i];
-                        return member;
-                    }
-                key_not_found: // not found, next key
-                    n1 = nullptr;
                 }
             }
             return member;
