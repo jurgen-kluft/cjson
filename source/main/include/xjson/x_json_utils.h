@@ -42,9 +42,15 @@ namespace xcore
             u32 c;
             s32 l;
         };
-        bool     WriteChar(u32 ch, char*& cursor, char const* end);
-        s32      SizeOfChar(u32 ch);
-        uchar8_t PeekChar(const char* str, const char* end);
+        bool        WriteChar(u32 ch, char*& cursor, char const* end);
+        s32         SizeOfChar(u32 ch);
+        uchar8_t    PeekUtf8Char(const char* str, const char* end);
+        inline char PeekAsciiChar(const char* str, const char* end)
+        {
+            if (str < end)
+                return *str;
+            return '\0';
+        }
 
     } // namespace json
 } // namespace xcore

@@ -44,7 +44,7 @@ namespace xcore
 
         static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
         {
-            JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc);
+            JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc, scratch);
             state->m_ErrorMessage          = nullptr;
             state->m_Allocator             = alloc;
             state->m_Scratch               = scratch;
@@ -65,7 +65,7 @@ namespace xcore
 
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
-            state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
+            state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(1024);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
             crunes_t fmt("line %d: %s");
             xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
@@ -79,7 +79,7 @@ namespace xcore
             JsonLexerState* lexer = &json_state->m_Lexer;
 
             if (!JsonLexerExpect(lexer, kJsonLexBeginObject))
-                return JsonError(json_state, "expected '{'");
+                return JsonError(json_state, "missing '{'");
 
             JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
@@ -142,10 +142,10 @@ namespace xcore
                     case kJsonLexString:
                     {
                         if (seen_value && !seen_comma)
-                            return JsonError(json_state, "expected ','");
+                            return JsonError(json_state, "missing ','");
 
                         if (!JsonLexerExpect(lexer, kJsonLexNameSeparator))
-                            return JsonError(json_state, "expected ':'");
+                            return JsonError(json_state, "missing ':'");
 
                         const JsonValue* value = JsonParseValue(json_state);
 
@@ -212,6 +212,11 @@ namespace xcore
 
             struct ListElem
             {
+                inline ListElem()
+                    : m_Value(nullptr)
+                    , m_Next(nullptr)
+                {
+                }
                 const JsonValue* m_Value;
                 ListElem*        m_Next;
             };
@@ -219,34 +224,25 @@ namespace xcore
             struct ValueList
             {
                 JsonAllocator* m_Scratch;
-                ListElem*      m_Head;
+                ListElem       m_Head;
                 ListElem*      m_Tail;
                 s32            m_Count;
 
                 void Init(JsonAllocator* scratch)
                 {
                     m_Scratch = scratch;
-                    m_Head    = nullptr;
-                    m_Tail    = nullptr;
+                    m_Tail    = &m_Head;
                     m_Count   = 0;
                 }
 
                 void Add(const JsonValue* value)
                 {
-                    if (1 == ++m_Count)
-                    {
-                        m_Head = m_Tail = m_Scratch->Allocate<ListElem>();
-                        m_Head->m_Value = value;
-                        m_Head->m_Next  = nullptr;
-                    }
-                    else
-                    {
-                        ListElem* tail  = m_Tail;
-                        m_Tail          = m_Scratch->Allocate<ListElem>();
-                        m_Tail->m_Value = value;
-                        m_Tail->m_Next  = nullptr;
-                        tail->m_Next    = m_Tail;
-                    }
+                    ListElem* elem = m_Scratch->Allocate<ListElem>();
+                    elem->m_Next   = nullptr;
+                    elem->m_Value  = value;
+                    m_Tail->m_Next = elem;
+                    m_Tail         = elem;
+                    m_Count += 1;
                 }
             };
 
@@ -287,7 +283,7 @@ namespace xcore
             const JsonValue** values = alloc->AllocateArray<const JsonValue*>(count);
 
             s32 index = 0;
-            for (ListElem* p = value_list.m_Head; p; p = p->m_Next, ++index)
+            for (ListElem* p = value_list.m_Head.m_Next; p; p = p->m_Next, ++index)
             {
                 values[index] = p->m_Value;
             }
@@ -305,49 +301,47 @@ namespace xcore
         {
             if (m_Type != kString)
                 return false;
-
-            const char* str = this->AsString()->m_String;
+                
+            const JsonStringValue* stringValue = static_cast<const JsonStringValue*>(this);
+            const char* str = stringValue->m_String;
             const char* end = str + 9;
 
-            uchar8_t ch = PeekChar(str, end);
-            if (ch.c != '#')
+            char c = PeekAsciiChar(str, end);
+            if (c != '#')
                 return false;
+            str++;
 
-            str += ch.l;
-            ch = PeekChar(str, end);
+            c = PeekAsciiChar(str, end);
 
-            u8 color[4] = {0, 0, 0, 0xff};
-            s8 c        = 0;
-            s8 n        = 0;
-            u8 v        = 0;
-            while (ch.c != '\0')
+            u8 ca[4] = {0, 0, 0, 0xff};
+            s8 ci    = 0;
+            s8 n     = 0;
+            u8 v     = 0;
+            while (c != '\0')
             {
-                if (ch.c >= '0' && ch.c <= '9')
+                if (c >= '0' && c <= '9')
                 {
-                    if (n == 0)
+                    c = c - '0';
+                    switch (n)
                     {
-                        v = (ch.c - '0') << 4;
-                        n = 1;
+                        case 0: v = c << 4; break;
+                        case 1: ca[ci++] = v | c; break;
                     }
-                    else if (n == 1)
-                    {
-                        v |= (ch.c - '0');
-                        color[c++] = v;
-                        n          = 0;
-                    }
+                    n = 1 - n;
                 }
                 else
                 {
                     return false;
                 }
 
-                str += ch.l;
+                str++;
+                c = PeekAsciiChar(str, end);
             }
 
-            if (c != 4)
+            if (ci != 4)
                 return false;
 
-            out_color = (color[0] << 24) | (color[1] << 16) | (color[2] << 8) | color[3];
+            out_color = (ca[0] << 24) | (ca[1] << 16) | (ca[2] << 8) | ca[3];
             return true;
         }
 

@@ -11,11 +11,12 @@ namespace xcore
 {
     namespace json
     {
-        void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc)
+        void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc, JsonAllocator* scratch)
         {
             self->m_Cursor               = buffer;
             self->m_End                  = end;
             self->m_Alloc                = alloc;
+            self->m_Scratch              = scratch;
             self->m_LineNumber           = 1;
             self->m_Lexeme.m_Type        = kJsonLexInvalid;
             self->m_ErrorMessage         = nullptr;
@@ -36,7 +37,7 @@ namespace xcore
         {
             ASSERT(state->m_ErrorMessage == nullptr);
             int const len         = ascii::strlen(error) + 32;
-            state->m_ErrorMessage = state->m_Alloc->AllocateArray<char>(len + 1);
+            state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(len + 1);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
             crunes_t fmt("line %d: %s");
             xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
@@ -63,9 +64,12 @@ namespace xcore
         {
             char const* rptr = state->m_Cursor;
 
-            uchar8_t ch = PeekChar(rptr, state->m_End);
-            ASSERT(ch.c == '\"');
-            rptr += ch.l;
+            char c = PeekAsciiChar(rptr, state->m_End);
+            if ('\"' != c)
+            {
+                return JsonLexerError(state, "expecting string delimiter '\"'");
+            }
+            rptr++;
 
             char* wend = nullptr;
             char* wptr = (char*)state->m_Alloc->CheckOut(wend);
@@ -76,14 +80,14 @@ namespace xcore
 
             while (true)
             {
-                ch = PeekChar(rptr, state->m_End);
-
-                if (0 == ch.c)
+                c = PeekAsciiChar(rptr, state->m_End);
+                if (0 == c)
                 {
                     // Cancel 'CheckOut'
                     return JsonLexerError(state, "end of file inside string");
                 }
 
+                uchar8_t ch = PeekUtf8Char(rptr, state->m_End);
                 ASSERT(ch.l >= 1 && ch.l <= 4);
                 if ('"' == ch.c)
                 {
@@ -94,10 +98,10 @@ namespace xcore
                 else if ('\\' == ch.c)
                 {
                     rptr += 1;
-                    ch = PeekChar(rptr, state->m_End);
+                    c = PeekAsciiChar(rptr, state->m_End);
                     rptr += 1;
 
-                    switch (ch.c)
+                    switch (c)
                     {
                         case '\\': WriteChar('\\', wptr, wend); break;
                         case '"': WriteChar('\"', wptr, wend); break;
@@ -112,13 +116,12 @@ namespace xcore
                             u32 hex_code = 0;
                             for (s32 i = 0; i < 4; ++i)
                             {
-                                ch = PeekChar(rptr, state->m_End);
+                                c = PeekAsciiChar(rptr, state->m_End);
                                 rptr += 1;
 
-                                ASSERT(ch.l == 1);
-                                if (is_hexa(ch.c))
+                                if (is_hexa(c))
                                 {
-                                    u32 lc = to_lower(ch.c);
+                                    u32 lc = to_lower(c);
                                     hex_code <<= 4;
                                     if (lc >= 'a' && lc <= 'f')
                                         hex_code |= lc - 'a' + 10;
@@ -127,7 +130,8 @@ namespace xcore
                                 }
                                 else
                                 {
-                                    if (0 == ch.c)
+                                    // Cancel 'CheckOut'
+                                    if (0 == c)
                                     {
                                         return JsonLexerError(state, "end of file inside escape code of json string");
                                     }
@@ -139,6 +143,7 @@ namespace xcore
 
                         default:
                         {
+                            // Cancel 'CheckOut'
                             return JsonLexerError(state, "unexpected character in string");
                         }
                     }
@@ -163,12 +168,12 @@ namespace xcore
 
             s32 kwlen = 0;
 
-            uchar8_t ch = PeekChar(eptr, state->m_End);
+            uchar8_t ch = PeekUtf8Char(eptr, state->m_End);
             while (is_alpha(ch.c))
             {
                 eptr += ch.l;
                 kwlen += 1;
-                ch = PeekChar(eptr, state->m_End);
+                ch = PeekUtf8Char(eptr, state->m_End);
             }
 
             if (4 == kwlen)
@@ -198,7 +203,7 @@ namespace xcore
 
         static char const* SkipWhitespace(JsonLexerState* state)
         {
-            uchar8_t ch = PeekChar(state->m_Cursor, state->m_End);
+            uchar8_t ch = PeekUtf8Char(state->m_Cursor, state->m_End);
             while (ch.c != 0)
             {
                 if (is_whitespace(ch.c))
@@ -214,7 +219,7 @@ namespace xcore
                     break;
                 }
 
-                ch = PeekChar(state->m_Cursor, state->m_End);
+                ch = PeekUtf8Char(state->m_Cursor, state->m_End);
             }
             return state->m_Cursor;
         }
@@ -222,7 +227,7 @@ namespace xcore
         static JsonLexeme JsonLexerFetchNext(JsonLexerState* state)
         {
             char const* p  = SkipWhitespace(state);
-            uchar8_t    ch = PeekChar(p, state->m_End);
+            uchar8_t    ch = PeekUtf8Char(p, state->m_End);
             switch (ch.c)
             {
                 case '-':

@@ -17,15 +17,21 @@ namespace xcore
         {
             enum Type
             {
-                kNull = 1,
+                kNull    = 1,
                 kBoolean = 2,
-                kObject = 3,
-                kArray = 4,
-                kString = 5,
-                kNumber = 6,
+                kObject  = 3,
+                kArray   = 4,
+                kString  = 5,
+                kNumber  = 6,
             };
-
             u16 m_Type;
+
+            inline bool IsArray() const { return m_Type == kArray; }
+            inline bool IsObject() const { return m_Type == kObject; }
+            inline bool IsString() const { return m_Type == kString; }
+            inline bool IsNumber() const { return m_Type == kNumber; }
+            inline bool IsBoolean() const { return m_Type == kBoolean; }
+            inline bool IsNull() const { return m_Type == kNull; }
 
             const struct JsonObjectValue*  AsObject() const;
             const struct JsonNumberValue*  AsNumber() const;
@@ -74,7 +80,6 @@ namespace xcore
         {
             if (kObject == m_Type)
                 return static_cast<const JsonObjectValue*>(this);
-
             return nullptr;
         }
 
@@ -82,7 +87,6 @@ namespace xcore
         {
             if (kArray == m_Type)
                 return static_cast<const JsonArrayValue*>(this);
-
             return nullptr;
         }
 
@@ -90,7 +94,6 @@ namespace xcore
         {
             if (kBoolean == m_Type)
                 return static_cast<const JsonBooleanValue*>(this);
-
             return nullptr;
         }
 
@@ -98,7 +101,6 @@ namespace xcore
         {
             if (kString == m_Type)
                 return static_cast<const JsonStringValue*>(this);
-
             return nullptr;
         }
 
@@ -106,7 +108,6 @@ namespace xcore
         {
             if (kNumber == m_Type)
                 return static_cast<const JsonNumberValue*>(this);
-
             return nullptr;
         }
 

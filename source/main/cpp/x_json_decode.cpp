@@ -294,7 +294,7 @@ namespace xcore
 
         static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
         {
-            JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc);
+            JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc, scratch);
             state->m_ErrorMessage          = nullptr;
             state->m_Allocator             = alloc;
             state->m_Scratch               = scratch;

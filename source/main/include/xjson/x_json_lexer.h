@@ -46,6 +46,7 @@ namespace xcore
             const char*    m_Cursor;
             char const*    m_End;
             JsonAllocator* m_Alloc;
+            JsonAllocator* m_Scratch;
             s32            m_LineNumber;
             JsonLexeme     m_Lexeme;
             char*          m_ErrorMessage;
@@ -62,7 +63,7 @@ namespace xcore
             JsonLexeme     m_FalseLexeme;
         };
 
-        void       JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc);
+        void       JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc, JsonAllocator* scratch);
         bool       JsonLexerExpect(JsonLexerState* state, JsonLexemeType type, JsonLexeme* out = nullptr);
         JsonLexeme JsonLexerPeek(JsonLexerState* state);
         void       JsonLexerSkip(JsonLexerState* state);

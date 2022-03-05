@@ -8,7 +8,7 @@ namespace xcore
 {
     namespace json
     {
-        uchar8_t PeekChar(const char* str, const char* end)
+        uchar8_t PeekUtf8Char(const char* str, const char* end)
         {
             if (str >= end)
                 return {0, 0};
@@ -121,46 +121,46 @@ namespace xcore
             f64 number  = 0.0;
 
             // If the number is negative
-            s64      sign = 1;
-            uchar8_t c    = PeekChar(str, end);
-            if (c.c == '-')
+            s64  sign = 1;
+            char c    = PeekAsciiChar(str, end);
+            if (c == '-')
             {
                 sign = -1;
-                str += c.l;
+                str++;
             }
 
             // Parse the integer part.
             while (str < end)
             {
-                c = PeekChar(str, end);
-                if (c.c < '0' || c.c > '9')
+                c = PeekAsciiChar(str, end);
+                if (c < '0' || c > '9')
                 {
                     break;
                 }
-                integer = integer * 10 + (c.c - '0');
-                str += c.l;
+                integer = integer * 10 + (c - '0');
+                str++;
             }
 
             number = (f64)integer;
             number *= sign;
 
             // Parse the decimal part.
-            c = PeekChar(str, end);
-            if (str < end && c.c == '.')
+            c = PeekAsciiChar(str, end);
+            if (str < end && c == '.')
             {
-                str += c.l;
+                str++;
                 f64 decimal = 0.0;
                 f64 div     = 1.0;
                 while (str < end)
                 {
-                    c = PeekChar(str, end);
-                    if (c.c < '0' || c.c > '9')
+                    c = PeekAsciiChar(str, end);
+                    if (c < '0' || c > '9')
                     {
                         break;
                     }
-                    decimal = decimal * 10.0 + (c.c - '0');
+                    decimal = decimal * 10.0 + (c - '0');
                     div *= 10.0;
-                    str += c.l;
+                    str++;
                 }
                 number = decimal / div;
 
@@ -169,31 +169,31 @@ namespace xcore
             }
 
             // Parse the exponent part.
-            c = PeekChar(str, end);
-            if (str < end && (c.c == 'e' || c.c == 'E'))
+            c = PeekAsciiChar(str, end);
+            if (str < end && (c == 'e' || c == 'E'))
             {
-                str += c.l;
+                str++;
 
                 s32 esign    = 1;
                 s32 exponent = 0;
-                c            = PeekChar(str, end);
-                if (str < end && (c.c == '+' || c.c == '-'))
+                c            = PeekAsciiChar(str, end);
+                if (str < end && (c == '+' || c == '-'))
                 {
-                    if (c.c == '-')
+                    if (c == '-')
                     {
                         esign = -1;
                     }
-                    str += c.l;
+                    str++;
                 }
                 while (str < end)
                 {
-                    uchar8_t c = PeekChar(str, end);
-                    if (c.c < '0' || c.c > '9')
+                    c = PeekAsciiChar(str, end);
+                    if (c < '0' || c > '9')
                     {
                         break;
                     }
-                    exponent = exponent * 10 + (c.c - '0');
-                    str += c.l;
+                    exponent = exponent * 10 + (c - '0');
+                    str++;
                 }
                 if (exponent > 308)
                 {
@@ -224,23 +224,20 @@ namespace xcore
                     if (integer <= 9223372036854775807ul)
                         out_number.m_Type |= kJsonNumber_s64;
                     out_number.m_U64 = (u64)integer;
-				}
-				else
-				{
+                }
+                else
+                {
                     out_number.m_Type = kJsonNumber_s64;
-                    out_number.m_S64 = (s64)sign * (s64)integer;
-				}
+                    out_number.m_S64  = (s64)sign * (s64)integer;
+                }
             }
 
             return str;
         }
 
-		bool        JsonNumberIsValid(JsonNumber const& number)
-		{
-			return number.m_Type != kJsonNumber_unknown;
-		}
+        bool JsonNumberIsValid(JsonNumber const& number) { return number.m_Type != kJsonNumber_unknown; }
 
-        s64         JsonNumberAsInt64(JsonNumber const& number)
+        s64 JsonNumberAsInt64(JsonNumber const& number)
         {
             if (number.m_Type & kJsonNumber_s64)
             {
@@ -260,7 +257,7 @@ namespace xcore
             }
         }
 
-        u64         JsonNumberAsUInt64(JsonNumber const& number)
+        u64 JsonNumberAsUInt64(JsonNumber const& number)
         {
             if (number.m_Type & kJsonNumber_s64)
             {
@@ -280,7 +277,7 @@ namespace xcore
             }
         }
 
-        f64         JsonNumberAsFloat64(JsonNumber const& number)
+        f64 JsonNumberAsFloat64(JsonNumber const& number)
         {
             if (number.m_Type & kJsonNumber_s64)
             {
