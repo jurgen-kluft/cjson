@@ -121,7 +121,7 @@ namespace xcore
             f64 number  = 0.0;
 
             // If the number is negative
-            s8       sign = 1;
+            s64      sign = 1;
             uchar8_t c    = PeekChar(str, end);
             if (c.c == '-')
             {
@@ -228,7 +228,7 @@ namespace xcore
 				else
 				{
                     out_number.m_Type = kJsonNumber_s64;
-                    out_number.m_S64 = (s64)(sign * integer);
+                    out_number.m_S64 = (s64)sign * (s64)integer;
 				}
             }
 
@@ -242,29 +242,13 @@ namespace xcore
 
         s64         JsonNumberAsInt64(JsonNumber const& number)
         {
-            else if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type & kJsonNumber_s64)
             {
                 return number.m_S64;
-            }
-            else if (number.m_Type & kJsonNumber_u8)
-            {
-                return number.m_U8;
-            }
-            else if (number.m_Type & kJsonNumber_u16)
-            {
-                return number.m_U16;
-            }
-            else if (number.m_Type & kJsonNumber_u32)
-            {
-                return number.m_U32;
             }
             else if (number.m_Type & kJsonNumber_u64)
             {
                 return number.m_U64;
-            }
-            else if (number.m_Type & kJsonNumber_f32)
-            {
-                return (s64)number.m_F32;
             }
             else if (number.m_Type & kJsonNumber_f64)
             {
@@ -278,41 +262,13 @@ namespace xcore
 
         u64         JsonNumberAsUInt64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s8)
-            {
-                return (u64)(s8)number.m_S8;
-            }
-            else if (number.m_Type & kJsonNumber_s16)
-            {
-                return (u64)(s16)number.m_S16;
-            }
-            else if (number.m_Type & kJsonNumber_s32)
-            {
-                return (u64)(s32)number.m_S32;
-            }
-            else if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type & kJsonNumber_s64)
             {
                 return (u64)(s64)number.m_S64;
-            }
-            else if (number.m_Type & kJsonNumber_u8)
-            {
-                return number.m_U8;
-            }
-            else if (number.m_Type & kJsonNumber_u16)
-            {
-                return number.m_U16;
-            }
-            else if (number.m_Type & kJsonNumber_u32)
-            {
-                return number.m_U32;
             }
             else if (number.m_Type & kJsonNumber_u64)
             {
                 return number.m_U64;
-            }
-            else if (number.m_Type & kJsonNumber_f32)
-            {
-                return (u64)number.m_F32;
             }
             else if (number.m_Type & kJsonNumber_f64)
             {
@@ -350,41 +306,13 @@ namespace xcore
         }
         f64         JsonNumberAsFloat64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s8)
-            {
-                return (f64)number.m_S8;
-            }
-            else if (number.m_Type & kJsonNumber_s16)
-            {
-                return (f64)number.m_S16;
-            }
-            else if (number.m_Type & kJsonNumber_s32)
-            {
-                return (f64)number.m_S32;
-            }
-            else if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type & kJsonNumber_s64)
             {
                 return (f64)number.m_S64;
-            }
-            else if (number.m_Type & kJsonNumber_u8)
-            {
-                return (f64)number.m_U8;
-            }
-            else if (number.m_Type & kJsonNumber_u16)
-            {
-                return (f64)number.m_U16;
-            }
-            else if (number.m_Type & kJsonNumber_u32)
-            {
-                return (f64)number.m_U32;
             }
             else if (number.m_Type & kJsonNumber_u64)
             {
                 return (f64)number.m_U64;
-            }
-            else if (number.m_Type & kJsonNumber_f32)
-            {
-                return (f64)number.m_F32;
             }
             else if (number.m_Type & kJsonNumber_f64)
             {

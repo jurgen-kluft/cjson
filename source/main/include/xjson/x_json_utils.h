@@ -16,13 +16,6 @@ namespace xcore
             kJsonNumber_unknown = 0,
             kJsonNumber_s64     = 0x0001,
             kJsonNumber_u64     = 0x0002,
-            kJsonNumber_s32     = 0x0004,
-            kJsonNumber_u32     = 0x0008,
-            kJsonNumber_s16     = 0x0010,
-            kJsonNumber_u16     = 0x0020,
-            kJsonNumber_s8      = 0x0040,
-            kJsonNumber_u8      = 0x0080,
-            kJsonNumber_f32     = 0x0100,
             kJsonNumber_f64     = 0x0200,
         };
 
