@@ -6,6 +6,7 @@
 #include "xjson/x_json_utils.h"
 #include "xjson/x_json_allocator.h"
 #include "xjson/x_json_decode.h"
+#include "xjson/x_json_lexer.h"
 
 namespace xcore
 {
@@ -63,34 +64,34 @@ namespace xcore
         static JsonTypeDescr sJsonTypeDescrBool = {"bool", &sDefaultBool, sizeof(bool), ALIGNOF(bool), 0, nullptr};
 
         static s8            sDefaultInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt8 = {"int8", &sDefaultInt8, sizeof(s8), ALIGNOF(s8), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt8 = {"s8", &sDefaultInt8, sizeof(s8), ALIGNOF(s8), 0, nullptr};
 
         static s16           sDefaultInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt16 = {"int16", &sDefaultInt16, sizeof(s16), ALIGNOF(s16), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt16 = {"s16", &sDefaultInt16, sizeof(s16), ALIGNOF(s16), 0, nullptr};
 
         static s32           sDefaultInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt32 = {"int32", &sDefaultInt32, sizeof(s32), ALIGNOF(s32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt32 = {"s32", &sDefaultInt32, sizeof(s32), ALIGNOF(s32), 0, nullptr};
 
         static s64           sDefaultInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt64 = {"int64", &sDefaultInt64, sizeof(s64), ALIGNOF(s64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrInt64 = {"s64", &sDefaultInt64, sizeof(s64), ALIGNOF(s64), 0, nullptr};
 
         static u8            sDefaultUInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt8 = {"uint8", &sDefaultUInt8, sizeof(u8), ALIGNOF(u8), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt8 = {"u8", &sDefaultUInt8, sizeof(u8), ALIGNOF(u8), 0, nullptr};
 
         static u16           sDefaultUInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt16 = {"uint16", &sDefaultUInt16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt16 = {"u16", &sDefaultUInt16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
 
         static u32           sDefaultUInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt32 = {"uint32", &sDefaultUInt32, sizeof(u32), ALIGNOF(u32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt32 = {"u32", &sDefaultUInt32, sizeof(u32), ALIGNOF(u32), 0, nullptr};
 
         static u64           sDefaultUInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt64 = {"uint64", &sDefaultUInt64, sizeof(u64), ALIGNOF(u64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrUInt64 = {"u64", &sDefaultUInt64, sizeof(u64), ALIGNOF(u64), 0, nullptr};
 
         static f32           sDefaultFloat32       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat32 = {"float32", &sDefaultFloat32, sizeof(f32), ALIGNOF(f32), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrFloat32 = {"f32", &sDefaultFloat32, sizeof(f32), ALIGNOF(f32), 0, nullptr};
 
         static f64           sDefaultFloat64       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat64 = {"float64", &sDefaultFloat64, sizeof(f64), ALIGNOF(f64), 0, nullptr};
+        static JsonTypeDescr sJsonTypeDescrFloat64 = {"f64", &sDefaultFloat64, sizeof(f64), ALIGNOF(f64), 0, nullptr};
 
         static const char*   sDefaultString       = "";
         static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), ALIGNOF(const char*), 0, nullptr};
@@ -120,6 +121,8 @@ namespace xcore
             o.m_descr = m_descr->m_typedescr;
             if (m_data_ptr != nullptr)
             {
+                // the instance is likely an element of an array, so the data ptr of the
+                // member is already set
                 o.m_instance = m_data_ptr;
             }
             else
@@ -272,343 +275,6 @@ namespace xcore
     namespace json_decoder
     {
         using namespace json;
-
-        enum JsonLexemeType
-        {
-            kJsonLexError          = -1,
-            kJsonLexInvalid        = 0,
-            kJsonLexString         = 1,
-            kJsonLexValueSeparator = 3,
-            kJsonLexNameSeparator  = 4,
-            kJsonLexBeginObject    = 5,
-            kJsonLexBeginArray     = 6,
-            kJsonLexEndObject      = 7,
-            kJsonLexEndArray       = 8,
-            kJsonLexBoolean        = 9,
-            kJsonLexNull           = 10,
-            kJsonLexEof            = 11,
-            kJsonLexNumber         = 12,
-        };
-
-        struct JsonLexeme
-        {
-            JsonLexemeType m_Type;
-            union
-            {
-                bool       m_Boolean;
-                JsonNumber m_Number;
-                char*      m_String;
-            };
-        };
-
-        struct JsonLexerState
-        {
-            const char*    m_Cursor;
-            char const*    m_End;
-            JsonAllocator* m_Alloc;
-            s32            m_LineNumber;
-            JsonLexeme     m_Lexeme;
-            char*          m_ErrorMessage;
-            JsonLexeme     m_ValueSeparatorLexeme;
-            JsonLexeme     m_NameSeparatorLexeme;
-            JsonLexeme     m_BeginObjectLexeme;
-            JsonLexeme     m_EndObjectLexeme;
-            JsonLexeme     m_BeginArrayLexeme;
-            JsonLexeme     m_EndArrayLexeme;
-            JsonLexeme     m_NullLexeme;
-            JsonLexeme     m_EofLexeme;
-            JsonLexeme     m_ErrorLexeme;
-            JsonLexeme     m_TrueLexeme;
-            JsonLexeme     m_FalseLexeme;
-        };
-
-        static void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc)
-        {
-            self->m_Cursor               = buffer;
-            self->m_End                  = end;
-            self->m_Alloc                = alloc;
-            self->m_LineNumber           = 1;
-            self->m_Lexeme.m_Type        = kJsonLexInvalid;
-            self->m_ErrorMessage         = nullptr;
-            self->m_ValueSeparatorLexeme = {kJsonLexValueSeparator, {0}};
-            self->m_NameSeparatorLexeme  = {kJsonLexNameSeparator, {0}};
-            self->m_BeginObjectLexeme    = {kJsonLexBeginObject, {0}};
-            self->m_EndObjectLexeme      = {kJsonLexEndObject, {0}};
-            self->m_BeginArrayLexeme     = {kJsonLexBeginArray, {0}};
-            self->m_EndArrayLexeme       = {kJsonLexEndArray, {0}};
-            self->m_NullLexeme           = {kJsonLexNull, {0}};
-            self->m_EofLexeme            = {kJsonLexEof, {0}};
-            self->m_ErrorLexeme          = {kJsonLexError, {0}};
-            self->m_TrueLexeme           = {kJsonLexBoolean, {true}};
-            self->m_FalseLexeme          = {kJsonLexBoolean, {false}};
-        }
-
-        static JsonLexeme JsonLexerError(JsonLexerState* state, const char* error)
-        {
-            ASSERT(state->m_ErrorMessage == nullptr);
-            int const len         = ascii::strlen(error) + 32;
-            state->m_ErrorMessage = state->m_Alloc->AllocateArray<char>(len + 1);
-            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
-            crunes_t fmt("line %d: %s");
-            xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
-            return state->m_ErrorLexeme;
-        }
-
-        static JsonLexeme GetNumberLexeme(JsonLexerState* state)
-        {
-            char const* start = state->m_Cursor;
-            char const* end   = state->m_End;
-
-            JsonLexeme result;
-            result.m_Type      = kJsonLexNumber;
-            char const* cursor = ParseNumber(start, end, result.m_Number);
-
-            if (result.m_Number.m_Type == kJsonNumber_unknown)
-                return JsonLexerError(state, "illegal number");
-
-            state->m_Cursor = cursor;
-            return start != cursor ? result : JsonLexerError(state, "bad number");
-        }
-
-        static JsonLexeme GetStringLexeme(JsonLexerState* state)
-        {
-            char const* rptr = state->m_Cursor;
-
-            uchar8_t ch = PeekChar(rptr, state->m_End);
-            ASSERT(ch.c == '\"');
-            rptr += ch.l;
-
-            char* wend = nullptr;
-            char* wptr = (char*)state->m_Alloc->CheckOut(wend);
-
-            JsonLexeme result;
-            result.m_Type   = kJsonLexString;
-            result.m_String = wptr;
-
-            while (true)
-            {
-                ch = PeekChar(rptr, state->m_End);
-
-                if (0 == ch.c)
-                {
-                    // Cancel 'CheckOut'
-                    return JsonLexerError(state, "end of file inside string");
-                }
-
-                ASSERT(ch.l >= 1 && ch.l <= 4);
-                if ('"' == ch.c)
-                {
-                    rptr += 1;
-                    WriteChar('\0', wptr, wend);
-                    break;
-                }
-                else if ('\\' == ch.c)
-                {
-                    rptr += 1;
-                    ch = PeekChar(rptr, state->m_End);
-                    rptr += 1;
-
-                    switch (ch.c)
-                    {
-                        case '\\': WriteChar('\\', wptr, wend); break;
-                        case '"': WriteChar('\"', wptr, wend); break;
-                        case '/': WriteChar('/', wptr, wend); break;
-                        case 'b': WriteChar('\b', wptr, wend); break;
-                        case 'f': WriteChar('\f', wptr, wend); break;
-                        case 'n': WriteChar('\n', wptr, wend); break;
-                        case 'r': WriteChar('\r', wptr, wend); break;
-                        case 't': WriteChar('\t', wptr, wend); break;
-                        case 'u':
-                        {
-                            u32 hex_code = 0;
-                            for (s32 i = 0; i < 4; ++i)
-                            {
-                                ch = PeekChar(rptr, state->m_End);
-                                rptr += 1;
-
-                                ASSERT(ch.l == 1);
-                                if (is_hexa(ch.c))
-                                {
-                                    u32 lc = to_lower(ch.c);
-                                    hex_code <<= 4;
-                                    if (lc >= 'a' && lc <= 'f')
-                                        hex_code |= lc - 'a' + 10;
-                                    else
-                                        hex_code |= lc - '0';
-                                }
-                                else
-                                {
-                                    if (0 == ch.c)
-                                    {
-                                        return JsonLexerError(state, "end of file inside escape code of json string");
-                                    }
-                                    return JsonLexerError(state, "expected 4 character hex number, e.g. '\\u00004E2D'");
-                                }
-                            }
-                            WriteChar(hex_code, wptr, wend);
-                        }
-
-                        default:
-                        {
-                            return JsonLexerError(state, "unexpected character in string");
-                        }
-                    }
-                }
-                else
-                {
-                    rptr += ch.l;
-                    WriteChar(ch.c, wptr, wend);
-                }
-            }
-
-            state->m_Alloc->Commit(wptr);
-
-            state->m_Cursor = rptr;
-            return result;
-        }
-
-        static JsonLexeme GetLiteralLexeme(JsonLexerState* state)
-        {
-            char const* rptr = state->m_Cursor;
-            char const* eptr = rptr;
-
-            s32 kwlen = 0;
-
-            uchar8_t ch = PeekChar(eptr, state->m_End);
-            while (is_alpha(ch.c))
-            {
-                eptr += ch.l;
-                kwlen += 1;
-                ch = PeekChar(eptr, state->m_End);
-            }
-
-            if (4 == kwlen)
-            {
-                if (rptr[0] == 't' && rptr[1] == 'r' && rptr[2] == 'u' && rptr[3] == 'e')
-                {
-                    state->m_Cursor = eptr;
-                    return state->m_TrueLexeme;
-                }
-                else if (rptr[0] == 'n' && rptr[1] == 'u' && rptr[2] == 'l' && rptr[3] == 'l')
-                {
-                    state->m_Cursor = eptr;
-                    return state->m_NullLexeme;
-                }
-            }
-            else if (5 == kwlen)
-            {
-                if (rptr[0] == 'f' && rptr[1] == 'a' && rptr[2] == 'l' && rptr[3] == 's' && rptr[4] == 'e')
-                {
-                    state->m_Cursor = eptr;
-                    return state->m_FalseLexeme;
-                }
-            }
-
-            return JsonLexerError(state, "invalid literal, expected one of false, true or null");
-        }
-
-        static char const* SkipWhitespace(JsonLexerState* state)
-        {
-            uchar8_t ch = PeekChar(state->m_Cursor, state->m_End);
-            while (ch.c != 0)
-            {
-                if (is_whitespace(ch.c))
-                {
-                    if ('\n' == ch.c)
-                    {
-                        ++state->m_LineNumber;
-                    }
-                    state->m_Cursor += ch.l;
-                }
-                else
-                {
-                    break;
-                }
-
-                ch = PeekChar(state->m_Cursor, state->m_End);
-            }
-            return state->m_Cursor;
-        }
-
-        static JsonLexeme JsonLexerFetchNext(JsonLexerState* state)
-        {
-            char const* p  = SkipWhitespace(state);
-            uchar8_t    ch = PeekChar(p, state->m_End);
-            switch (ch.c)
-            {
-                case '-':
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9': return GetNumberLexeme(state);
-                case '"': return GetStringLexeme(state);
-                case 't':
-                case 'f':
-                case 'n': return GetLiteralLexeme(state);
-                case '{': state->m_Cursor = p + 1; return state->m_BeginObjectLexeme;
-                case '}': state->m_Cursor = p + 1; return state->m_EndObjectLexeme;
-                case '[': state->m_Cursor = p + 1; return state->m_BeginArrayLexeme;
-                case ']': state->m_Cursor = p + 1; return state->m_EndArrayLexeme;
-                case ',': state->m_Cursor = p + 1; return state->m_ValueSeparatorLexeme;
-                case ':': state->m_Cursor = p + 1; return state->m_NameSeparatorLexeme;
-                case '\0': return state->m_EofLexeme;
-
-                default: // very likely an error
-                    return GetLiteralLexeme(state);
-            }
-        }
-
-        static JsonLexeme JsonLexerPeek(JsonLexerState* state)
-        {
-            if (kJsonLexInvalid == state->m_Lexeme.m_Type)
-            {
-                state->m_Lexeme = JsonLexerFetchNext(state);
-            }
-
-            return state->m_Lexeme;
-        }
-
-        static JsonLexeme JsonLexerNext(JsonLexerState* state)
-        {
-            if (kJsonLexInvalid != state->m_Lexeme.m_Type)
-            {
-                JsonLexeme result      = state->m_Lexeme;
-                state->m_Lexeme.m_Type = kJsonLexInvalid;
-                return result;
-            }
-
-            return JsonLexerFetchNext(state);
-        }
-
-        static void JsonLexerSkip(JsonLexerState* state)
-        {
-            if (kJsonLexInvalid != state->m_Lexeme.m_Type)
-            {
-                state->m_Lexeme.m_Type = kJsonLexInvalid;
-                return;
-            }
-
-            JsonLexerNext(state);
-        }
-
-        static bool JsonLexerExpect(JsonLexerState* state, JsonLexemeType type, JsonLexeme* out = nullptr)
-        {
-            JsonLexeme l = JsonLexerNext(state);
-            if (l.m_Type == type)
-            {
-                if (out)
-                    *out = l;
-                return true;
-            }
-
-            return false;
-        }
 
         struct JsonState
         {
