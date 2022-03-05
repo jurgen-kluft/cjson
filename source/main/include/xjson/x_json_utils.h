@@ -34,13 +34,6 @@ namespace xcore
         bool        JsonNumberIsValid(JsonNumber const& number);
         s64         JsonNumberAsInt64(JsonNumber const& number);
         u64         JsonNumberAsUInt64(JsonNumber const& number);
-        s32         JsonNumberAsInt32(JsonNumber const& number);
-        u32         JsonNumberAsUInt32(JsonNumber const& number);
-        s16         JsonNumberAsInt16(JsonNumber const& number);
-        u16         JsonNumberAsUInt16(JsonNumber const& number);
-        s8          JsonNumberAsInt8(JsonNumber const& number);
-        u8          JsonNumberAsUInt8(JsonNumber const& number);
-        f32         JsonNumberAsFloat32(JsonNumber const& number);
         f64         JsonNumberAsFloat64(JsonNumber const& number);
 
         // UTF-8; read a character and return the unicode codepoint (UTF-32)

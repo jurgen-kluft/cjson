@@ -248,7 +248,7 @@ namespace xcore
             }
             else if (number.m_Type & kJsonNumber_u64)
             {
-                return number.m_U64;
+                return (s64)number.m_U64;
             }
             else if (number.m_Type & kJsonNumber_f64)
             {
@@ -280,30 +280,6 @@ namespace xcore
             }
         }
 
-        s32         JsonNumberAsInt32(JsonNumber const& number)
-        {
-            return (s32)JsonNumberAsInt64(number);
-        }
-        u32         JsonNumberAsUInt32(JsonNumber const& number)
-        {
-            return (u32)JsonNumberAsUInt64(number);
-        }
-        s16         JsonNumberAsInt16(JsonNumber const& number)
-        {
-            return (s16)JsonNumberAsInt64(number);
-        }
-        u16         JsonNumberAsUInt16(JsonNumber const& number)
-        {
-            return (u16)JsonNumberAsUInt64(number);
-        }
-        s8          JsonNumberAsInt8(JsonNumber const& number)
-        {
-            return (s8)JsonNumberAsInt64(number);
-        }
-        u8          JsonNumberAsUInt8(JsonNumber const& number)
-        {
-            return (u8)JsonNumberAsUInt64(number);
-        }
         f64         JsonNumberAsFloat64(JsonNumber const& number)
         {
             if (number.m_Type & kJsonNumber_s64)
@@ -322,10 +298,6 @@ namespace xcore
             {
                 return 0.0;
             }
-        }
-        f32         JsonNumberAsFloat32(JsonNumber const& number)
-        {
-            return (f32)JsonNumberAsFloat64(number);
         }
 
     } // namespace json

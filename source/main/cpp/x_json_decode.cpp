@@ -195,15 +195,15 @@ namespace xcore
 
                 switch (m_descr->m_type & JsonType::TypeNumber)
                 {
-                    case JsonType::TypeInt8: *((s8*)m_data_ptr) = JsonNumberAsInt8(number); break;
-                    case JsonType::TypeInt16: *((s16*)m_data_ptr) = JsonNumberAsInt16(number); break;
-                    case JsonType::TypeInt32: *((s32*)m_data_ptr) = JsonNumberAsInt32(number); break;
+                    case JsonType::TypeInt8: *((s8*)m_data_ptr) = (s8)JsonNumberAsInt64(number); break;
+                    case JsonType::TypeInt16: *((s16*)m_data_ptr) = (s16)JsonNumberAsInt64(number); break;
+                    case JsonType::TypeInt32: *((s32*)m_data_ptr) = (s32)JsonNumberAsInt64(number); break;
                     case JsonType::TypeInt64: *((s64*)m_data_ptr) = JsonNumberAsInt64(number); break;
-                    case JsonType::TypeUInt8: *((u8*)m_data_ptr) = JsonNumberAsUInt8(number); break;
-                    case JsonType::TypeUInt16: *((u16*)m_data_ptr) = JsonNumberAsUInt16(number); break;
-                    case JsonType::TypeUInt32: *((u32*)m_data_ptr) = JsonNumberAsUInt32(number); break;
+                    case JsonType::TypeUInt8: *((u8*)m_data_ptr) = (u8)JsonNumberAsUInt64(number); break;
+                    case JsonType::TypeUInt16: *((u16*)m_data_ptr) = (u16)JsonNumberAsUInt64(number); break;
+                    case JsonType::TypeUInt32: *((u32*)m_data_ptr) = (u32)JsonNumberAsUInt64(number); break;
                     case JsonType::TypeUInt64: *((u64*)m_data_ptr) = JsonNumberAsUInt64(number); break;
-                    case JsonType::TypeF32: *((f32*)m_data_ptr) = JsonNumberAsFloat32(number); break;
+                    case JsonType::TypeF32: *((f32*)m_data_ptr) = (f32)JsonNumberAsFloat64(number); break;
                     case JsonType::TypeF64: *((f64*)m_data_ptr) = JsonNumberAsFloat64(number); break;
                     default: break;
                 }
