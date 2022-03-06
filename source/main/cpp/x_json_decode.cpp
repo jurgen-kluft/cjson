@@ -287,9 +287,6 @@ namespace xcore
             int               m_NumberOfStrings;
             int               m_NumberOfArrays;
             int               m_NumberOfBooleans;
-            JsonBooleanValue* m_TrueValue;
-            JsonBooleanValue* m_FalseValue;
-            JsonValue*        m_NullValue;
         };
 
         static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
@@ -303,14 +300,6 @@ namespace xcore
             state->m_NumberOfStrings       = 0;
             state->m_NumberOfArrays        = 0;
             state->m_NumberOfBooleans      = 2;
-            state->m_TrueValue             = alloc->Allocate<JsonBooleanValue>();
-            state->m_TrueValue->m_Type     = JsonValue::kBoolean;
-            state->m_TrueValue->m_Boolean  = true;
-            state->m_FalseValue            = alloc->Allocate<JsonBooleanValue>();
-            state->m_FalseValue->m_Type    = JsonValue::kBoolean;
-            state->m_FalseValue->m_Boolean = false;
-            state->m_NullValue             = alloc->Allocate<JsonValue>();
-            state->m_NullValue->m_Type     = JsonValue::kNull;
         }
 
         struct JsonError
@@ -335,8 +324,6 @@ namespace xcore
 
             if (!JsonLexerExpect(lexer, kJsonLexBeginObject))
                 return MakeJsonError(json_state, "expected '{'");
-
-            JsonAllocatorScope scratch_scope(json_state->m_Scratch);
 
             bool seen_value = false;
             bool seen_comma = false;
