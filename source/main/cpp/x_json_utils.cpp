@@ -162,9 +162,9 @@ namespace xcore
                     div *= 10.0;
                     str++;
                 }
-                number = decimal / div;
+                number += decimal / div;
 
-                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_Type = kJsonNumber_f64;
                 out_number.m_F64 = number;
             }
 
@@ -212,7 +212,7 @@ namespace xcore
                         number /= 10.0;
                 }
 
-                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_Type = kJsonNumber_f64;
                 out_number.m_F64 = number;
             }
 

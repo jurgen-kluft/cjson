@@ -6,6 +6,7 @@
 #endif
 
 #include "xbase/x_debug.h"
+#include "xjson/x_json_allocator.h"
 
 namespace xcore
 {

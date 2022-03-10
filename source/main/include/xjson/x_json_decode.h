@@ -27,6 +27,10 @@ namespace xcore
         extern JsonTypeFuncs const* JsonFuncsInt16;
         extern JsonTypeFuncs const* JsonFuncsInt32;
         extern JsonTypeFuncs const* JsonFuncsInt64;
+        extern JsonTypeFuncs const* JsonFuncsUInt8;
+        extern JsonTypeFuncs const* JsonFuncsUInt16;
+        extern JsonTypeFuncs const* JsonFuncsUInt32;
+        extern JsonTypeFuncs const* JsonFuncsUInt64;
         extern JsonTypeFuncs const* JsonFuncsFloat32;
         extern JsonTypeFuncs const* JsonFuncsFloat64;
         extern JsonTypeFuncs const* JsonFuncsString;
@@ -165,6 +169,27 @@ namespace xcore
                 : m_type(JsonType::TypeInt8 | JsonType::TypeArray)
                 , m_funcs(JsonFuncsInt8)
                 , m_typedescr(JsonTypeDescrInt8)
+                , m_csize(count)
+                , m_name(name)
+                , m_member(&member)
+            {
+            }
+
+            JsonFieldDescr(const char* name, u8*& member, s8& count)
+                : m_type(JsonType::TypeUInt8 | JsonType::TypeArrayPtr | JsonType::TypeSize8)
+                , m_funcs(JsonFuncsUInt8)
+                , m_typedescr(JsonTypeDescrUInt8)
+                , m_size8(&count)
+                , m_name(name)
+                , m_member(&member)
+            {
+            }
+
+            template <s32 N>
+            JsonFieldDescr(const char* name, u8 (&member)[N], s32 count)
+                : m_type(JsonType::TypeUInt8 | JsonType::TypeArray)
+                , m_funcs(JsonFuncsUInt8)
+                , m_typedescr(JsonTypeDescrUInt8)
                 , m_csize(count)
                 , m_name(name)
                 , m_member(&member)

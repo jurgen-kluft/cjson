@@ -253,6 +253,9 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
 
             char* json_text = alloc->m_Cursor;
             ok = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
+
+            json::DestroyAllocator(alloc);
+            json::DestroyAllocator(scratch);
         }
     }
 }

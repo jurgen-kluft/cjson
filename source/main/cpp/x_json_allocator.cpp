@@ -14,6 +14,14 @@ namespace xcore
             return alloc;
         }
 
+        JsonAllocator* CreateAllocator(void* mem, u32 len, const char* name)
+        {
+            JsonAllocator* alloc = context_t::system_alloc()->construct<JsonAllocator>();
+            alloc->Init(mem, len, name);
+            return alloc;
+        }
+
+
         void DestroyAllocator(JsonAllocator* alloc)
         {
             alloc->Destroy();
@@ -33,15 +41,31 @@ namespace xcore
             this->m_Pointer     = static_cast<char*>(context_t::system_alloc()->allocate(max_size));
             this->m_Cursor      = this->m_Pointer;
             this->m_Size        = max_size;
+            this->m_Owner       = 0;
+            this->m_DebugName   = debug_name;
+            Reset();
+        }
+
+        void JsonAllocator::Init(void* mem, u32 len, const char* debug_name)
+        {
+            this->m_Pointer     = (char*)mem;
+            this->m_Cursor      = this->m_Pointer;
+            this->m_Size        = len;
+            this->m_Owner       = 1;
             this->m_DebugName   = debug_name;
             Reset();
         }
 
         void JsonAllocator::Destroy()
         {
-            context_t::system_alloc()->deallocate(this->m_Pointer);
+            if (this->m_Owner != 0)
+            {
+                context_t::system_alloc()->deallocate(this->m_Pointer);
+            }
             this->m_Pointer = nullptr;
             this->m_Cursor  = nullptr;
+            this->m_Size    = 0;
+            this->m_Owner   = 0;
         }
 
         char* JsonAllocator::Allocate(s32 size, s32 align)

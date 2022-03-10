@@ -13,10 +13,10 @@ namespace xcore
     {
         enum JsonNumberType
         {
-            kJsonNumber_unknown = 0,
-            kJsonNumber_s64     = 0x0001,
-            kJsonNumber_u64     = 0x0002,
-            kJsonNumber_f64     = 0x0200,
+            kJsonNumber_unknown = 0x0,
+            kJsonNumber_s64     = 0x1,
+            kJsonNumber_u64     = 0x2,
+            kJsonNumber_f64     = 0x4,
         };
 
         struct JsonNumber
