@@ -153,6 +153,8 @@ struct keyboard_t
         m_sh    = 9.f;
     }
 
+    const char* m_name; // name of this keyboard
+
     xcore::s16  m_nb_keygroups;
     keygroup_t* m_keygroups;
 
@@ -171,6 +173,7 @@ static keyboard_t s_default_keyboard;
 
 // clang-format off
 static json::JsonFieldDescr s_members_keyboard[] = {
+    json::JsonFieldDescr("name", s_default_keyboard.m_name),
     json::JsonFieldDescr("scale", s_default_keyboard.m_scale), 
     json::JsonFieldDescr("key_width", s_default_keyboard.m_w), 
     json::JsonFieldDescr("key_height", s_default_keyboard.m_h), 
