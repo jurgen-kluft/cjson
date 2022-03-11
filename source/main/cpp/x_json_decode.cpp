@@ -467,13 +467,15 @@ namespace xcore
                         m.m_data_ptr     = obj;
                     }
                     err = JsonDecodeValue(json_state, object, m);
-
                     value_list.Add(elem);
                 }
                 else
                 {
+                    ListElem* elem = value_list.NewListItem();
                     err = JsonDecodeValue(json_state, object, member);
+                    value_list.Add(elem);
                 }
+                
                 if (err != nullptr)
                     return err;
             }
