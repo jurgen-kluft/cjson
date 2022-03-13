@@ -376,6 +376,19 @@ namespace xcore
                 , m_name(name)
                 , m_member(&member)
             {
+                // const char*  m_name;
+            }
+
+            JsonFieldDescr(const char* name, const char**& member, s32& count)
+                : m_type(JsonType::TypeString | JsonType::TypeArrayPtr | JsonType::TypeSize32)
+                , m_funcs(JsonFuncsString)
+                , m_typedescr(JsonTypeDescrString)
+                , m_size32(&count)
+                , m_name(name)
+                , m_member(&member)
+            {
+                // s32            m_nb_names;
+                // const char**   m_names;
             }
 
             template <typename T>
