@@ -96,6 +96,9 @@ namespace xcore
         static const char*   sDefaultString       = "";
         static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), ALIGNOF(const char*), 0, nullptr};
 
+        static u16           sDefaultEnum16       = 0;
+        static JsonTypeDescr sJsonTypeDescrEnum16 = {"enum(u16)", &sDefaultEnum16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
+
         JsonTypeDescr const* JsonTypeDescrBool    = &sJsonTypeDescrBool;
         JsonTypeDescr const* JsonTypeDescrInt8    = &sJsonTypeDescrInt8;
         JsonTypeDescr const* JsonTypeDescrInt16   = &sJsonTypeDescrInt16;
@@ -108,12 +111,13 @@ namespace xcore
         JsonTypeDescr const* JsonTypeDescrFloat32 = &sJsonTypeDescrFloat32;
         JsonTypeDescr const* JsonTypeDescrFloat64 = &sJsonTypeDescrFloat64;
         JsonTypeDescr const* JsonTypeDescrString  = &sJsonTypeDescrString;
+        JsonTypeDescr const* JsonTypeDescrEnum16  = &sJsonTypeDescrEnum16;
 
-		void* JsonMember::get_member_ptr(JsonObject const& object)
-		{
-			uptr offset = (uptr)m_descr->m_member - (uptr)object.m_descr->m_default;
-			return (void*)((uptr)object.m_instance + offset);
-		}
+        void* JsonMember::get_member_ptr(JsonObject const& object)
+        {
+            uptr offset = (uptr)m_descr->m_member - (uptr)object.m_descr->m_default;
+            return (void*)((uptr)object.m_instance + offset);
+        }
 
         JsonObject JsonMember::get_object(JsonObject const& object, JsonAllocator* alloc)
         {
@@ -167,6 +171,39 @@ namespace xcore
                 }
 
                 *((const char**)m_data_ptr) = str;
+            }
+        }
+
+        void JsonMember::set_enum(JsonObject const& object, const char* str)
+        {
+            if (has_descr())
+            {
+                // Set the string pointer on the object member
+                if (m_data_ptr == nullptr)
+                {
+                    m_data_ptr = (void*)get_member_ptr(object);
+                }
+                else
+                {
+                    ASSERT(false); // enum is not supported for arrays (yet)
+                    // The member value is part of something else, like an array element
+                    // The caller has provided a pointer to the member value.
+                }
+                
+                ASSERT(is_enum());
+
+                u64 value = 0;
+                if (m_descr->m_enum->m_from_string != nullptr)
+                    m_descr->m_enum->m_from_string(str, m_descr->m_enum->m_enum_strs, value);
+                else
+                    EnumFromString(str, m_descr->m_enum->m_enum_strs, value);
+
+                if (is_enum16())
+                    *((u16*)m_data_ptr) = (u16)value;
+                else if (is_enum32())
+                    *((u32*)m_data_ptr) = (u32)value;
+                else if (is_enum64())
+                    *((u64*)m_data_ptr) = (u64)value;
             }
         }
 
@@ -278,28 +315,30 @@ namespace xcore
 
         struct JsonState
         {
-            JsonLexerState    m_Lexer;
-            char*             m_ErrorMessage;
-            JsonAllocator*    m_Allocator;
-            JsonAllocator*    m_Scratch;
-            int               m_NumberOfObjects;
-            int               m_NumberOfNumbers;
-            int               m_NumberOfStrings;
-            int               m_NumberOfArrays;
-            int               m_NumberOfBooleans;
+            JsonLexerState m_Lexer;
+            char*          m_ErrorMessage;
+            JsonAllocator* m_Allocator;
+            JsonAllocator* m_Scratch;
+            int            m_NumberOfObjects;
+            int            m_NumberOfNumbers;
+            int            m_NumberOfStrings;
+            int            m_NumberOfEnums;
+            int            m_NumberOfArrays;
+            int            m_NumberOfBooleans;
         };
 
         static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
         {
             JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc, scratch);
-            state->m_ErrorMessage          = nullptr;
-            state->m_Allocator             = alloc;
-            state->m_Scratch               = scratch;
-            state->m_NumberOfObjects       = 0;
-            state->m_NumberOfNumbers       = 0;
-            state->m_NumberOfStrings       = 0;
-            state->m_NumberOfArrays        = 0;
-            state->m_NumberOfBooleans      = 2;
+            state->m_ErrorMessage     = nullptr;
+            state->m_Allocator        = alloc;
+            state->m_Scratch          = scratch;
+            state->m_NumberOfObjects  = 0;
+            state->m_NumberOfNumbers  = 0;
+            state->m_NumberOfStrings  = 0;
+            state->m_NumberOfEnums    = 0;
+            state->m_NumberOfArrays   = 0;
+            state->m_NumberOfBooleans = 2;
         }
 
         struct JsonError
@@ -472,10 +511,10 @@ namespace xcore
                 else
                 {
                     ListElem* elem = value_list.NewListItem();
-                    err = JsonDecodeValue(json_state, object, member);
+                    err            = JsonDecodeValue(json_state, object, member);
                     value_list.Add(elem);
                 }
-                
+
                 if (err != nullptr)
                     return err;
             }
@@ -651,11 +690,19 @@ namespace xcore
 
                 case kJsonLexString:
                 {
-                    if (member.has_descr() && !member.is_string())
+                    if (member.has_descr() && (!member.is_string() && !member.is_enum()))
                         return MakeJsonError(json_state, "encountered json string but class member is not the same type");
 
-                    json_state->m_NumberOfStrings += 1;
-                    member.set_string(object, l.m_String);
+                    if (member.is_string())
+                    {
+                        json_state->m_NumberOfStrings += 1;
+                        member.set_string(object, l.m_String);
+                    }
+                    else if (member.is_enum())
+                    {
+                        json_state->m_NumberOfEnums += 1;
+                        member.set_enum(object, l.m_String);
+                    }
 
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;

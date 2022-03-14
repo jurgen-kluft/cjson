@@ -52,6 +52,9 @@ namespace xcore
             return '\0';
         }
 
+        void EnumToString(u64 e, const char** enum_strs, char* str, const char* end);
+        void EnumFromString(const char* str, const char** enum_strs, u64& out_e);
+
     } // namespace json
 } // namespace xcore
 

@@ -74,6 +74,19 @@ namespace xcore
             return *((const char**)member.m_data_ptr);
         }
 
+        static u64 member_as_enum(const JsonMember& member)
+        {
+            ASSERT(member.is_enum() && !member.is_pointer());
+            if (member.is_enum16())
+                return (u64)(*(u16*)member.m_data_ptr);
+            else if (member.is_enum32())
+                return (u64)(*(u32*)member.m_data_ptr);
+            else if (member.is_enum64())
+                return (u64)(*(u64*)member.m_data_ptr);
+
+            return 0;
+        }
+
         struct jsondoc_t
         {
             char const* m_json_text_begin;
@@ -143,6 +156,17 @@ namespace xcore
                 writeString(str);
                 writeString("\"");
             }
+
+            void writeValueEnum(JsonMember& member)
+            {
+                writeString("\"");
+                ASSERT(member.is_enum() && !member.is_pointer());
+                if (member.m_descr->m_enum != nullptr)
+                    member.m_descr->m_enum->m_to_string(member_as_enum(member), member.m_descr->m_enum->m_enum_strs, m_json_text, m_json_text_end);
+
+                writeString("\"");
+            }
+
             void writeValueBool(bool value) { writeString(value ? "true" : "false"); }
             void writeValueInt64(s64 field_value) { m_json_text = itoa(field_value, m_json_text, m_json_text_end, 10); }
             void writeValueUInt64(u64 field_value) { m_json_text = utoa(field_value, m_json_text, m_json_text_end, 10); }
@@ -287,6 +311,10 @@ namespace xcore
             else if (member.is_string())
             {
                 doc.writeValueString(member_as_string(member));
+            }
+            else if (member.is_enum())
+            {
+                doc.writeValueEnum(member);
             }
             else if (member.is_object())
             {

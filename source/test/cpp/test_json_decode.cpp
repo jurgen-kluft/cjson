@@ -75,16 +75,17 @@ static json::JsonTypeFuncs json_keys_funcs = {
 
 struct keygroup_t
 {
-    const char* m_name; // name of this group
-    float       m_x;    // x position of this group
-    float       m_y;    // y position of this group
-    float       m_w;    // key width
-    float       m_h;    // key height
-    float       m_sw;   // key spacing width
-    float       m_sh;   // key spacing height
-    xcore::s16  m_r;    // rows
-    xcore::s16  m_c;    // columns
-    xcore::s16  m_a;    // angle, -45 degrees to 45 degrees (granularity is 1 degree)
+    const char* m_name;  // name of this group
+    float       m_x;     // x position of this group
+    float       m_y;     // y position of this group
+    float       m_w;     // key width
+    float       m_h;     // key height
+    float       m_sw;    // key spacing width
+    float       m_sh;    // key spacing height
+    xcore::u16  m_enum;  // enum
+    xcore::s16  m_r;     // rows
+    xcore::s16  m_c;     // columns
+    xcore::s16  m_a;     // angle, -45 degrees to 45 degrees (granularity is 1 degree)
     xcore::s8   m_capcolor_size;
     xcore::s8   m_txtcolor_size;
     xcore::s8   m_ledcolor_size;
@@ -97,6 +98,14 @@ struct keygroup_t
 
 static keygroup_t s_default_keygroup;
 
+static const char* enum_str[] = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd", nullptr};
+
+static json::JsonEnumFuncs json_keygroup_enum_fns = {
+    enum_str,
+    nullptr,
+    nullptr
+};
+
 // clang-format off
 static json::JsonFieldDescr s_members_keygroup[] = {
     json::JsonFieldDescr("name", s_default_keygroup.m_name), 
@@ -106,6 +115,7 @@ static json::JsonFieldDescr s_members_keygroup[] = {
     json::JsonFieldDescr("h", s_default_keygroup.m_h), 
     json::JsonFieldDescr("sw", s_default_keygroup.m_sw), 
     json::JsonFieldDescr("sh", s_default_keygroup.m_sh), 
+    json::JsonFieldDescr("enum", s_default_keygroup.m_enum, json_keygroup_enum_fns), 
     json::JsonFieldDescr("r", s_default_keygroup.m_r),
     json::JsonFieldDescr("c", s_default_keygroup.m_c),
     json::JsonFieldDescr("a", s_default_keygroup.m_a),
@@ -252,7 +262,7 @@ UNITTEST_SUITE_BEGIN(xjson_decode)
             scratch->Reset();
 
             char* json_text = alloc->m_Cursor;
-            ok = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
+            ok              = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
 
             json::DestroyAllocator(alloc);
             json::DestroyAllocator(scratch);
