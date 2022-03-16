@@ -307,14 +307,13 @@ namespace xcore
             *dst = '\0';
         }
 
-        void EnumToString(u64 e, const char** enum_strs, char* str, const char* end)
+        void EnumToString(u64 e, const char** enum_strs, char*& str, const char* end)
         {
             char* begin = str;
             char* dst   = begin;
-            *dst        = '\0';
 
             s16 i = 0;
-            while (e != 0 && i < 8)
+            while (e != 0 && (enum_strs[i] != nullptr))
             {
                 u16 bit = (u16)(e & 1);
                 if (bit != 0)
@@ -331,7 +330,8 @@ namespace xcore
                 }
             }
 
-            *dst++ = '\0';
+            *dst = '\0';
+            str = dst;
         }
 
         static bool json_enum_equal(const char*& enum_str, const char* str)

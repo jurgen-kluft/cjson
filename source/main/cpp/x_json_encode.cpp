@@ -162,7 +162,18 @@ namespace xcore
                 writeString("\"");
                 ASSERT(member.is_enum() && !member.is_pointer());
                 if (member.m_descr->m_enum != nullptr)
-                    member.m_descr->m_enum->m_to_string(member_as_enum(member), member.m_descr->m_enum->m_enum_strs, m_json_text, m_json_text_end);
+                {
+                    u64 const    eval  = member_as_enum(member);
+                    const char** estrs = member.m_descr->m_enum->m_enum_strs;
+                    if (member.m_descr->m_enum->m_to_string != nullptr)
+                    {
+                        member.m_descr->m_enum->m_to_string(eval, estrs, m_json_text, m_json_text_end);
+                    }
+                    else
+                    {
+                        EnumToString(eval, estrs, m_json_text, m_json_text_end);
+                    }
+                }
 
                 writeString("\"");
             }
@@ -289,6 +300,10 @@ namespace xcore
             {
                 doc.writeValueBool(member_as_bool(member));
             }
+            else if (member.is_enum())
+            {
+                doc.writeValueEnum(member);
+            }
             else if (member.is_number())
             {
                 if (member.is_f32())
@@ -311,10 +326,6 @@ namespace xcore
             else if (member.is_string())
             {
                 doc.writeValueString(member_as_string(member));
-            }
-            else if (member.is_enum())
-            {
-                doc.writeValueEnum(member);
             }
             else if (member.is_object())
             {

@@ -14,7 +14,7 @@ namespace xcore
         typedef void (*JsonAllocatorFn)(JsonAllocator* alloc, s32 count, void*& p);
         typedef void (*JsonCopyFn)(void* dst, s32 dst_i, void* src);
         typedef void (*JsonEnumToStringFn)(u64 in_enum, const char** enum_strs, char*& out_str, char const* out_end);
-        typedef void (*JsonEnumFromStringFn)(const char* in_str, const char** enum_strs, u64& out_enum);
+        typedef void (*JsonEnumFromStringFn)(const char*& in_str, const char** enum_strs, u64& out_enum);
 
         struct JsonTypeDescr;
 

@@ -38,6 +38,8 @@ struct key_t
     float*      m_capcolor;      // color of the key cap, e.g. [ 0.1, 0.1, 0.1, 1.0 ]
     float*      m_txtcolor;      // color of the key label
     float*      m_ledcolor;      // color of the key led
+
+    XCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 static key_t s_default_key;
@@ -54,7 +56,25 @@ static json::JsonFieldDescr s_members_key[] = {
     json::JsonFieldDescr("led_color", s_default_key.m_ledcolor, s_default_key.m_ledcolor_size),
 };
 
-static void json_alloc_key(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<key_t>(n); }
+static void json_alloc_key(json::JsonAllocator* alloc, s32 n, void*& ptr) 
+{ 
+    ptr = nullptr;
+    if (n == 1)
+    {
+        ptr = alloc->Allocate<key_t>();
+        new (ptr) key_t();
+    }
+    else if (n > 1)
+    {
+        ptr = alloc->AllocateArray<key_t>(n);
+
+        char* mem = (char*)ptr;
+        for (s32 i = 0; i < n; ++i)
+        {
+            new (mem + i * sizeof(key_t)) key_t();
+        }
+    }
+}
 static void json_copy_key(void* dst, s32 dst_index, void* src ) { ((key_t*)dst)[dst_index] = *(key_t*)src; }
 
 static json::JsonTypeDescr json_key = 
@@ -94,6 +114,8 @@ struct keygroup_t
     float*      m_ledcolor; // color of the key led
     xcore::s16  m_nb_keys;  // number of keys in the array
     key_t*      m_keys;     // array of keys
+
+    XCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 static keygroup_t s_default_keygroup;
@@ -125,7 +147,25 @@ static json::JsonFieldDescr s_members_keygroup[] = {
     json::JsonFieldDescr("keys", s_default_keygroup.m_keys, s_default_keygroup.m_nb_keys, json_keys_funcs, json_key), 
 };
 
-static void json_alloc_keygroup(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<keygroup_t>(n); }
+static void json_alloc_keygroup(json::JsonAllocator* alloc, s32 n, void*& ptr)
+{
+    ptr = nullptr;
+    if (n == 1)
+    {
+        ptr = alloc->Allocate<keygroup_t>();
+        new (ptr) keygroup_t();
+    }
+    else if (n > 1)
+    {
+        ptr = alloc->AllocateArray<keygroup_t>(n);
+
+        char* mem = (char*)ptr;
+        for (s32 i = 0; i < n; ++i)
+        {
+            new (mem + i * sizeof(keygroup_t)) keygroup_t();
+        }
+    }
+}
 static void json_copy_keygroup(void* dst, s32 dst_index, void* src) { ((keygroup_t*)dst)[dst_index] = *(keygroup_t*)src; }
 
 static json::JsonTypeDescr json_keygroup = {
@@ -151,6 +191,7 @@ struct keyboard_t
 {
     keyboard_t()
     {
+        m_name = "Kyria";
         m_nb_keygroups = 0;
         m_keygroups    = nullptr;
         xcore::copy(m_capcolor, sColorDarkGrey);
@@ -177,6 +218,8 @@ struct keyboard_t
     float m_h;  // key height
     float m_sw; // key spacing width
     float m_sh; // key spacing height
+
+    XCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 static keyboard_t s_default_keyboard;
@@ -197,7 +240,25 @@ static json::JsonFieldDescr s_members_keyboard[] = {
 // clang-format on
 
 // implementation of the constructor for the keygroup object
-static void json_construct_keyboard(json::JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<keyboard_t>(n); }
+static void json_construct_keyboard(json::JsonAllocator* alloc, s32 n, void*& ptr) 
+{ 
+    ptr = nullptr;
+    if (n == 1)
+    {
+        ptr = alloc->Allocate<keyboard_t>();
+        new (ptr) keyboard_t();
+    }
+    else if (n > 1)
+    {
+        ptr = alloc->AllocateArray<keyboard_t>(n);
+
+        char* mem = (char*)ptr;
+        for (s32 i = 0; i < n; ++i)
+        {
+            new (mem + i * sizeof(keyboard_t)) keyboard_t();
+        }
+    }
+}
 static void json_copy_keyboard(void* dst, s32 dst_index, void* src) { ((keyboard_t*)dst)[dst_index] = *(keyboard_t*)src; }
 
 // clang-format off
@@ -220,6 +281,8 @@ struct keyboard_root_t
 {
     keyboard_root_t() { m_keyboard = nullptr; }
     keyboard_t* m_keyboard;
+
+    XCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 static keyboard_root_t s_default_keyboard_root;
