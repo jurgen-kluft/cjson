@@ -120,8 +120,10 @@ struct keygroup_t
 
 static keygroup_t s_default_keygroup;
 
+//                          Bit      0       1         2       3       4        5        6       7       
 static const char* enum_str[] = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd", nullptr};
 
+// You could override the from and to string functions, if not the default to and from string functions are used.
 static json::JsonEnumFuncs json_keygroup_enum_fns = {
     enum_str,
     nullptr,
