@@ -334,7 +334,7 @@ namespace xcore
             str = dst;
         }
 
-        static bool json_enum_equal(const char*& enum_str, const char* str)
+        static bool JsonEnumEqual(const char*& enum_str, const char* str)
         {
             const char* estr = enum_str;
             while (true)
@@ -361,7 +361,7 @@ namespace xcore
             return true;
         }
 
-        void EnumFromString(const char* str, const char** enum_strs, u64& out_e)
+        void EnumFromString(const char*& str, const char** enum_strs, u64& out_e)
         {
             const char** estr = enum_strs;
             while (true)
@@ -382,7 +382,7 @@ namespace xcore
                 s32 e = 0;
                 while (enum_strs[e] != nullptr)
                 {
-                    if (json_enum_equal(str, enum_strs[e]))
+                    if (JsonEnumEqual(str, enum_strs[e]))
                     {
                         out_e |= (u64)1 << e;
                         break;

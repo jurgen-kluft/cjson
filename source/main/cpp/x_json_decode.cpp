@@ -1,5 +1,6 @@
 #include "xbase/x_allocator.h"
 #include "xbase/x_context.h"
+#include "xbase/x_memory.h"
 #include "xbase/x_printf.h"
 #include "xbase/x_runes.h"
 #include "xjson/x_json.h"
@@ -12,92 +13,19 @@ namespace xcore
 {
     namespace json
     {
-        static void          JsonAllocBool(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<bool>(n); }
-        static JsonTypeFuncs sJsonFuncsBool = {JsonAllocBool, nullptr};
-        JsonTypeFuncs const* JsonFuncsBool  = &sJsonFuncsBool;
-
-        static void          JsonAllocInt8(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s8>(n); }
-        static JsonTypeFuncs sJsonFuncsInt8 = {JsonAllocInt8, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt8  = &sJsonFuncsInt8;
-
-        static void          JsonAllocInt16(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s16>(n); }
-        static JsonTypeFuncs sJsonFuncsInt16 = {JsonAllocInt16, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt16  = &sJsonFuncsInt16;
-
-        static void          JsonAllocInt32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s32>(n); }
-        static JsonTypeFuncs sJsonFuncsInt32 = {JsonAllocInt32, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt32  = &sJsonFuncsInt32;
-
-        static void          JsonAllocInt64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<s64>(n); }
-        static JsonTypeFuncs sJsonFuncsInt64 = {JsonAllocInt64, nullptr};
-        JsonTypeFuncs const* JsonFuncsInt64  = &sJsonFuncsInt64;
-
-        static void          JsonAllocUInt8(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u8>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt8 = {JsonAllocUInt8, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt8  = &sJsonFuncsUInt8;
-
-        static void          JsonAllocUInt16(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u16>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt16 = {JsonAllocUInt16, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt16  = &sJsonFuncsUInt16;
-
-        static void          JsonAllocUInt32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u32>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt32 = {JsonAllocUInt32, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt32  = &sJsonFuncsUInt32;
-
-        static void          JsonAllocUInt64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<u64>(n); }
-        static JsonTypeFuncs sJsonFuncsUInt64 = {JsonAllocUInt64, nullptr};
-        JsonTypeFuncs const* JsonFuncsUInt64  = &sJsonFuncsUInt64;
-
-        static void          JsonAllocFloat32(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<f32>(n); }
-        static JsonTypeFuncs sJsonFuncsFloat32 = {JsonAllocFloat32, nullptr};
-        JsonTypeFuncs const* JsonFuncsFloat32  = &sJsonFuncsFloat32;
-
-        static void          JsonAllocFloat64(JsonAllocator* alloc, s32 n, void*& ptr) { ptr = alloc->AllocateArray<f64>(n); }
-        static JsonTypeFuncs sJsonFuncsFloat64 = {JsonAllocFloat64, nullptr};
-        JsonTypeFuncs const* JsonFuncsFloat64  = &sJsonFuncsFloat64;
-
-        static void          JsonAllocString(JsonAllocator* alloc, s32 n, void*& ptr) {}
-        static JsonTypeFuncs sJsonFuncsString = {JsonAllocString, nullptr};
-        JsonTypeFuncs const* JsonFuncsString  = &sJsonFuncsString;
-
-        static bool          sDefaultBool       = false;
-        static JsonTypeDescr sJsonTypeDescrBool = {"bool", &sDefaultBool, sizeof(bool), ALIGNOF(bool), 0, nullptr};
-
-        static s8            sDefaultInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt8 = {"s8", &sDefaultInt8, sizeof(s8), ALIGNOF(s8), 0, nullptr};
-
-        static s16           sDefaultInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt16 = {"s16", &sDefaultInt16, sizeof(s16), ALIGNOF(s16), 0, nullptr};
-
-        static s32           sDefaultInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt32 = {"s32", &sDefaultInt32, sizeof(s32), ALIGNOF(s32), 0, nullptr};
-
-        static s64           sDefaultInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrInt64 = {"s64", &sDefaultInt64, sizeof(s64), ALIGNOF(s64), 0, nullptr};
-
-        static u8            sDefaultUInt8       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt8 = {"u8", &sDefaultUInt8, sizeof(u8), ALIGNOF(u8), 0, nullptr};
-
-        static u16           sDefaultUInt16       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt16 = {"u16", &sDefaultUInt16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
-
-        static u32           sDefaultUInt32       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt32 = {"u32", &sDefaultUInt32, sizeof(u32), ALIGNOF(u32), 0, nullptr};
-
-        static u64           sDefaultUInt64       = 0;
-        static JsonTypeDescr sJsonTypeDescrUInt64 = {"u64", &sDefaultUInt64, sizeof(u64), ALIGNOF(u64), 0, nullptr};
-
-        static f32           sDefaultFloat32       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat32 = {"f32", &sDefaultFloat32, sizeof(f32), ALIGNOF(f32), 0, nullptr};
-
-        static f64           sDefaultFloat64       = 0.0f;
-        static JsonTypeDescr sJsonTypeDescrFloat64 = {"f64", &sDefaultFloat64, sizeof(f64), ALIGNOF(f64), 0, nullptr};
-
-        static const char*   sDefaultString       = "";
-        static JsonTypeDescr sJsonTypeDescrString = {"string", &sDefaultString, sizeof(const char*), ALIGNOF(const char*), 0, nullptr};
-
-        static u16           sDefaultEnum16       = 0;
-        static JsonTypeDescr sJsonTypeDescrEnum16 = {"enum(u16)", &sDefaultEnum16, sizeof(u16), ALIGNOF(u16), 0, nullptr};
+        static JsonSystemTypeDef sJsonTypeDescrBool("bool", sizeof(bool), ALIGNOF(bool));
+        static JsonSystemTypeDef sJsonTypeDescrInt8("s8", sizeof(s8), ALIGNOF(s8));
+        static JsonSystemTypeDef sJsonTypeDescrInt16("s16", sizeof(s16), ALIGNOF(s16));
+        static JsonSystemTypeDef sJsonTypeDescrInt32("s32", sizeof(s32), ALIGNOF(s32));
+        static JsonSystemTypeDef sJsonTypeDescrInt64("s64", sizeof(s64), ALIGNOF(s64));
+        static JsonSystemTypeDef sJsonTypeDescrUInt8("u8", sizeof(u8), ALIGNOF(u8));
+        static JsonSystemTypeDef sJsonTypeDescrUInt16("u16", sizeof(u16), ALIGNOF(u16));
+        static JsonSystemTypeDef sJsonTypeDescrUInt32("u32", sizeof(u32), ALIGNOF(u32));
+        static JsonSystemTypeDef sJsonTypeDescrUInt64("u64", sizeof(u64), ALIGNOF(u64));
+        static JsonSystemTypeDef sJsonTypeDescrFloat32("f32", sizeof(f32), ALIGNOF(f32));
+        static JsonSystemTypeDef sJsonTypeDescrFloat64("f64", sizeof(f64), ALIGNOF(f64));
+        static JsonSystemTypeDef sJsonTypeDescrString("string", sizeof(const char*), ALIGNOF(const char*));
+        static JsonSystemTypeDef sJsonTypeDescrEnum16("enum(u16)", sizeof(u16), ALIGNOF(u16));
 
         JsonTypeDescr const* JsonTypeDescrBool    = &sJsonTypeDescrBool;
         JsonTypeDescr const* JsonTypeDescrInt8    = &sJsonTypeDescrInt8;
@@ -113,9 +41,92 @@ namespace xcore
         JsonTypeDescr const* JsonTypeDescrString  = &sJsonTypeDescrString;
         JsonTypeDescr const* JsonTypeDescrEnum16  = &sJsonTypeDescrEnum16;
 
+        JsonObjectTypeDef*   JsonTypeDescr::as_object_type() const
+        {
+            if (m_type == ObjectType)
+            {
+                return (JsonObjectTypeDef*)this;
+            }
+            return nullptr;
+        }
+
+        JsonEnumTypeDef*   JsonTypeDescr::as_enum_type() const
+        {
+            if (m_type == EnumType)
+            {
+                return (JsonEnumTypeDef*)this;
+            }
+            return nullptr;
+        }
+
+        void default_copy_fn(void* _dst, void* _src, s16 _sizeof)
+        {
+            char* dst = (char*)_dst;
+            const char* src = (const char*)_src;
+            for (s32 i=0; i<_sizeof; ++i)
+                dst[i] = src[i];
+        }
+
+        JsonCopyFn         JsonTypeDescr::get_copy_fn() const
+        {
+            if (m_type == ObjectType)
+            {
+                JsonObjectTypeDef* object_type_def = (JsonObjectTypeDef*)this;
+                return object_type_def->m_copy;
+            }
+            return nullptr;
+        }
+
+        JsonPlacementNewFn JsonTypeDescr::get_placement_new_fn() const
+        {
+            if (m_type == ObjectType)
+            {
+                JsonObjectTypeDef* object_type_def = (JsonObjectTypeDef*)this;
+                return object_type_def->m_pnew;
+            }
+            return nullptr;
+        }
+
+        JsonObjectTypeDef::JsonObjectTypeDef(const char* _name, void* _default, s16 _sizeof, s16 _alignof, s32 _member_count, JsonFieldDescr* _members, JsonPlacementNewFn pnew, JsonCopyFn copy)
+            : JsonTypeDescr(_name, _sizeof, _alignof, JsonTypeDescr::ObjectType)
+            , m_default(_default)
+            , m_member_count(_member_count)
+            , m_members(_members)
+            , m_pnew(pnew)
+            , m_copy(copy)
+        {
+            if (m_copy == nullptr) m_copy = default_copy_fn;
+        }
+
+        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _alignof, const char** _enum_strs, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
+            : JsonTypeDescr(_name, _sizeof, _alignof, JsonTypeDescr::EnumType)
+            , m_enum_strs(_enum_strs)
+            , m_to_str(_enum_to_str)
+            , m_from_str(_enum_from_str)
+        {
+            if (m_to_str==nullptr) m_to_str = EnumToString;
+            if (m_from_str==nullptr) m_from_str = EnumFromString;
+        }
+
+        static void json_alloc_object(JsonTypeDescr const* descr, JsonAllocator* alloc, s32 n, void*& ptr)
+        {
+            JsonPlacementNewFn pnew = descr->get_placement_new_fn();
+
+            ptr       = alloc->Allocate(n * descr->m_sizeof, descr->m_alignof);
+            char* mem = (char*)ptr;
+            for (s32 i = 0; i < n; ++i)
+            {
+                void* p = mem + i * descr->m_sizeof;
+                if (pnew!=nullptr)
+                    pnew(p);
+            }
+        }
+
         void* JsonMember::get_member_ptr(JsonObject const& object)
         {
-            uptr offset = (uptr)m_descr->m_member - (uptr)object.m_descr->m_default;
+            JsonObjectTypeDef const* o = object.m_descr->as_object_type();
+            ASSERT(o != nullptr);
+            uptr offset = (uptr)m_descr->m_member - (uptr)o->m_default;
             return (void*)((uptr)object.m_instance + offset);
         }
 
@@ -138,7 +149,7 @@ namespace xcore
                     //                           key_t*  m_key;
                     //
                     // Once allocated, write the pointer of the object into the member
-                    m_descr->m_funcs->m_alloc(alloc, 1, o.m_instance);
+                    json_alloc_object(m_descr->m_typedescr, alloc, 1, o.m_instance);
                     void** member_ptr = (void**)get_member_ptr(object);
                     *member_ptr       = o.m_instance;
                 }
@@ -189,14 +200,13 @@ namespace xcore
                     // The member value is part of something else, like an array element
                     // The caller has provided a pointer to the member value.
                 }
-                
+
                 ASSERT(is_enum());
 
+                JsonEnumTypeDef* etd = m_descr->m_typedescr->as_enum_type();
+
                 u64 value = 0;
-                if (m_descr->m_enum->m_from_string != nullptr)
-                    m_descr->m_enum->m_from_string(str, m_descr->m_enum->m_enum_strs, value);
-                else
-                    EnumFromString(str, m_descr->m_enum->m_enum_strs, value);
+                etd->m_from_str(str, etd->m_enum_strs, value);
 
                 if (is_enum16())
                     *((u16*)m_data_ptr) = (u16)value;
@@ -217,8 +227,7 @@ namespace xcore
                     if (is_pointer())
                     {
                         void** member_value_ptr = (void**)get_member_ptr(object);
-                        void*  value_ptr;
-                        m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
+                        void*  value_ptr = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
                         *member_value_ptr = value_ptr;
                         m_data_ptr        = value_ptr;
                     }
@@ -260,8 +269,7 @@ namespace xcore
                     if (is_pointer())
                     {
                         void** member_value_ptr = (void**)get_member_ptr(object);
-                        void*  value_ptr;
-                        m_descr->m_funcs->m_alloc(alloc, 1, value_ptr);
+                        void*  value_ptr = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
                         *member_value_ptr = value_ptr;
                         m_data_ptr        = value_ptr;
                     }
@@ -285,10 +293,12 @@ namespace xcore
             JsonMember member;
             if (m_descr != nullptr)
             {
-                for (s32 i = 0; i < m_descr->m_member_count; ++i)
+                JsonObjectTypeDef* objdef = m_descr->as_object_type();
+
+                for (s32 i = 0; i < objdef->m_member_count; ++i)
                 {
                     const char* n1 = name;
-                    const char* n2 = m_descr->m_members[i].m_name;
+                    const char* n2 = objdef->m_members[i].m_name;
                     while (true)
                     {
                         if (*n1 != *n2)
@@ -296,7 +306,7 @@ namespace xcore
 
                         if (*n1 == 0)
                         {
-                            member.m_descr = &m_descr->m_members[i];
+                            member.m_descr = &objdef->m_members[i];
                             return member;
                         }
                         n1++;
@@ -500,8 +510,7 @@ namespace xcore
                     }
                     else if (m.is_object())
                     {
-                        void* obj;
-                        m.m_descr->m_funcs->m_alloc(scratch, 1, obj);
+                        void* obj = scratch->Allocate(m.m_descr->m_typedescr->m_sizeof, m.m_descr->m_typedescr->m_alignof);
                         elem->m_ElemData = obj;
                         m.m_data_ptr     = obj;
                     }
@@ -527,12 +536,14 @@ namespace xcore
                 void* array = nullptr;
                 if (member.is_array_ptr())
                 {
+                    JsonObjectTypeDef const* obj_type_def = object.m_descr->as_object_type();
+
                     if (member.is_array_ptr_size8())
                     {
                         if (count > 127)
                             count = 127;
 
-                        uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)object.m_descr->m_default;
+                        uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)obj_type_def->m_default;
                         s8*        size8  = (s8*)((uptr)object.m_instance + offset);
                         *size8            = (s8)count;
                     }
@@ -540,7 +551,7 @@ namespace xcore
                     {
                         if (count > 32767)
                             count = 32767;
-                        uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)object.m_descr->m_default;
+                        uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)obj_type_def->m_default;
                         s16*       size16 = (s16*)((uptr)object.m_instance + offset);
                         *size16           = (s16)count;
                     }
@@ -548,11 +559,11 @@ namespace xcore
                     {
                         if (count > 2147483647)
                             count = 2147483647;
-                        uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)object.m_descr->m_default;
+                        uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)obj_type_def->m_default;
                         s32*       size32 = (s32*)((uptr)object.m_instance + offset);
                         *size32           = count;
                     }
-                    member.m_descr->m_funcs->m_alloc(alloc, count, array);
+                    array = alloc->Allocate(count * (member.m_descr->m_typedescr->m_sizeof), member.m_descr->m_typedescr->m_alignof);
                 }
                 else if (member.is_array())
                 {
@@ -627,10 +638,17 @@ namespace xcore
                     }
                     else if (member.is_object())
                     {
+                        char* a = (char*)array;
+                        s16 const s = member.m_descr->m_typedescr->m_sizeof;
+                        JsonObjectTypeDef* obj_type = member.m_descr->m_typedescr->as_object_type();
                         for (s32 i = 0; i < count; ++i)
                         {
                             void* src = elem->m_ElemData;
-                            member.m_descr->m_funcs->m_copy(array, i, src);
+                            if (obj_type->m_copy != nullptr)
+                            {
+                                obj_type->m_copy(a, src, s);
+                            }
+                            a += s;
                             elem = elem->m_Next;
                         }
                     }
