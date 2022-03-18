@@ -41,7 +41,7 @@ namespace xcore
         JsonTypeDescr const* JsonTypeDescrString  = &sJsonTypeDescrString;
         JsonTypeDescr const* JsonTypeDescrEnum16  = &sJsonTypeDescrEnum16;
 
-        JsonObjectTypeDef*   JsonTypeDescr::as_object_type() const
+        JsonObjectTypeDef* JsonTypeDescr::as_object_type() const
         {
             if (m_type == ObjectType)
             {
@@ -50,7 +50,7 @@ namespace xcore
             return nullptr;
         }
 
-        JsonEnumTypeDef*   JsonTypeDescr::as_enum_type() const
+        JsonEnumTypeDef* JsonTypeDescr::as_enum_type() const
         {
             if (m_type == EnumType)
             {
@@ -61,13 +61,13 @@ namespace xcore
 
         void default_copy_fn(void* _dst, void* _src, s16 _sizeof)
         {
-            char* dst = (char*)_dst;
+            char*       dst = (char*)_dst;
             const char* src = (const char*)_src;
-            for (s32 i=0; i<_sizeof; ++i)
+            for (s32 i = 0; i < _sizeof; ++i)
                 dst[i] = src[i];
         }
 
-        JsonCopyFn         JsonTypeDescr::get_copy_fn() const
+        JsonCopyFn JsonTypeDescr::get_copy_fn() const
         {
             if (m_type == ObjectType)
             {
@@ -95,7 +95,8 @@ namespace xcore
             , m_pnew(pnew)
             , m_copy(copy)
         {
-            if (m_copy == nullptr) m_copy = default_copy_fn;
+            if (m_copy == nullptr)
+                m_copy = default_copy_fn;
         }
 
         JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _alignof, const char** _enum_strs, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
@@ -104,8 +105,10 @@ namespace xcore
             , m_to_str(_enum_to_str)
             , m_from_str(_enum_from_str)
         {
-            if (m_to_str==nullptr) m_to_str = EnumToString;
-            if (m_from_str==nullptr) m_from_str = EnumFromString;
+            if (m_to_str == nullptr)
+                m_to_str = EnumToString;
+            if (m_from_str == nullptr)
+                m_from_str = EnumFromString;
         }
 
         static void json_alloc_object(JsonTypeDescr const* descr, JsonAllocator* alloc, s32 n, void*& ptr)
@@ -117,7 +120,7 @@ namespace xcore
             for (s32 i = 0; i < n; ++i)
             {
                 void* p = mem + i * descr->m_sizeof;
-                if (pnew!=nullptr)
+                if (pnew != nullptr)
                     pnew(p);
             }
         }
@@ -227,9 +230,9 @@ namespace xcore
                     if (is_pointer())
                     {
                         void** member_value_ptr = (void**)get_member_ptr(object);
-                        void*  value_ptr = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
-                        *member_value_ptr = value_ptr;
-                        m_data_ptr        = value_ptr;
+                        void*  value_ptr        = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
+                        *member_value_ptr       = value_ptr;
+                        m_data_ptr              = value_ptr;
                     }
                     else
                     {
@@ -269,9 +272,9 @@ namespace xcore
                     if (is_pointer())
                     {
                         void** member_value_ptr = (void**)get_member_ptr(object);
-                        void*  value_ptr = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
-                        *member_value_ptr = value_ptr;
-                        m_data_ptr        = value_ptr;
+                        void*  value_ptr        = alloc->Allocate(m_descr->m_typedescr->m_sizeof, m_descr->m_typedescr->m_alignof);
+                        *member_value_ptr       = value_ptr;
+                        m_data_ptr              = value_ptr;
                     }
                     else
                     {
@@ -510,7 +513,8 @@ namespace xcore
                     }
                     else if (m.is_object())
                     {
-                        void* obj = scratch->Allocate(m.m_descr->m_typedescr->m_sizeof, m.m_descr->m_typedescr->m_alignof);
+                        void* obj;
+                        json_alloc_object(m.m_descr->m_typedescr, scratch, 1, obj);
                         elem->m_ElemData = obj;
                         m.m_data_ptr     = obj;
                     }
@@ -638,8 +642,8 @@ namespace xcore
                     }
                     else if (member.is_object())
                     {
-                        char* a = (char*)array;
-                        s16 const s = member.m_descr->m_typedescr->m_sizeof;
+                        char*              a        = (char*)array;
+                        s16 const          s        = member.m_descr->m_typedescr->m_sizeof;
                         JsonObjectTypeDef* obj_type = member.m_descr->m_typedescr->as_object_type();
                         for (s32 i = 0; i < count; ++i)
                         {
@@ -711,15 +715,22 @@ namespace xcore
                     if (member.has_descr() && (!member.is_string() && !member.is_enum()))
                         return MakeJsonError(json_state, "encountered json string but class member is not the same type");
 
-                    if (member.is_string())
+                    if (member.has_descr())
+                    {
+                        if (member.is_string())
+                        {
+                            json_state->m_NumberOfStrings += 1;
+                            member.set_string(object, l.m_String);
+                        }
+                        else if (member.is_enum())
+                        {
+                            json_state->m_NumberOfEnums += 1;
+                            member.set_enum(object, l.m_String);
+                        }
+                    }
+                    else
                     {
                         json_state->m_NumberOfStrings += 1;
-                        member.set_string(object, l.m_String);
-                    }
-                    else if (member.is_enum())
-                    {
-                        json_state->m_NumberOfEnums += 1;
-                        member.set_enum(object, l.m_String);
                     }
 
                     JsonLexerSkip(&json_state->m_Lexer);
@@ -732,7 +743,10 @@ namespace xcore
                         return MakeJsonError(json_state, "encountered json number but class member is not the same type");
 
                     json_state->m_NumberOfNumbers += 1;
-                    member.set_number(object, json_state->m_Allocator, l.m_Number);
+                    if (member.has_descr())
+                    {
+                        member.set_number(object, json_state->m_Allocator, l.m_Number);
+                    }
 
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
@@ -743,7 +757,10 @@ namespace xcore
                         return MakeJsonError(json_state, "encountered json boolean but class member is not the same type");
 
                     json_state->m_NumberOfBooleans += 1;
-                    member.set_bool(object, json_state->m_Allocator, l.m_Boolean);
+                    if (member.has_descr())
+                    {
+                        member.set_bool(object, json_state->m_Allocator, l.m_Boolean);
+                    }
 
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
