@@ -1,30 +1,30 @@
-package xjson
+package cjson
 
 import (
-	xbase "github.com/jurgen-kluft/xbase/package"
-	"github.com/jurgen-kluft/xcode/denv"
-	xunittest "github.com/jurgen-kluft/xunittest/package"
+	cbase "github.com/jurgen-kluft/cbase/package"
+	"github.com/jurgen-kluft/ccode/denv"
+	cunittest "github.com/jurgen-kluft/cunittest/package"
 )
 
-// GetPackage returns the package object of 'xjson'
+// GetPackage returns the package object of 'cjson'
 func GetPackage() *denv.Package {
 	// Dependencies
-	xunittestpkg := xunittest.GetPackage()
-	xbasepkg := xbase.GetPackage()
+	cunittestpkg := cunittest.GetPackage()
+	cbasepkg := cbase.GetPackage()
 
-	// The main (xjson) package
-	mainpkg := denv.NewPackage("xjson")
-	mainpkg.AddPackage(xunittestpkg)
-	mainpkg.AddPackage(xbasepkg)
+	// The main (cjson) package
+	mainpkg := denv.NewPackage("cjson")
+	mainpkg.AddPackage(cunittestpkg)
+	mainpkg.AddPackage(cbasepkg)
 
-	// 'xjson' library
-	mainlib := denv.SetupDefaultCppLibProject("xjson", "github.com\\jurgen-kluft\\xjson")
-	mainlib.Dependencies = append(mainlib.Dependencies, xbasepkg.GetMainLib())
+	// 'cjson' library
+	mainlib := denv.SetupDefaultCppLibProject("cjson", "github.com\\jurgen-kluft\\cjson")
+	mainlib.Dependencies = append(mainlib.Dependencies, cbasepkg.GetMainLib())
 
-	// 'xjson' unittest project
-	maintest := denv.SetupDefaultCppTestProject("xjson_test", "github.com\\jurgen-kluft\\xjson")
-	maintest.Dependencies = append(maintest.Dependencies, xunittestpkg.GetMainLib())
-	maintest.Dependencies = append(maintest.Dependencies, xbasepkg.GetMainLib())
+	// 'cjson' unittest project
+	maintest := denv.SetupDefaultCppTestProject("cjson_test", "github.com\\jurgen-kluft\\cjson")
+	maintest.Dependencies = append(maintest.Dependencies, cunittestpkg.GetMainLib())
+	maintest.Dependencies = append(maintest.Dependencies, cbasepkg.GetMainLib())
 	maintest.Dependencies = append(maintest.Dependencies, mainlib)
 
 	mainpkg.AddMainLib(mainlib)
