@@ -13,10 +13,10 @@ namespace xcore
     {
         enum JsonNumberType
         {
-            kJsonNumber_unknown = 0,
-            kJsonNumber_s64     = 0x0001,
-            kJsonNumber_u64     = 0x0002,
-            kJsonNumber_f64     = 0x0200,
+            kJsonNumber_unknown = 0x0,
+            kJsonNumber_s64     = 0x1,
+            kJsonNumber_u64     = 0x2,
+            kJsonNumber_f64     = 0x4,
         };
 
         struct JsonNumber
@@ -51,6 +51,9 @@ namespace xcore
                 return *str;
             return '\0';
         }
+
+        void  EnumToString(u64 e, const char** enum_strs, char*& str, const char* end);
+        void  EnumFromString(const char*& str, const char** enum_strs, u64& out_e);
 
     } // namespace json
 } // namespace xcore

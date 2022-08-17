@@ -13,5 +13,5 @@ Uses a simple forward/linear allocator.
 
 ## Dependencies
 
-- xbase
+- xbase (types & allocator)
 

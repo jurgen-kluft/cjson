@@ -89,7 +89,7 @@ namespace xcore
 
                 uchar8_t ch = PeekUtf8Char(rptr, state->m_End);
                 ASSERT(ch.l >= 1 && ch.l <= 4);
-                if ('"' == ch.c)
+                if (ch.l == 1 && '"' == ch.c)
                 {
                     rptr += 1;
                     WriteChar('\0', wptr, wend);
@@ -135,10 +135,11 @@ namespace xcore
                                     {
                                         return JsonLexerError(state, "end of file inside escape code of json string");
                                     }
-                                    return JsonLexerError(state, "expected 4 character hex number, e.g. '\\u00004E2D'");
+                                    return JsonLexerError(state, "expected 4 character hex number, e.g. '\\uF001'");
                                 }
                             }
                             WriteChar(hex_code, wptr, wend);
+                            break;
                         }
 
                         default:

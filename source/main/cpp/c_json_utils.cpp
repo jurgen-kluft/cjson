@@ -162,9 +162,9 @@ namespace xcore
                     div *= 10.0;
                     str++;
                 }
-                number = decimal / div;
+                number += decimal / div;
 
-                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_Type = kJsonNumber_f64;
                 out_number.m_F64 = number;
             }
 
@@ -212,7 +212,7 @@ namespace xcore
                         number /= 10.0;
                 }
 
-                out_number.m_Type |= kJsonNumber_f64;
+                out_number.m_Type = kJsonNumber_f64;
                 out_number.m_F64 = number;
             }
 
@@ -296,6 +296,102 @@ namespace xcore
                 return 0.0;
             }
         }
+
+
+        static void json_write_str(char*& dst, char const* end, char const* str)
+        {
+            while (dst < end && *str)
+            {
+                *dst++ = *str++;
+            }
+            *dst = '\0';
+        }
+
+        void EnumToString(u64 e, const char** enum_strs, char*& str, const char* end)
+        {
+            char* begin = str;
+            char* dst   = begin;
+
+            s16 i = 0;
+            while (e != 0 && (enum_strs[i] != nullptr))
+            {
+                u16 bit = (u16)(e & 1);
+                if (bit != 0)
+                {
+                    json_write_str(dst, end, enum_strs[i]);
+                }
+
+                i++;
+                e = e >> 1;
+
+                if (e != 0)
+                {
+                    json_write_str(dst, end, "|");
+                }
+            }
+
+            *dst = '\0';
+            str = dst;
+        }
+
+        static bool JsonEnumEqual(const char*& enum_str, const char* str)
+        {
+            const char* estr = enum_str;
+            while (true)
+            {
+                char ec = *estr;
+                char c = *str;
+                if ((ec == '\0' || ec == '|') && c == '\0')
+                    break;
+                    
+                if (c == '\0')
+                    return false;
+
+                if (ec != c)
+                {
+                    ec = to_lower(ec);
+                    c = to_lower(c);
+                    if (ec != c)
+                        return false;
+                }
+                estr++;
+                str++;
+            }
+            enum_str = estr;
+            return true;
+        }
+
+        void EnumFromString(const char*& str, const char** enum_strs, u64& out_e)
+        {
+            const char** estr = enum_strs;
+            while (true)
+            {
+                while (*str != '\0' && is_whitespace(*str))
+                {
+                    str++;
+                }
+                if (*str == '\0')
+                    break;
+
+                if (*str == '|')
+                {
+                    str++;
+                    continue;
+                }
+
+                s32 e = 0;
+                while (enum_strs[e] != nullptr)
+                {
+                    if (JsonEnumEqual(str, enum_strs[e]))
+                    {
+                        out_e |= (u64)1 << e;
+                        break;
+                    }
+                    e++;
+                }
+            }
+        }
+
 
     } // namespace json
 } // namespace xcore

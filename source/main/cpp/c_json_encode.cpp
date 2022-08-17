@@ -74,6 +74,19 @@ namespace xcore
             return *((const char**)member.m_data_ptr);
         }
 
+        static u64 member_as_enum(const JsonMember& member)
+        {
+            ASSERT(member.is_enum() && !member.is_pointer());
+            if (member.is_enum16())
+                return (u64)(*(u16*)member.m_data_ptr);
+            else if (member.is_enum32())
+                return (u64)(*(u32*)member.m_data_ptr);
+            else if (member.is_enum64())
+                return (u64)(*(u64*)member.m_data_ptr);
+
+            return 0;
+        }
+
         struct jsondoc_t
         {
             char const* m_json_text_begin;
@@ -143,6 +156,29 @@ namespace xcore
                 writeString(str);
                 writeString("\"");
             }
+
+            void writeValueEnum(JsonMember& member)
+            {
+                writeString("\"");
+                ASSERT(member.is_enum() && !member.is_pointer());
+                JsonEnumTypeDef* enum_type = member.m_descr->m_typedescr->as_enum_type();
+                if (enum_type != nullptr)
+                {
+                    u64 const    eval  = member_as_enum(member);
+                    const char** estrs = enum_type->m_enum_strs;
+                    if (enum_type->m_to_str != nullptr)
+                    {
+                        enum_type->m_to_str(eval, estrs, m_json_text, m_json_text_end);
+                    }
+                    else
+                    {
+                        EnumToString(eval, estrs, m_json_text, m_json_text_end);
+                    }
+                }
+
+                writeString("\"");
+            }
+
             void writeValueBool(bool value) { writeString(value ? "true" : "false"); }
             void writeValueInt64(s64 field_value) { m_json_text = itoa(field_value, m_json_text, m_json_text_end, 10); }
             void writeValueUInt64(u64 field_value) { m_json_text = utoa(field_value, m_json_text, m_json_text_end, 10); }
@@ -174,8 +210,8 @@ namespace xcore
 
         static bool JsonEncodeArray(JsonObject& object, JsonMember& member, jsondoc_t& doc, char const*& error_message)
         {
-            char* array_ptr;
-            s32   array_size;
+            char* array_ptr  = nullptr;
+            s32   array_size = 0;
             if (member.is_array())
             {
                 array_size = member.m_descr->m_csize;
@@ -183,21 +219,23 @@ namespace xcore
             }
             else if (member.is_array_ptr())
             {
+                JsonObjectTypeDef const* obj_type_def = object.m_descr->as_object_type();
+
                 if (member.is_array_ptr_size8())
                 {
-                    uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)object.m_descr->m_default;
+                    uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)obj_type_def->m_default;
                     s8*        size8  = (s8*)((uptr)object.m_instance + offset);
                     array_size        = *size8;
                 }
                 else if (member.is_array_ptr_size16())
                 {
-                    uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)object.m_descr->m_default;
+                    uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)obj_type_def->m_default;
                     s16*       size16 = (s16*)((uptr)object.m_instance + offset);
                     array_size        = *size16;
                 }
                 else if (member.is_array_ptr_size32())
                 {
-                    uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)object.m_descr->m_default;
+                    uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)obj_type_def->m_default;
                     s32*       size32 = (s32*)((uptr)object.m_instance + offset);
                     array_size        = *size32;
                 }
@@ -207,7 +245,7 @@ namespace xcore
             doc.startArray();
             if (array_size > 0 && array_ptr != nullptr)
             {
-                u32 const aligned_size = (member.m_descr->m_typedescr->m_sizeof + (member.m_descr->m_typedescr->m_alignof - 1)) & ~(member.m_descr->m_typedescr->m_alignof - 1);
+                u32 const aligned_size = member.m_descr->m_typedescr->m_sizeof;
                 for (s32 i = 0; i < array_size; ++i)
                 {
                     JsonMember e;
@@ -225,13 +263,11 @@ namespace xcore
         static bool JsonEncodeObject(JsonObject& object, jsondoc_t& doc, char const*& error_message)
         {
             doc.startObject();
-
-            s32 const n = object.m_descr->m_member_count;
+            JsonObjectTypeDef* objtype = object.m_descr->as_object_type();
+            s32 const          n       = objtype->m_member_count;
             for (s32 i = 0; i < n; ++i)
             {
-                JsonFieldDescr const* member_descr = object.m_descr->m_members + i;
-                JsonMember            member;
-                member.m_descr    = member_descr;
+                JsonMember member(&objtype->m_members[i]);
                 member.m_data_ptr = member.get_member_ptr(object);
 
                 if (member.is_array() || member.is_array_ptr())
@@ -264,6 +300,10 @@ namespace xcore
             if (member.is_bool())
             {
                 doc.writeValueBool(member_as_bool(member));
+            }
+            else if (member.is_enum())
+            {
+                doc.writeValueEnum(member);
             }
             else if (member.is_number())
             {
