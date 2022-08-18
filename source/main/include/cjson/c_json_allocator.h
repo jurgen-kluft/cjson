@@ -1,12 +1,12 @@
 #ifndef __XBASE_JSON_ALLOCATOR_H__
 #define __XBASE_JSON_ALLOCATOR_H__
-#include "xbase/x_target.h"
+#include "cbase/x_target.h"
 #ifdef USE_PRAGMA_ONCE
 #pragma once
 #endif
 
-#include "xbase/x_allocator.h"
-#include "xbase/x_debug.h"
+#include "cbase/x_allocator.h"
+#include "cbase/x_debug.h"
 
 namespace xcore
 {

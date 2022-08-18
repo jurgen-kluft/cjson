@@ -1,6 +1,6 @@
-#include "xbase/x_allocator.h"
-#include "xbase/x_context.h"
-#include "xbase/x_memory.h"
+#include "cbase/x_allocator.h"
+#include "cbase/x_context.h"
+#include "cbase/x_memory.h"
 #include "xjson/x_json_allocator.h"
 
 namespace xcore
