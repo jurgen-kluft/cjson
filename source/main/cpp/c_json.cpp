@@ -1,13 +1,14 @@
-#include "cbase/x_allocator.h"
-#include "cbase/x_context.h"
-#include "cbase/x_printf.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json.h"
-#include "xjson/x_json_lexer.h"
-#include "xjson/x_json_utils.h"
-#include "xjson/x_json_allocator.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_context.h"
+#include "cbase/c_memory.h"
+#include "cbase/c_printf.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json.h"
+#include "cjson/c_json_lexer.h"
+#include "cjson/c_json_utils.h"
+#include "cjson/c_json_allocator.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -68,7 +69,7 @@ namespace xcore
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(1024);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
             crunes_t fmt("line %d: %s");
-            xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
+            ncore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
 
@@ -414,7 +415,7 @@ namespace xcore
             {
                 s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
                 char*     errmsg = scratch->AllocateArray<char>(len + 1);
-                x_memcopy(errmsg, json_state->m_ErrorMessage, len);
+                nmem::memcpy(errmsg, json_state->m_ErrorMessage, len);
                 errmsg[len]   = '\0';
                 error_message = errmsg;
             }
@@ -423,4 +424,4 @@ namespace xcore
         }
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore

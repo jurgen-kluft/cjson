@@ -1,15 +1,15 @@
-#include "cbase/x_allocator.h"
-#include "cbase/x_context.h"
-#include "cbase/x_memory.h"
-#include "cbase/x_printf.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json.h"
-#include "xjson/x_json_utils.h"
-#include "xjson/x_json_allocator.h"
-#include "xjson/x_json_decode.h"
-#include "xjson/x_json_lexer.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_context.h"
+#include "cbase/c_memory.h"
+#include "cbase/c_printf.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json.h"
+#include "cjson/c_json_utils.h"
+#include "cjson/c_json_allocator.h"
+#include "cjson/c_json_decode.h"
+#include "cjson/c_json_lexer.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -87,8 +87,8 @@ namespace xcore
             return nullptr;
         }
 
-        JsonObjectTypeDef::JsonObjectTypeDef(const char* _name, void* _default, s16 _sizeof, s16 _alignof, s32 _member_count, JsonFieldDescr* _members, JsonPlacementNewFn pnew, JsonCopyFn copy)
-            : JsonTypeDescr(_name, _sizeof, _alignof, JsonTypeDescr::ObjectType)
+        JsonObjectTypeDef::JsonObjectTypeDef(const char* _name, void* _default, s16 _sizeof, s16 _align_of, s32 _member_count, JsonFieldDescr* _members, JsonPlacementNewFn pnew, JsonCopyFn copy)
+            : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::ObjectType)
             , m_default(_default)
             , m_member_count(_member_count)
             , m_members(_members)
@@ -99,8 +99,8 @@ namespace xcore
                 m_copy = default_copy_fn;
         }
 
-        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _alignof, const char** _enum_strs, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
-            : JsonTypeDescr(_name, _sizeof, _alignof, JsonTypeDescr::EnumType)
+        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
+            : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::EnumType)
             , m_enum_strs(_enum_strs)
             , m_to_str(_enum_to_str)
             , m_from_str(_enum_from_str)
@@ -129,8 +129,8 @@ namespace xcore
         {
             JsonObjectTypeDef const* o = object.m_descr->as_object_type();
             ASSERT(o != nullptr);
-            uptr offset = (uptr)m_descr->m_member - (uptr)o->m_default;
-            return (void*)((uptr)object.m_instance + offset);
+            ptr_t offset = (ptr_t)m_descr->m_member - (ptr_t)o->m_default;
+            return (void*)((ptr_t)object.m_instance + offset);
         }
 
         JsonObject JsonMember::get_object(JsonObject const& object, JsonAllocator* alloc)
@@ -364,7 +364,7 @@ namespace xcore
             state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
             crunes_t fmt("line %d: %s");
-            xcore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
+            sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
 
@@ -547,24 +547,24 @@ namespace xcore
                         if (count > 127)
                             count = 127;
 
-                        uptr const offset = (uptr)member.m_descr->m_size8 - (uptr)obj_type_def->m_default;
-                        s8*        size8  = (s8*)((uptr)object.m_instance + offset);
+                        ptr_t const offset = (ptr_t)member.m_descr->m_size8 - (ptr_t)obj_type_def->m_default;
+                        s8*        size8  = (s8*)((ptr_t)object.m_instance + offset);
                         *size8            = (s8)count;
                     }
                     else if (member.is_array_ptr_size16())
                     {
                         if (count > 32767)
                             count = 32767;
-                        uptr const offset = (uptr)member.m_descr->m_size16 - (uptr)obj_type_def->m_default;
-                        s16*       size16 = (s16*)((uptr)object.m_instance + offset);
+                        ptr_t const offset = (ptr_t)member.m_descr->m_size16 - (ptr_t)obj_type_def->m_default;
+                        s16*       size16 = (s16*)((ptr_t)object.m_instance + offset);
                         *size16           = (s16)count;
                     }
                     else if (member.is_array_ptr_size32())
                     {
                         if (count > 2147483647)
                             count = 2147483647;
-                        uptr const offset = (uptr)member.m_descr->m_size32 - (uptr)obj_type_def->m_default;
-                        s32*       size32 = (s32*)((uptr)object.m_instance + offset);
+                        ptr_t const offset = (ptr_t)member.m_descr->m_size32 - (ptr_t)obj_type_def->m_default;
+                        s32*       size32 = (s32*)((ptr_t)object.m_instance + offset);
                         *size32           = count;
                     }
                     array = alloc->Allocate(count * (member.m_descr->m_typedescr->m_sizeof), member.m_descr->m_typedescr->m_alignof);
@@ -796,7 +796,7 @@ namespace xcore
             error_message    = nullptr;
             s32 const len    = ascii::strlen(json_state->m_ErrorMessage);
             char*     errmsg = scratch->AllocateArray<char>(len + 1);
-            x_memcopy(errmsg, json_state->m_ErrorMessage, len);
+            nmem::memcpy(errmsg, json_state->m_ErrorMessage, len);
             errmsg[len]   = '\0';
             error_message = errmsg;
             return false;
@@ -808,4 +808,4 @@ namespace xcore
     {
         bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message) { return json_decoder::JsonDecode(str, end, json_root, allocator, scratch, error_message); }
     } // namespace json
-} // namespace xcore
+} // namespace ncore

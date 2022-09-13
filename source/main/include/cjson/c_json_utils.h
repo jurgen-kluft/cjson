@@ -1,13 +1,13 @@
-#ifndef __XBASE_JSON_UTILS_H__
-#define __XBASE_JSON_UTILS_H__
-#include "cbase/x_target.h"
+#ifndef __CJSON_JSON_UTILS_H__
+#define __CJSON_JSON_UTILS_H__
+#include "cbase/c_target.h"
 #ifdef USE_PRAGMA_ONCE
 #pragma once
 #endif
 
-#include "cbase/x_debug.h"
+#include "cbase/c_debug.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -56,6 +56,6 @@ namespace xcore
         void  EnumFromString(const char*& str, const char** enum_strs, u64& out_e);
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore
 
-#endif // __XBASE_JSON_H__
+#endif // __CJSON_JSON_UTILS_H__

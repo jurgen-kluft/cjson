@@ -1,16 +1,16 @@
-#include "cbase/x_target.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json.h"
-#include "xjson/x_json_allocator.h"
+#include "cbase/c_target.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json.h"
+#include "cjson/c_json_allocator.h"
 
 #include "cunittest/cunittest.h"
 
-using namespace xcore;
+using namespace ncore;
 
 extern unsigned char   kyria_json[];
 extern unsigned int    kyria_json_len;
 
-UNITTEST_SUITE_BEGIN(xjson)
+UNITTEST_SUITE_BEGIN(cjson)
 {
     UNITTEST_FIXTURE(parse)
     {

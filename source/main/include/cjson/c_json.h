@@ -1,14 +1,14 @@
-#ifndef __XBASE_JSON_H__
-#define __XBASE_JSON_H__
-#include "cbase/x_target.h"
+#ifndef __CJSON_JSON_H__
+#define __CJSON_JSON_H__
+#include "cbase/c_target.h"
 #ifdef USE_PRAGMA_ONCE
 #pragma once
 #endif
 
-#include "cbase/x_debug.h"
-#include "xjson/x_json_allocator.h"
+#include "cbase/c_debug.h"
+#include "cjson/c_json_allocator.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -147,6 +147,6 @@ namespace xcore
         const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore
 
-#endif // __XBASE_JSON_H__
+#endif // __CJSON_JSON_H__

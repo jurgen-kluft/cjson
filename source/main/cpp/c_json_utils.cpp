@@ -1,10 +1,10 @@
-#include "cbase/x_allocator.h"
-#include "cbase/x_context.h"
-#include "cbase/x_printf.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json_utils.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_context.h"
+#include "cbase/c_printf.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json_utils.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -394,4 +394,4 @@ namespace xcore
 
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore

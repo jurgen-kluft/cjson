@@ -1,11 +1,11 @@
-#ifndef __XBASE_JSON_DECODE_H__
-#define __XBASE_JSON_DECODE_H__
-#include "cbase/x_target.h"
+#ifndef __CJSON_JSON_DECODE_H__
+#define __CJSON_JSON_DECODE_H__
+#include "cbase/c_target.h"
 #ifdef USE_PRAGMA_ONCE
 #pragma once
 #endif
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -16,8 +16,6 @@ namespace xcore
         typedef void (*JsonCopyFn)(void* _dst, void* _src, s16 _sizeof);
         typedef void (*JsonEnumToStringFn)(u64 in_enum, const char** enum_strs, char*& out_str, char const* out_end);
         typedef void (*JsonEnumFromStringFn)(const char*& in_str, const char** enum_strs, u64& out_enum);
-
-        struct JsonTypeDescr;
 
         struct JsonType
         {
@@ -61,10 +59,10 @@ namespace xcore
         class JsonTypeDescr
         {
         public:
-            JsonTypeDescr(const char* _name, s16 _sizeof, s16 _alignof, s32 _type)
+            JsonTypeDescr(const char* _name, s16 _sizeof, s16 _align_of, s32 _type)
                 : m_name(_name)
                 , m_sizeof(_sizeof)
-                , m_alignof(_alignof)
+                , m_alignof(_align_of)
                 , m_type(_type)
             {
             }
@@ -90,8 +88,8 @@ namespace xcore
         class JsonSystemTypeDef : public JsonTypeDescr
         {
         public:
-            JsonSystemTypeDef(const char* _name, s16 _sizeof, s16 _alignof)
-                : JsonTypeDescr(_name, _sizeof, _alignof, JsonTypeDescr::SystemType)
+            JsonSystemTypeDef(const char* _name, s16 _sizeof, s16 _align_of)
+                : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::SystemType)
             {
             }
         };
@@ -99,7 +97,7 @@ namespace xcore
         class JsonObjectTypeDef : public JsonTypeDescr
         {
         public:
-            JsonObjectTypeDef(const char* _name, void* _default, s16 _sizeof, s16 _alignof, s32 _member_count, JsonFieldDescr* _members, JsonPlacementNewFn pnew, JsonCopyFn copy);
+            JsonObjectTypeDef(const char* _name, void* _default, s16 _sizeof, s16 _align_of, s32 _member_count, JsonFieldDescr* _members, JsonPlacementNewFn pnew, JsonCopyFn copy);
             void*              m_default;
             s32                m_member_count;
             JsonFieldDescr*    m_members;
@@ -126,7 +124,7 @@ namespace xcore
         class JsonEnumTypeDef : public JsonTypeDescr
         {
         public:
-            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _alignof, const char** _enum_strs, JsonEnumToStringFn _enum_to_str = nullptr, JsonEnumFromStringFn _enum_from_str = nullptr);
+            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, JsonEnumToStringFn _enum_to_str = nullptr, JsonEnumFromStringFn _enum_from_str = nullptr);
             const char**         m_enum_strs;
             JsonEnumToStringFn   m_to_str;
             JsonEnumFromStringFn m_from_str;
@@ -155,10 +153,10 @@ namespace xcore
 
             union
             {
-                xcore::s32  m_csize;
-                xcore::s8*  m_size8;
-                xcore::s16* m_size16;
-                xcore::s32* m_size32;
+                s32  m_csize;
+                s8*  m_size8;
+                s16* m_size16;
+                s32* m_size32;
             };
 
             JsonFieldDescr(const char* name, bool& member)
@@ -196,7 +194,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s8& member)
+            JsonFieldDescr(const char* name, s8& member)
                 : m_type(JsonType::TypeInt8)
                 , m_typedescr(JsonTypeDescrInt8)
                 , m_size32(nullptr)
@@ -205,7 +203,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s8*& member)
+            JsonFieldDescr(const char* name, s8*& member)
                 : m_type(JsonType::TypeInt8 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt8)
                 , m_size32(nullptr)
@@ -214,7 +212,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s8*& member, s32 count)
+            JsonFieldDescr(const char* name, s8*& member, s32 count)
                 : m_type(JsonType::TypeInt8 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt8)
                 , m_csize(count)
@@ -242,7 +240,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s8*& member, s32& count)
+            JsonFieldDescr(const char* name, s8*& member, s32& count)
                 : m_type(JsonType::TypeInt8 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt8)
                 , m_size32(&count)
@@ -251,7 +249,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s16& member)
+            JsonFieldDescr(const char* name, s16& member)
                 : m_type(JsonType::TypeInt16)
                 , m_typedescr(JsonTypeDescrInt16)
                 , m_size32(nullptr)
@@ -260,7 +258,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s16*& member)
+            JsonFieldDescr(const char* name, s16*& member)
                 : m_type(JsonType::TypeInt16 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt16)
                 , m_size32(nullptr)
@@ -269,7 +267,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s16*& member, s32 count)
+            JsonFieldDescr(const char* name, s16*& member, s32 count)
                 : m_type(JsonType::TypeInt16 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt16)
                 , m_csize(count)
@@ -278,7 +276,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s16*& member, s32& count)
+            JsonFieldDescr(const char* name, s16*& member, s32& count)
                 : m_type(JsonType::TypeInt16 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt16)
                 , m_size32(&count)
@@ -287,7 +285,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::u16& member)
+            JsonFieldDescr(const char* name, u16& member)
                 : m_type(JsonType::TypeUInt16)
                 , m_typedescr(JsonTypeDescrUInt16)
                 , m_size32(nullptr)
@@ -296,7 +294,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::u16*& member)
+            JsonFieldDescr(const char* name, u16*& member)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrUInt16)
                 , m_size32(nullptr)
@@ -305,7 +303,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::u16& member, JsonEnumTypeDef& enumtype)
+            JsonFieldDescr(const char* name, u16& member, JsonEnumTypeDef& enumtype)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeEnum16)
                 , m_typedescr(&enumtype)
                 , m_size32(nullptr)
@@ -314,7 +312,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::u16*& member, s32 count)
+            JsonFieldDescr(const char* name, u16*& member, s32 count)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrUInt16)
                 , m_csize(count)
@@ -323,7 +321,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::u16*& member, s32& count)
+            JsonFieldDescr(const char* name, u16*& member, s32& count)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrUInt16)
                 , m_size32(&count)
@@ -332,7 +330,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s32& member)
+            JsonFieldDescr(const char* name, s32& member)
                 : m_type(JsonType::TypeInt32)
                 , m_typedescr(JsonTypeDescrInt32)
                 , m_size32(nullptr)
@@ -341,7 +339,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s32*& member)
+            JsonFieldDescr(const char* name, s32*& member)
                 : m_type(JsonType::TypeInt32 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt32)
                 , m_size32(nullptr)
@@ -350,7 +348,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s32*& member, s32 count)
+            JsonFieldDescr(const char* name, s32*& member, s32 count)
                 : m_type(JsonType::TypeInt32 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt32)
                 , m_csize(count)
@@ -359,7 +357,7 @@ namespace xcore
             {
             }
 
-            JsonFieldDescr(const char* name, xcore::s32*& member, s32& count)
+            JsonFieldDescr(const char* name, s32*& member, s32& count)
                 : m_type(JsonType::TypeInt32 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt32)
                 , m_size32(&count)
@@ -486,7 +484,7 @@ namespace xcore
             }
 
             template <typename T>
-            JsonFieldDescr(const char* name, T*& member, xcore::s16& count, JsonTypeDescr& typeDescr)
+            JsonFieldDescr(const char* name, T*& member, s16& count, JsonTypeDescr& typeDescr)
                 : m_type(JsonType::TypeObject | JsonType::TypeArrayPtr | JsonType::TypeSize16)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
@@ -498,7 +496,7 @@ namespace xcore
             }
 
             template <typename T>
-            JsonFieldDescr(const char* name, T*& member, xcore::s32& count, JsonTypeDescr& typeDescr)
+            JsonFieldDescr(const char* name, T*& member, s32& count, JsonTypeDescr& typeDescr)
                 : m_type(JsonType::TypeObject | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
@@ -583,6 +581,6 @@ namespace xcore
         bool JsonDecode(char const* json, char const* json_end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore
 
-#endif // __XBASE_JSON_H__
+#endif // __CJSON_JSON_DECODE_H__

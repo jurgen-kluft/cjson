@@ -1,14 +1,14 @@
-#include "cbase/x_target.h"
-#include "cbase/x_memory.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json.h"
-#include "xjson/x_json_allocator.h"
-#include "xjson/x_json_decode.h"
-#include "xjson/x_json_encode.h"
+#include "cbase/c_target.h"
+#include "cbase/c_memory.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json.h"
+#include "cjson/c_json_allocator.h"
+#include "cjson/c_json_decode.h"
+#include "cjson/c_json_encode.h"
 
 #include "cunittest/cunittest.h"
 
-using namespace xcore;
+using namespace ncore;
 
 extern unsigned char kyria_json[];
 extern unsigned int  kyria_json_len;
@@ -28,13 +28,13 @@ struct key_t
     }
 
     bool        m_nob;           // home-key (e.g. the F or J key)
-    xcore::s16  m_index;         // index in keymap
+    ncore::s16  m_index;         // index in keymap
     const char* m_label;         // label (e.g. "Q")
     float       m_w;             // key width
     float       m_h;             // key height
-    xcore::s8   m_capcolor_size; // should become 3 or 4 (RGB or RGBA)
-    xcore::s8   m_txtcolor_size; //
-    xcore::s8   m_ledcolor_size; //
+    ncore::s8   m_capcolor_size; // should become 3 or 4 (RGB or RGBA)
+    ncore::s8   m_txtcolor_size; //
+    ncore::s8   m_ledcolor_size; //
     float*      m_capcolor;      // color of the key cap, e.g. [ 0.1, 0.1, 0.1, 1.0 ]
     float*      m_txtcolor;      // color of the key label
     float*      m_ledcolor;      // color of the key led
@@ -68,17 +68,17 @@ struct keygroup_t
     float       m_h;    // key height
     float       m_sw;   // key spacing width
     float       m_sh;   // key spacing height
-    xcore::u16  m_enum; // enum
-    xcore::s16  m_r;    // rows
-    xcore::s16  m_c;    // columns
-    xcore::s16  m_a;    // angle, -45 degrees to 45 degrees (granularity is 1 degree)
-    xcore::s8   m_capcolor_size;
-    xcore::s8   m_txtcolor_size;
-    xcore::s8   m_ledcolor_size;
+    ncore::u16  m_enum; // enum
+    ncore::s16  m_r;    // rows
+    ncore::s16  m_c;    // columns
+    ncore::s16  m_a;    // angle, -45 degrees to 45 degrees (granularity is 1 degree)
+    ncore::s8   m_capcolor_size;
+    ncore::s8   m_txtcolor_size;
+    ncore::s8   m_ledcolor_size;
     float*      m_capcolor; // color of the key cap
     float*      m_txtcolor; // color of the key label
     float*      m_ledcolor; // color of the key led
-    xcore::s16  m_nb_keys;  // number of keys in the array
+    ncore::s16  m_nb_keys;  // number of keys in the array
     key_t*      m_keys;     // array of keys
 
     XCORE_CLASS_PLACEMENT_NEW_DELETE
@@ -124,9 +124,9 @@ struct keyboard_t
         m_name         = "Kyria";
         m_nb_keygroups = 0;
         m_keygroups    = nullptr;
-        xcore::copy(m_capcolor, sColorDarkGrey);
-        xcore::copy(m_txtcolor, sColorWhite);
-        xcore::copy(m_ledcolor, sColorBlue);
+        ncore::copy(m_capcolor, sColorDarkGrey);
+        ncore::copy(m_txtcolor, sColorWhite);
+        ncore::copy(m_ledcolor, sColorBlue);
         m_scale = 1.0f;
         m_w     = 81.f;
         m_h     = 81.f;
@@ -136,7 +136,7 @@ struct keyboard_t
 
     const char* m_name; // name of this keyboard
 
-    xcore::s16  m_nb_keygroups;
+    ncore::s16  m_nb_keygroups;
     keygroup_t* m_keygroups;
 
     // global caps, txt and led color, can be overriden per key
@@ -190,7 +190,7 @@ template <> void json::JsonObjectTypeRegisterFields<keyboard_root_t>(keyboard_ro
 
 static json::JsonObjectTypeDeclr<keyboard_root_t> json_keyboards_root("root");
 
-UNITTEST_SUITE_BEGIN(xjson_decode)
+UNITTEST_SUITE_BEGIN(cjson_decode)
 {
     UNITTEST_FIXTURE(decode)
     {

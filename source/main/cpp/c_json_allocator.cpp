@@ -1,9 +1,9 @@
-#include "cbase/x_allocator.h"
-#include "cbase/x_context.h"
-#include "cbase/x_memory.h"
-#include "xjson/x_json_allocator.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_context.h"
+#include "cbase/c_memory.h"
+#include "cjson/c_json_allocator.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -118,8 +118,8 @@ namespace xcore
         void JsonAllocator::Reset()
         {
             this->m_Cursor = this->m_Pointer;
-			xmem::memset(this->m_Pointer, 0xCD, this->m_Size);
+			nmem::memset(this->m_Pointer, 0xCD, this->m_Size);
         }
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore

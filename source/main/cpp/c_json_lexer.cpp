@@ -1,13 +1,13 @@
-#include "cbase/x_allocator.h"
-#include "cbase/x_context.h"
-#include "cbase/x_printf.h"
-#include "cbase/x_runes.h"
-#include "xjson/x_json.h"
-#include "xjson/x_json_utils.h"
-#include "xjson/x_json_allocator.h"
-#include "xjson/x_json_lexer.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_context.h"
+#include "cbase/c_printf.h"
+#include "cbase/c_runes.h"
+#include "cjson/c_json.h"
+#include "cjson/c_json_utils.h"
+#include "cjson/c_json_allocator.h"
+#include "cjson/c_json_lexer.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -40,7 +40,7 @@ namespace xcore
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(len + 1);
             runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
             crunes_t fmt("line %d: %s");
-            xcore::sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
+            sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
             return state->m_ErrorLexeme;
         }
 
@@ -306,4 +306,4 @@ namespace xcore
         }
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore

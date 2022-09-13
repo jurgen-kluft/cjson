@@ -1,14 +1,14 @@
-#ifndef __XBASE_JSON_ALLOCATOR_H__
-#define __XBASE_JSON_ALLOCATOR_H__
-#include "cbase/x_target.h"
+#ifndef __CJSON_JSON_ALLOCATOR_H__
+#define __CJSON_JSON_ALLOCATOR_H__
+#include "cbase/c_target.h"
 #ifdef USE_PRAGMA_ONCE
 #pragma once
 #endif
 
-#include "cbase/x_allocator.h"
-#include "cbase/x_debug.h"
+#include "cbase/c_allocator.h"
+#include "cbase/c_debug.h"
 
-namespace xcore
+namespace ncore
 {
     namespace json
     {
@@ -61,6 +61,6 @@ namespace xcore
         void           DestroyAllocator(JsonAllocator* alloc);
 
     } // namespace json
-} // namespace xcore
+} // namespace ncore
 
-#endif // __XBASE_JSON_H__
+#endif // __CJSON_JSON_ALLOCATOR_H__
