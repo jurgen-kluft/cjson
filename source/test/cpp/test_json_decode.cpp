@@ -39,7 +39,7 @@ struct key_t
     float*      m_txtcolor;      // color of the key label
     float*      m_ledcolor;      // color of the key led
 
-    XCORE_CLASS_PLACEMENT_NEW_DELETE
+    DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 template <> void json::JsonObjectTypeRegisterFields<key_t>(key_t& base, json::JsonFieldDescr*& members, s32& member_count)
@@ -81,7 +81,7 @@ struct keygroup_t
     ncore::s16  m_nb_keys;  // number of keys in the array
     key_t*      m_keys;     // array of keys
 
-    XCORE_CLASS_PLACEMENT_NEW_DELETE
+    DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 // You can provide to and from string functions, if not the default to and from string functions are used.
@@ -149,7 +149,7 @@ struct keyboard_t
     float m_sw; // key spacing width
     float m_sh; // key spacing height
 
-    XCORE_CLASS_PLACEMENT_NEW_DELETE
+    DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 template <> void json::JsonObjectTypeRegisterFields<keyboard_t>(keyboard_t& base, json::JsonFieldDescr*& members, s32& member_count)
@@ -176,7 +176,7 @@ struct keyboard_root_t
     keyboard_root_t() { m_keyboard = nullptr; }
     keyboard_t* m_keyboard;
 
-    XCORE_CLASS_PLACEMENT_NEW_DELETE
+    DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
 template <> void json::JsonObjectTypeRegisterFields<keyboard_root_t>(keyboard_root_t& base, json::JsonFieldDescr*& members, s32& member_count)

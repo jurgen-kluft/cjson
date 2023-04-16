@@ -34,7 +34,7 @@ namespace ncore
                 return static_cast<T*>((void*)Allocate(sizeof(T) * count, ALIGNOF(T)));
             }
 
-            XCORE_CLASS_PLACEMENT_NEW_DELETE
+            DCORE_CLASS_PLACEMENT_NEW_DELETE
 
             char*       m_Pointer; // allocated pointer
             char*       m_Cursor;  // current pointer
