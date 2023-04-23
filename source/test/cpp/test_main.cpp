@@ -1,4 +1,3 @@
-
 #include "cbase/c_base.h"
 #include "cbase/c_allocator.h"
 #include "cbase/c_console.h"
@@ -6,9 +5,7 @@
 
 #include "cunittest/cunittest.h"
 
-UNITTEST_SUITE_LIST(cUnitTest);
-UNITTEST_SUITE_DECLARE(cUnitTest, cjson);
-UNITTEST_SUITE_DECLARE(cUnitTest, cjson_decode);
+UNITTEST_SUITE_LIST
 
 namespace ncore
 {
@@ -20,7 +17,7 @@ namespace ncore
 
         virtual bool handle_assert(u32& flags, const char* fileName, s32 lineNumber, const char* exprString, const char* messageString)
         {
-            UnitTest::reportAssert(exprString, fileName, lineNumber);
+            UnitTest::ReportAssert(exprString, fileName, lineNumber);
             NumberOfAsserts++;
             return false;
         }
