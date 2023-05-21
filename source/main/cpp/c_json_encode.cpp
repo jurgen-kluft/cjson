@@ -180,10 +180,10 @@ namespace ncore
             }
 
             void writeValueBool(bool value) { writeString(value ? "true" : "false"); }
-            void writeValueInt64(s64 field_value) { m_json_text = itoa(field_value, m_json_text, m_json_text_end, 10); }
-            void writeValueUInt64(u64 field_value) { m_json_text = utoa(field_value, m_json_text, m_json_text_end, 10); }
-            void writeValueFloat(f32 field_value) { m_json_text = ftoa(field_value, m_json_text, m_json_text_end); }
-            void writeValueDouble(f64 field_value) { m_json_text = dtoa(field_value, m_json_text, m_json_text_end); }
+            void writeValueInt64(s64 field_value) { m_json_text = ascii::itoa(field_value, m_json_text, m_json_text_end, 10); }
+            void writeValueUInt64(u64 field_value) { m_json_text = ascii::utoa(field_value, m_json_text, m_json_text_end, 10); }
+            void writeValueFloat(f32 field_value) { m_json_text = ascii::ftoa(field_value, m_json_text, m_json_text_end); }
+            void writeValueDouble(f64 field_value) { m_json_text = ascii::dtoa(field_value, m_json_text, m_json_text_end); }
 
             void startField(const char* field_name)
             {

@@ -26,12 +26,12 @@ namespace ncore
 
             template <typename T> T* Allocate() 
             { 
-                void* mem = Allocate(sizeof(T), ALIGNOF(T));
+                void* mem = Allocate(sizeof(T), alignof (T));
                 return static_cast<T*>(mem);
             }
             template <typename T> T* AllocateArray(s32 count) 
             { 
-                return static_cast<T*>((void*)Allocate(sizeof(T) * count, ALIGNOF(T)));
+                return static_cast<T*>((void*)Allocate(sizeof(T) * count, alignof(T)));
             }
 
             DCORE_CLASS_PLACEMENT_NEW_DELETE

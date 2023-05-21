@@ -13,19 +13,19 @@ namespace ncore
 {
     namespace json
     {
-        static JsonSystemTypeDef sJsonTypeDescrBool("bool", sizeof(bool), ALIGNOF(bool));
-        static JsonSystemTypeDef sJsonTypeDescrInt8("s8", sizeof(s8), ALIGNOF(s8));
-        static JsonSystemTypeDef sJsonTypeDescrInt16("s16", sizeof(s16), ALIGNOF(s16));
-        static JsonSystemTypeDef sJsonTypeDescrInt32("s32", sizeof(s32), ALIGNOF(s32));
-        static JsonSystemTypeDef sJsonTypeDescrInt64("s64", sizeof(s64), ALIGNOF(s64));
-        static JsonSystemTypeDef sJsonTypeDescrUInt8("u8", sizeof(u8), ALIGNOF(u8));
-        static JsonSystemTypeDef sJsonTypeDescrUInt16("u16", sizeof(u16), ALIGNOF(u16));
-        static JsonSystemTypeDef sJsonTypeDescrUInt32("u32", sizeof(u32), ALIGNOF(u32));
-        static JsonSystemTypeDef sJsonTypeDescrUInt64("u64", sizeof(u64), ALIGNOF(u64));
-        static JsonSystemTypeDef sJsonTypeDescrFloat32("f32", sizeof(f32), ALIGNOF(f32));
-        static JsonSystemTypeDef sJsonTypeDescrFloat64("f64", sizeof(f64), ALIGNOF(f64));
-        static JsonSystemTypeDef sJsonTypeDescrString("string", sizeof(const char*), ALIGNOF(const char*));
-        static JsonSystemTypeDef sJsonTypeDescrEnum16("enum(u16)", sizeof(u16), ALIGNOF(u16));
+        static JsonSystemTypeDef sJsonTypeDescrBool("bool", sizeof(bool), alignof(bool));
+        static JsonSystemTypeDef sJsonTypeDescrInt8("s8", sizeof(s8), alignof(s8));
+        static JsonSystemTypeDef sJsonTypeDescrInt16("s16", sizeof(s16), alignof(s16));
+        static JsonSystemTypeDef sJsonTypeDescrInt32("s32", sizeof(s32), alignof(s32));
+        static JsonSystemTypeDef sJsonTypeDescrInt64("s64", sizeof(s64), alignof(s64));
+        static JsonSystemTypeDef sJsonTypeDescrUInt8("u8", sizeof(u8), alignof(u8));
+        static JsonSystemTypeDef sJsonTypeDescrUInt16("u16", sizeof(u16), alignof(u16));
+        static JsonSystemTypeDef sJsonTypeDescrUInt32("u32", sizeof(u32), alignof(u32));
+        static JsonSystemTypeDef sJsonTypeDescrUInt64("u64", sizeof(u64), alignof(u64));
+        static JsonSystemTypeDef sJsonTypeDescrFloat32("f32", sizeof(f32), alignof(f32));
+        static JsonSystemTypeDef sJsonTypeDescrFloat64("f64", sizeof(f64), alignof(f64));
+        static JsonSystemTypeDef sJsonTypeDescrString("string", sizeof(const char*), alignof(const char*));
+        static JsonSystemTypeDef sJsonTypeDescrEnum16("enum(u16)", sizeof(u16), alignof(u16));
 
         JsonTypeDescr const* JsonTypeDescrBool    = &sJsonTypeDescrBool;
         JsonTypeDescr const* JsonTypeDescrInt8    = &sJsonTypeDescrInt8;

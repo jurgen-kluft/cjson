@@ -87,7 +87,7 @@ struct keygroup_t
 // You can provide to and from string functions, if not the default to and from string functions are used.
 //                          Bit      0       1         2       3       4        5        6       7
 static const char* enum_strs[] = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd", nullptr};
-static json::JsonEnumTypeDef json_keygroup_enum("keygroup_enum", sizeof(u16), ALIGNOF(u16), enum_strs);
+static json::JsonEnumTypeDef json_keygroup_enum("keygroup_enum", sizeof(u16), alignof(u16), enum_strs);
 
 template <> void json::JsonObjectTypeRegisterFields<keygroup_t>(keygroup_t& base, json::JsonFieldDescr*& members, s32& member_count)
 {

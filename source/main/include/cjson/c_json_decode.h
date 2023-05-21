@@ -114,7 +114,7 @@ namespace ncore
             static void placement_new(void* ptr) { new (ptr) T(); }
 
             JsonObjectTypeDeclr(const char* name)
-                : JsonObjectTypeDef(name, &m_default, sizeof(T), ALIGNOF(T), 0, nullptr, placement_new, nullptr)
+                : JsonObjectTypeDef(name, &m_default, sizeof(T), alignof(T), 0, nullptr, placement_new, nullptr)
                 , m_default()
             {
                 JsonObjectTypeRegisterFields<T>(m_default, m_members, m_member_count);
