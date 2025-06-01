@@ -15,22 +15,22 @@ func GetPackage() *denv.Package {
 	ccorepkg := ccore.GetPackage()
 
 	// The main (cjson) package
-	mainpkg := denv.NewPackage("cjson")
+	mainpkg := denv.NewPackage("github.com\\jurgen-kluft", "cjson")
 	mainpkg.AddPackage(cunittestpkg)
 	mainpkg.AddPackage(cbasepkg)
 	mainpkg.AddPackage(ccorepkg)
 
 	// 'cjson' library
-	mainlib := denv.SetupCppLibProject("cjson", "github.com\\jurgen-kluft\\cjson")
+	mainlib := denv.SetupCppLibProject(mainpkg, "cjson")
 	mainlib.AddDependencies(cbasepkg.GetMainLib()...)
 	mainlib.AddDependencies(ccorepkg.GetMainLib()...)
 
 	// 'cjson' unittest project
-	maintest := denv.SetupDefaultCppTestProject("cjson_test", "github.com\\jurgen-kluft\\cjson")
+	maintest := denv.SetupCppTestProject(mainpkg, "cjson_test")
 	maintest.AddDependencies(cunittestpkg.GetMainLib()...)
 	maintest.AddDependencies(cbasepkg.GetMainLib()...)
 	maintest.AddDependencies(ccorepkg.GetMainLib()...)
-	maintest.Dependencies = append(maintest.Dependencies, mainlib)
+	maintest.AddDependency(mainlib)
 
 	mainpkg.AddMainLib(mainlib)
 	mainpkg.AddUnittest(maintest)
