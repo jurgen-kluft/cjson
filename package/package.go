@@ -3,36 +3,42 @@ package cjson
 import (
 	cbase "github.com/jurgen-kluft/cbase/package"
 	denv "github.com/jurgen-kluft/ccode/denv"
-	ccore "github.com/jurgen-kluft/ccore/package"
 	cunittest "github.com/jurgen-kluft/cunittest/package"
 )
 
-// GetPackage returns the package object of 'cjson'
+const (
+	repo_path = "github.com\\jurgen-kluft"
+	repo_name = "cjson"
+)
+
 func GetPackage() *denv.Package {
-	// Dependencies
+	name := repo_name
+
+	// dependencies
 	cunittestpkg := cunittest.GetPackage()
 	cbasepkg := cbase.GetPackage()
-	ccorepkg := ccore.GetPackage()
 
-	// The main (cjson) package
-	mainpkg := denv.NewPackage("github.com\\jurgen-kluft", "cjson")
+	// main package
+	mainpkg := denv.NewPackage(repo_path, repo_name)
 	mainpkg.AddPackage(cunittestpkg)
 	mainpkg.AddPackage(cbasepkg)
-	mainpkg.AddPackage(ccorepkg)
 
-	// 'cjson' library
-	mainlib := denv.SetupCppLibProject(mainpkg, "cjson")
+	// main library
+	mainlib := denv.SetupCppLibProject(mainpkg, name)
 	mainlib.AddDependencies(cbasepkg.GetMainLib()...)
-	mainlib.AddDependencies(ccorepkg.GetMainLib()...)
 
-	// 'cjson' unittest project
-	maintest := denv.SetupCppTestProject(mainpkg, "cjson_test")
+	// test library
+	testlib := denv.SetupCppTestLibProject(mainpkg, name)
+	testlib.AddDependencies(cbasepkg.GetTestLib()...)
+	testlib.AddDependencies(cunittestpkg.GetTestLib()...)
+
+	// unittest project
+	maintest := denv.SetupCppTestProject(mainpkg, name)
 	maintest.AddDependencies(cunittestpkg.GetMainLib()...)
-	maintest.AddDependencies(cbasepkg.GetMainLib()...)
-	maintest.AddDependencies(ccorepkg.GetMainLib()...)
-	maintest.AddDependency(mainlib)
+	maintest.AddDependency(testlib)
 
 	mainpkg.AddMainLib(mainlib)
+	mainpkg.AddTestLib(testlib)
 	mainpkg.AddUnittest(maintest)
 	return mainpkg
 }
