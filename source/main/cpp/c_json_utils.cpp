@@ -343,14 +343,14 @@ namespace ncore
                 char c = *str;
                 if ((ec == '\0' || ec == '|') && c == '\0')
                     break;
-                    
+
                 if (c == '\0')
                     return false;
 
                 if (ec != c)
                 {
-                    ec = to_lower(ec);
-                    c = to_lower(c);
+                    ec = nrunes::to_lower(ec);
+                    c = nrunes::to_lower(c);
                     if (ec != c)
                         return false;
                 }
@@ -363,10 +363,9 @@ namespace ncore
 
         void EnumFromString(const char*& str, const char** enum_strs, u64& out_e)
         {
-            const char** estr = enum_strs;
             while (true)
             {
-                while (*str != '\0' && is_whitespace(*str))
+                while (*str != '\0' && nrunes::is_whitespace(*str))
                 {
                     str++;
                 }

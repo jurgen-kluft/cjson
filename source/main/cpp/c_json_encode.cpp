@@ -1,5 +1,6 @@
 #include "cbase/c_allocator.h"
 #include "cbase/c_context.h"
+#include "cbase/c_memory.h"
 #include "cbase/c_printf.h"
 #include "cbase/c_runes.h"
 #include "cjson/c_json.h"
@@ -98,8 +99,7 @@ namespace ncore
             jsondoc_t()
             {
                 m_indent_spaces = 2;
-                for (s32 i = 0; i < sizeof(m_indent_str); ++i)
-                    m_indent_str[i] = ' ';
+                g_fill(m_indent_str, ' ');
                 m_indent_str[sizeof(m_indent_str) - 1] = '\0';
             }
 

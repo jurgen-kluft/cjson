@@ -38,8 +38,8 @@ namespace ncore
             ASSERT(state->m_ErrorMessage == nullptr);
             int const len         = ascii::strlen(error) + 32;
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(len + 1);
-            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + len);
-            crunes_t fmt("line %d: %s");
+            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + len);
+            crunes_t fmt = make_crunes("line %d: %s");
             sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
             return state->m_ErrorLexeme;
         }
@@ -119,9 +119,9 @@ namespace ncore
                                 c = PeekAsciiChar(rptr, state->m_End);
                                 rptr += 1;
 
-                                if (is_hexa(c))
+                                if (nrunes::is_hexa(c))
                                 {
-                                    u32 lc = to_lower(c);
+                                    u32 lc = nrunes::to_lower(c);
                                     hex_code <<= 4;
                                     if (lc >= 'a' && lc <= 'f')
                                         hex_code |= lc - 'a' + 10;
@@ -170,7 +170,7 @@ namespace ncore
             s32 kwlen = 0;
 
             uchar8_t ch = PeekUtf8Char(eptr, state->m_End);
-            while (is_alpha(ch.c))
+            while (nrunes::is_alpha(ch.c))
             {
                 eptr += ch.l;
                 kwlen += 1;
@@ -207,7 +207,7 @@ namespace ncore
             uchar8_t ch = PeekUtf8Char(state->m_Cursor, state->m_End);
             while (ch.c != 0)
             {
-                if (is_whitespace(ch.c))
+                if (nrunes::is_whitespace(ch.c))
                 {
                     if ('\n' == ch.c)
                     {

@@ -9,14 +9,14 @@ namespace ncore
     {
         JsonAllocator* CreateAllocator(u32 size, const char* name)
         {
-            JsonAllocator* alloc = context_t::system_alloc()->construct<JsonAllocator>();
+            JsonAllocator* alloc = g_construct<JsonAllocator>(g_current_context().system_alloc());
             alloc->Init(size, name);
             return alloc;
         }
 
         JsonAllocator* CreateAllocator(void* mem, u32 len, const char* name)
         {
-            JsonAllocator* alloc = context_t::system_alloc()->construct<JsonAllocator>();
+            JsonAllocator* alloc = g_construct<JsonAllocator>(g_current_context().system_alloc());
             alloc->Init(mem, len, name);
             return alloc;
         }
@@ -25,7 +25,7 @@ namespace ncore
         void DestroyAllocator(JsonAllocator* alloc)
         {
             alloc->Destroy();
-            context_t::system_alloc()->destruct(alloc);
+            g_destruct(g_current_context().system_alloc(), alloc);
         }
 
         JsonAllocatorScope::JsonAllocatorScope(JsonAllocator* a)
@@ -38,7 +38,7 @@ namespace ncore
 
         void JsonAllocator::Init(s32 max_size, const char* debug_name)
         {
-            this->m_Pointer     = static_cast<char*>(context_t::system_alloc()->allocate(max_size));
+            this->m_Pointer     = static_cast<char*>(g_allocate_array<char>(g_current_context().system_alloc(), max_size));
             this->m_Cursor      = this->m_Pointer;
             this->m_Size        = max_size;
             this->m_Owner       = 0;
@@ -60,7 +60,7 @@ namespace ncore
         {
             if (this->m_Owner != 0)
             {
-                context_t::system_alloc()->deallocate(this->m_Pointer);
+                g_deallocate_array(g_current_context().system_alloc(), this->m_Pointer);
             }
             this->m_Pointer = nullptr;
             this->m_Cursor  = nullptr;

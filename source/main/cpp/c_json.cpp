@@ -67,8 +67,8 @@ namespace ncore
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(1024);
-            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
-            crunes_t fmt("line %d: %s");
+            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+            crunes_t fmt = make_crunes("line %d: %s");
             ncore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
@@ -302,7 +302,7 @@ namespace ncore
         {
             if (m_Type != kString)
                 return false;
-                
+
             const JsonStringValue* stringValue = static_cast<const JsonStringValue*>(this);
             const char* str = stringValue->m_String;
             const char* end = str + 9;

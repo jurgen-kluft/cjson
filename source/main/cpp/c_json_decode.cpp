@@ -362,8 +362,8 @@ namespace ncore
         static JsonError* MakeJsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
-            runes_t  errmsg(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
-            crunes_t fmt("line %d: %s");
+            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+            crunes_t fmt = make_crunes("line %d: %s");
             sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
@@ -770,7 +770,7 @@ namespace ncore
                 default: return MakeJsonError(json_state, "invalid document");
             }
 
-            return nullptr;
+            return err;
         }
 
         bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)

@@ -124,9 +124,9 @@ struct keyboard_t
         m_name         = "Kyria";
         m_nb_keygroups = 0;
         m_keygroups    = nullptr;
-        ncore::copy(m_capcolor, sColorDarkGrey);
-        ncore::copy(m_txtcolor, sColorWhite);
-        ncore::copy(m_ledcolor, sColorBlue);
+        ncore::g_copy(m_capcolor, sColorDarkGrey);
+        ncore::g_copy(m_txtcolor, sColorWhite);
+        ncore::g_copy(m_ledcolor, sColorBlue);
         m_scale = 1.0f;
         m_w     = 81.f;
         m_h     = 81.f;

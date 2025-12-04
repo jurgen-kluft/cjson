@@ -162,71 +162,71 @@ namespace ncore
             JsonFieldDescr(const char* name, bool& member)
                 : m_type(JsonType::TypeBool)
                 , m_typedescr(JsonTypeDescrBool)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
             JsonFieldDescr(const char* name, bool*& member)
                 : m_type(JsonType::TypeBool | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrBool)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, bool*& member, s32 count)
                 : m_type(JsonType::TypeBool | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrBool)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, bool*& member, s32& count)
                 : m_type(JsonType::TypeBool | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrBool)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
             JsonFieldDescr(const char* name, s8& member)
                 : m_type(JsonType::TypeInt8)
                 , m_typedescr(JsonTypeDescrInt8)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s8*& member)
                 : m_type(JsonType::TypeInt8 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt8)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s8*& member, s32 count)
                 : m_type(JsonType::TypeInt8 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt8)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, u8*& member, s8& count)
                 : m_type(JsonType::TypeUInt8 | JsonType::TypeArrayPtr | JsonType::TypeSize8)
                 , m_typedescr(JsonTypeDescrUInt8)
-                , m_size8(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size8(&count)
             {
             }
 
@@ -234,144 +234,144 @@ namespace ncore
             JsonFieldDescr(const char* name, u8 (&member)[N], s32 count)
                 : m_type(JsonType::TypeUInt8 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrUInt8)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, s8*& member, s32& count)
                 : m_type(JsonType::TypeInt8 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt8)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
             JsonFieldDescr(const char* name, s16& member)
                 : m_type(JsonType::TypeInt16)
                 , m_typedescr(JsonTypeDescrInt16)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s16*& member)
                 : m_type(JsonType::TypeInt16 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt16)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s16*& member, s32 count)
                 : m_type(JsonType::TypeInt16 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt16)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, s16*& member, s32& count)
                 : m_type(JsonType::TypeInt16 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt16)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
             JsonFieldDescr(const char* name, u16& member)
                 : m_type(JsonType::TypeUInt16)
                 , m_typedescr(JsonTypeDescrUInt16)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, u16*& member)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrUInt16)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, u16& member, JsonEnumTypeDef& enumtype)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeEnum16)
                 , m_typedescr(&enumtype)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, u16*& member, s32 count)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrUInt16)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, u16*& member, s32& count)
                 : m_type(JsonType::TypeUInt16 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrUInt16)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
             JsonFieldDescr(const char* name, s32& member)
                 : m_type(JsonType::TypeInt32)
                 , m_typedescr(JsonTypeDescrInt32)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s32*& member)
                 : m_type(JsonType::TypeInt32 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrInt32)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, s32*& member, s32 count)
                 : m_type(JsonType::TypeInt32 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrInt32)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, s32*& member, s32& count)
                 : m_type(JsonType::TypeInt32 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrInt32)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
             JsonFieldDescr(const char* name, float& member)
                 : m_type(JsonType::TypeF32)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
@@ -379,54 +379,54 @@ namespace ncore
             JsonFieldDescr(const char* name, float (&member)[N], s32 count)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, float*& member)
                 : m_type(JsonType::TypeF32 | JsonType::TypePointer)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
             }
 
             JsonFieldDescr(const char* name, float*& member, s32 count)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, float*& member, s8& count)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArrayPtr | JsonType::TypeSize8)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_size8(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size8(&count)
             {
             }
 
             JsonFieldDescr(const char* name, float*& member, s16& count)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArrayPtr | JsonType::TypeSize16)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_size16(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size16(&count)
             {
             }
 
             JsonFieldDescr(const char* name, float*& member, s32& count)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
             }
 
@@ -434,18 +434,18 @@ namespace ncore
             JsonFieldDescr(const char* name, float* (&member)[N], s32 count = N)
                 : m_type(JsonType::TypeF32 | JsonType::TypeArray)
                 , m_typedescr(JsonTypeDescrFloat32)
-                , m_csize(count)
                 , m_name(name)
                 , m_member(&member)
+                , m_csize(count)
             {
             }
 
             JsonFieldDescr(const char* name, const char*& member)
                 : m_type(JsonType::TypeString)
                 , m_typedescr(JsonTypeDescrString)
-                , m_size32(nullptr)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
                 // const char*  m_name;
             }
@@ -453,9 +453,9 @@ namespace ncore
             JsonFieldDescr(const char* name, const char**& member, s32& count)
                 : m_type(JsonType::TypeString | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(JsonTypeDescrString)
-                , m_size32(&count)
                 , m_name(name)
                 , m_member(&member)
+                , m_size32(&count)
             {
                 // s32            m_nb_names;
                 // const char**   m_names;
@@ -466,8 +466,8 @@ namespace ncore
                 : m_type(JsonType::TypeObject)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
-                , m_size32(nullptr)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
                 // e.g. key_t m_key;
             }
@@ -477,8 +477,8 @@ namespace ncore
                 : m_type(JsonType::TypeObject | JsonType::TypePointer)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
-                , m_size32(nullptr)
                 , m_member(&member)
+                , m_size32(nullptr)
             {
                 // e.g. key_t* m_key;
             }
@@ -488,8 +488,8 @@ namespace ncore
                 : m_type(JsonType::TypeObject | JsonType::TypeArrayPtr | JsonType::TypeSize16)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
-                , m_size16(&count)
                 , m_member(&member)
+                , m_size16(&count)
             {
                 // e.g.
                 //  - key_t* m_keys; // array of keys (size<32768)
@@ -500,8 +500,8 @@ namespace ncore
                 : m_type(JsonType::TypeObject | JsonType::TypeArrayPtr | JsonType::TypeSize32)
                 , m_typedescr(&typeDescr)
                 , m_name(name)
-                , m_size32(&count)
                 , m_member(&member)
+                , m_size32(&count)
             {
                 // e.g.
                 //  - key_t* m_keys; // array of keys (size<2147483647)
