@@ -2,7 +2,7 @@
 #define __CJSON_JSON_ALLOCATOR_H__
 #include "ccore/c_target.h"
 #ifdef USE_PRAGMA_ONCE
-#pragma once
+#    pragma once
 #endif
 
 #include "cbase/c_allocator.h"
@@ -10,37 +10,35 @@
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         struct JsonAllocator
         {
-            void  Init(s32 max_size, const char* debug_name);
-            void  Init(void* mem, u32 len, const char* debug_name);
+            void  Init(alloc_t* alloc, s64 max_size, const char* debug_name);
+            void  Init(void* mem, s64 len, const char* debug_name);
             void  Destroy();
-            char* Allocate(s32 size, s32 align);
+            char* Allocate(s64 size, s16 alignment);
 
-            char* CheckOut(char*& end, s32 align = 4);
+            char* CheckOut(char*& end);
             void  Commit(char* ptr);
 
             void Reset();
 
-            template <typename T> T* Allocate() 
-            { 
-                void* mem = Allocate(sizeof(T), alignof (T));
+            template <typename T> T* Allocate(s16 alignment = sizeof(void*))
+            {
+                ASSERT(alignment <= (s16)sizeof(void*));
+                void* mem = Allocate(sizeof(T), alignment);
                 return static_cast<T*>(mem);
             }
-            template <typename T> T* AllocateArray(s32 count) 
-            { 
-                return static_cast<T*>((void*)Allocate(sizeof(T) * count, alignof(T)));
-            }
+            template <typename T> T* AllocateArray(s32 count) { return static_cast<T*>((void*)Allocate(sizeof(T) * count, sizeof(void*))); }
 
             DCORE_CLASS_PLACEMENT_NEW_DELETE
 
-            char*       m_Pointer; // allocated pointer
-            char*       m_Cursor;  // current pointer
-            s32         m_Size;
-            s32         m_Owner;
-            const char* m_DebugName;
+            alloc_t*    m_Alloc;     // underlying allocator
+            char*       m_Pointer;   // allocated pointer
+            s64         m_Size;      // current size
+            s64         m_Capacity;  // total capacity
+            const char* m_DebugName; // debug name
         };
 
         class JsonAllocatorScope
@@ -51,16 +49,11 @@ namespace ncore
 
         private:
             JsonAllocatorScope(const JsonAllocatorScope& o) {}
-			JsonAllocatorScope& operator=(const JsonAllocatorScope&) { return *this; }
-            JsonAllocator*     m_Allocator;
-            char*              m_Cursor;
+            JsonAllocatorScope& operator=(const JsonAllocatorScope&) { return *this; }
+            JsonAllocator*      m_Allocator;
+            s64                 m_Size;
         };
-
-        JsonAllocator* CreateAllocator(u32 size, const char* name = "JSON Allocator");
-        JsonAllocator* CreateAllocator(void* mem, u32 len, const char* name = "JSON Allocator");
-        void           DestroyAllocator(JsonAllocator* alloc);
-
-    } // namespace json
+    } // namespace njson
 } // namespace ncore
 
 #endif // __CJSON_JSON_ALLOCATOR_H__

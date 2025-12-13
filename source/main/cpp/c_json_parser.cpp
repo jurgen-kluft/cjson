@@ -3,72 +3,74 @@
 #include "cbase/c_memory.h"
 #include "cbase/c_printf.h"
 #include "cbase/c_runes.h"
-#include "cjson/c_json.h"
-#include "cjson/c_json_lexer.h"
+#include "cjson/c_json_parser.h"
+#include "cjson/c_json_parser_lexer.h"
 #include "cjson/c_json_utils.h"
 #include "cjson/c_json_allocator.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         const JsonValue* JsonValue::Find(const char* key) const
         {
-            const JsonObjectValue* obj = AsObject();
+            const JsonObjectValue* obj         = AsObject();
+            const JsonNamedValue*  named_value = obj->m_LinkedList;
             for (int i = 0, count = obj->m_Count; i < count; ++i)
             {
                 const char* cmp_key = key;
-                const char* obj_key = obj->m_Names[i];
+                const char* obj_key = named_value->m_Name;
                 while (*cmp_key != 0 && *obj_key != 0 && *cmp_key == *obj_key)
                     ++cmp_key, ++obj_key;
                 if (*cmp_key == 0 && *obj_key == 0)
-                    return obj->m_Values[i];
+                    return named_value->m_Value;
+                named_value = named_value->m_Next;
             }
             return nullptr;
         }
 
         struct JsonState
         {
-            JsonLexerState    m_Lexer;
-            char*             m_ErrorMessage;
-            JsonAllocator*    m_Allocator;
-            JsonAllocator*    m_Scratch;
-            int               m_NumberOfObjects;
-            int               m_NumberOfNumbers;
-            int               m_NumberOfStrings;
-            int               m_NumberOfArrays;
-            int               m_NumberOfBooleans;
-            JsonBooleanValue* m_TrueValue;
-            JsonBooleanValue* m_FalseValue;
-            JsonValue*        m_NullValue;
+            JsonLexerState m_Lexer;
+            char*          m_ErrorMessage;
+            JsonAllocator* m_Allocator;
+            JsonAllocator* m_Scratch;
+            int            m_NumberOfObjects;
+            int            m_NumberOfNumbers;
+            int            m_NumberOfStrings;
+            int            m_NumberOfArrays;
+            int            m_NumberOfBooleans;
+            JsonValue*     m_TrueValue;
+            JsonValue*     m_FalseValue;
+            JsonValue*     m_NullValue;
         };
 
         static void JsonStateInit(JsonState* state, JsonAllocator* alloc, JsonAllocator* scratch, char const* buffer, char const* end)
         {
             JsonLexerStateInit(&state->m_Lexer, buffer, end, alloc, scratch);
-            state->m_ErrorMessage          = nullptr;
-            state->m_Allocator             = alloc;
-            state->m_Scratch               = scratch;
-            state->m_NumberOfObjects       = 0;
-            state->m_NumberOfNumbers       = 0;
-            state->m_NumberOfStrings       = 0;
-            state->m_NumberOfArrays        = 0;
-            state->m_NumberOfBooleans      = 2;
-            state->m_TrueValue             = alloc->Allocate<JsonBooleanValue>();
-            state->m_TrueValue->m_Type     = JsonValue::kBoolean;
-            state->m_TrueValue->m_Boolean  = true;
-            state->m_FalseValue            = alloc->Allocate<JsonBooleanValue>();
-            state->m_FalseValue->m_Type    = JsonValue::kBoolean;
-            state->m_FalseValue->m_Boolean = false;
-            state->m_NullValue             = alloc->Allocate<JsonValue>();
-            state->m_NullValue->m_Type     = JsonValue::kNull;
+            state->m_ErrorMessage                            = nullptr;
+            state->m_Allocator                               = alloc;
+            state->m_Scratch                                 = scratch;
+            state->m_NumberOfObjects                         = 0;
+            state->m_NumberOfNumbers                         = 0;
+            state->m_NumberOfStrings                         = 0;
+            state->m_NumberOfArrays                          = 0;
+            state->m_NumberOfBooleans                        = 2;
+            state->m_TrueValue                               = alloc->Allocate<JsonValue>();
+            state->m_TrueValue->m_Type                       = JsonValue::kBoolean;
+            state->m_TrueValue->m_Value.m_Boolean.m_Boolean  = true;
+            state->m_FalseValue                              = alloc->Allocate<JsonValue>();
+            state->m_FalseValue->m_Type                      = JsonValue::kBoolean;
+            state->m_FalseValue->m_Value.m_Boolean.m_Boolean = false;
+            state->m_NullValue                               = alloc->Allocate<JsonValue>();
+            state->m_NullValue->m_Type                       = JsonValue::kNull;
         }
 
         static JsonValue* JsonError(JsonState* state, const char* error)
         {
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(1024);
-            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
-            crunes_t fmt = make_crunes("line %d: %s");
+            runes_t  errmsg       = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+            crunes_t fmt          = ascii::make_crunes("line %d: %s");
             ncore::sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
             return nullptr;
         }
@@ -90,6 +92,7 @@ namespace ncore
             struct KvPair
             {
                 const char*      m_Key;
+                const char*      m_KeyEnd;
                 const JsonValue* m_Value;
                 KvPair*          m_Next;
             };
@@ -109,7 +112,7 @@ namespace ncore
                     m_Count   = 0;
                 }
 
-                void Add(const char* key, const JsonValue* value)
+                void Add(const char* key, const char* key_end, const JsonValue* value)
                 {
                     if (1 == ++m_Count)
                     {
@@ -130,8 +133,15 @@ namespace ncore
                 }
             };
 
-            KvPairList kv_pairs;
-            kv_pairs.Init(json_state->m_Scratch);
+            // KvPairList kv_pairs;
+            // kv_pairs.Init(json_state->m_Scratch);
+
+            JsonAllocator* alloc  = json_state->m_Allocator;
+            JsonValue*     result = alloc->Allocate<JsonValue>();
+            result->m_Type        = JsonValue::kObject;
+
+            result->m_Value.m_Object.m_Count      = 0;
+            result->m_Value.m_Object.m_LinkedList = nullptr;
 
             bool done = false;
             while (!done)
@@ -153,7 +163,12 @@ namespace ncore
                         if (value == nullptr)
                             return nullptr;
 
-                        kv_pairs.Add(l.m_String, value);
+                        JsonNamedValue* named_value           = alloc->Allocate<JsonNamedValue>();
+                        named_value->m_Name                   = l.m_String.m_Str;
+                        named_value->m_Value                  = value;
+                        named_value->m_Next                   = result->m_Value.m_Object.m_LinkedList;
+                        result->m_Value.m_Object.m_LinkedList = named_value;
+                        result->m_Value.m_Object.m_Count += 1;
 
                         seen_value = true;
                         seen_comma = false;
@@ -179,26 +194,7 @@ namespace ncore
                 }
             }
 
-            JsonAllocator* alloc = json_state->m_Allocator;
-
-            s32               count  = kv_pairs.m_Count;
-            const char**      names  = alloc->AllocateArray<const char*>(kv_pairs.m_Count);
-            const JsonValue** values = alloc->AllocateArray<const JsonValue*>(kv_pairs.m_Count);
-
-            s32 index = 0;
-            for (KvPair* p = kv_pairs.m_Head; p; p = p->m_Next, ++index)
-            {
-                names[index]  = p->m_Key;
-                values[index] = p->m_Value;
-            }
-
             json_state->m_NumberOfObjects += 1;
-            JsonObjectValue* result = alloc->Allocate<JsonObjectValue>();
-            result->m_Type          = JsonValue::kObject;
-            result->m_Count         = count;
-            result->m_Names         = names;
-            result->m_Values        = values;
-
             return result;
         }
 
@@ -209,48 +205,16 @@ namespace ncore
             if (!JsonLexerExpect(lexer, kJsonLexBeginArray))
                 return JsonError(json_state, "expected '['");
 
-            JsonAllocatorScope scratch_scope(json_state->m_Scratch);
+            JsonAllocator* alloc = json_state->m_Allocator;
 
-            struct ListElem
-            {
-                inline ListElem()
-                    : m_Value(nullptr)
-                    , m_Next(nullptr)
-                {
-                }
-                const JsonValue* m_Value;
-                ListElem*        m_Next;
-            };
+            JsonValue* result                    = alloc->Allocate<JsonValue>();
+            result->m_Type                       = JsonValue::kArray;
+            result->m_Value.m_Array.m_Count      = 0;
+            result->m_Value.m_Array.m_LinkedList = nullptr;
 
-            struct ValueList
-            {
-                JsonAllocator* m_Scratch;
-                ListElem       m_Head;
-                ListElem*      m_Tail;
-                s32            m_Count;
-
-                void Init(JsonAllocator* scratch)
-                {
-                    m_Scratch = scratch;
-                    m_Tail    = &m_Head;
-                    m_Count   = 0;
-                }
-
-                void Add(const JsonValue* value)
-                {
-                    ListElem* elem = m_Scratch->Allocate<ListElem>();
-                    elem->m_Next   = nullptr;
-                    elem->m_Value  = value;
-                    m_Tail->m_Next = elem;
-                    m_Tail         = elem;
-                    m_Count += 1;
-                }
-            };
-
-            ValueList value_list;
-
-            value_list.Init(json_state->m_Scratch);
-
+            i32              count = 0;
+            JsonLinkedValue* head  = nullptr;
+            JsonLinkedValue* tail  = nullptr;
             for (;;)
             {
                 JsonLexeme l = JsonLexerPeek(lexer);
@@ -261,7 +225,7 @@ namespace ncore
                     break;
                 }
 
-                if (value_list.m_Count > 0)
+                if (count > 0)
                 {
                     if (kJsonLexValueSeparator != l.m_Type)
                     {
@@ -275,25 +239,25 @@ namespace ncore
                 if (!value)
                     return nullptr;
 
-                value_list.Add(value);
+                JsonLinkedValue* linked_value = alloc->Allocate<JsonLinkedValue>();
+                linked_value->m_Value         = value;
+                linked_value->m_Next          = nullptr;
+                if (count == 0)
+                {
+                    head = tail = linked_value;
+                }
+                else
+                {
+                    tail->m_Next = linked_value;
+                    tail         = linked_value;
+                }
+                count += 1;
             }
 
-            JsonAllocator* alloc = json_state->m_Allocator;
-
-            s32               count  = value_list.m_Count;
-            const JsonValue** values = alloc->AllocateArray<const JsonValue*>(count);
-
-            s32 index = 0;
-            for (ListElem* p = value_list.m_Head.m_Next; p; p = p->m_Next, ++index)
-            {
-                values[index] = p->m_Value;
-            }
+            result->m_Value.m_Array.m_Count      = count;
+            result->m_Value.m_Array.m_LinkedList = head;
 
             json_state->m_NumberOfArrays += 1;
-            JsonArrayValue* result = alloc->Allocate<JsonArrayValue>();
-            result->m_Type         = JsonValue::kArray;
-            result->m_Count        = count;
-            result->m_Values       = values;
 
             return result;
         }
@@ -303,9 +267,8 @@ namespace ncore
             if (m_Type != kString)
                 return false;
 
-            const JsonStringValue* stringValue = static_cast<const JsonStringValue*>(this);
-            const char* str = stringValue->m_String;
-            const char* end = str + 9;
+            const char* str = m_Value.m_String.m_String;
+            const char* end = m_Value.m_String.m_End;
 
             char c = PeekAsciiChar(str, end);
             if (c != '#')
@@ -358,10 +321,11 @@ namespace ncore
                 case kJsonLexString:
                 {
                     json_state->m_NumberOfStrings += 1;
-                    JsonStringValue* sv = json_state->m_Allocator->Allocate<JsonStringValue>();
-                    sv->m_Type          = JsonValue::kString;
-                    sv->m_String        = l.m_String;
-                    result              = sv;
+                    JsonValue* sv                 = json_state->m_Allocator->Allocate<JsonValue>();
+                    sv->m_Type                    = JsonValue::kString;
+                    sv->m_Value.m_String.m_String = l.m_String.m_Str;
+                    sv->m_Value.m_String.m_End    = l.m_String.m_Str + l.m_String.m_Len;
+                    result                        = sv;
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
                 }
@@ -369,16 +333,17 @@ namespace ncore
                 case kJsonLexNumber:
                 {
                     json_state->m_NumberOfNumbers += 1;
-                    JsonNumberValue* nv = json_state->m_Allocator->Allocate<JsonNumberValue>();
-                    nv->m_Type          = JsonValue::kNumber;
-                    nv->m_Number        = JsonNumberAsFloat64(l.m_Number);
-                    result              = nv;
+                    JsonValue* nv                     = json_state->m_Allocator->Allocate<JsonValue>();
+                    nv->m_Type                        = JsonValue::kNumber;
+                    nv->m_Value.m_Number.m_NumberType = l.m_Number.m_Type;
+                    nv->m_Value.m_Number.m_F64        = JsonNumberAsFloat64(l.m_Number);
+                    result                            = nv;
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
                 }
 
                 case kJsonLexBoolean:
-                    result = l.m_Boolean ? json_state->m_TrueValue : json_state->m_FalseValue;
+                    result = l.m_Number.m_S64 != 0 ? json_state->m_TrueValue : json_state->m_FalseValue;
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
 
@@ -393,7 +358,7 @@ namespace ncore
             return result;
         }
 
-        const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
+        const JsonValue* Parse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message)
         {
             JsonState* json_state = scratch->Allocate<JsonState>();
             JsonStateInit(json_state, allocator, scratch, str, end);
@@ -423,5 +388,5 @@ namespace ncore
             return root;
         }
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore

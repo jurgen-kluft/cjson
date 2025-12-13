@@ -2,7 +2,7 @@
 #define __CJSON_JSON_H__
 #include "ccore/c_target.h"
 #ifdef USE_PRAGMA_ONCE
-#pragma once
+#    pragma once
 #endif
 
 #include "ccore/c_debug.h"
@@ -10,9 +10,58 @@
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         struct JsonAllocator;
+
+        struct JsonValue;
+
+        struct JsonBooleanValue
+        {
+            bool m_Boolean;
+        };
+
+        struct JsonNumberValue
+        {
+            u32 m_NumberType;
+            union
+            {
+                f64 m_F64;
+                u64 m_U64;
+                s64 m_S64;
+            };
+        };
+
+        struct JsonStringValue
+        {
+            const char* m_String;
+            const char* m_End;
+        };
+
+        struct JsonLinkedValue
+        {
+            const JsonValue* m_Value;
+            JsonLinkedValue* m_Next;
+        };
+
+        struct JsonArrayValue
+        {
+            i32              m_Count;
+            JsonLinkedValue* m_LinkedList;
+        };
+
+        struct JsonNamedValue
+        {
+            const char*      m_Name;
+            const JsonValue* m_Value;
+            JsonNamedValue*  m_Next;
+        };
+
+        struct JsonObjectValue
+        {
+            i32             m_Count;
+            JsonNamedValue* m_LinkedList;
+        };
 
         struct JsonValue
         {
@@ -25,7 +74,17 @@ namespace ncore
                 kString  = 5,
                 kNumber  = 6,
             };
-            u16 m_Type;
+            i32 m_Type;
+
+            union value_t
+            {
+                JsonBooleanValue m_Boolean;
+                JsonNumberValue  m_Number;
+                JsonStringValue  m_String;
+                JsonArrayValue   m_Array;
+                JsonObjectValue  m_Object;
+            };
+            value_t m_Value;
 
             inline bool IsArray() const { return m_Type == kArray; }
             inline bool IsObject() const { return m_Type == kObject; }
@@ -40,90 +99,63 @@ namespace ncore
             const struct JsonArrayValue*   AsArray() const;
             const struct JsonBooleanValue* AsBoolean() const;
 
+            bool        GetBoolean() const;
             double      GetNumber() const;
             const char* GetString() const;
             bool        GetColor(u32& color) const;
-            bool        GetBoolean() const;
 
-            const JsonValue* Elem(int index) const;
-            const JsonValue* Find(const char* key) const;
-        };
-
-        struct JsonBooleanValue : JsonValue
-        {
-            u16 m_Boolean;
-        };
-
-        struct JsonNumberValue : JsonValue
-        {
-            double m_Number;
-        };
-
-        struct JsonStringValue : JsonValue
-        {
-            const char* m_String;
-        };
-
-        struct JsonArrayValue : JsonValue
-        {
-            int               m_Count;
-            const JsonValue** m_Values;
-        };
-
-        struct JsonObjectValue : JsonValue
-        {
-            int               m_Count;
-            const char**      m_Names;
-            const JsonValue** m_Values;
+            const JsonLinkedValue* Head(i32& count) const;
+            const JsonValue*       Find(const char* key) const;
         };
 
         inline const JsonObjectValue* JsonValue::AsObject() const
         {
             if (kObject == m_Type)
-                return static_cast<const JsonObjectValue*>(this);
+                return &m_Value.m_Object;
             return nullptr;
         }
 
         inline const JsonArrayValue* JsonValue::AsArray() const
         {
             if (kArray == m_Type)
-                return static_cast<const JsonArrayValue*>(this);
+                return &m_Value.m_Array;
             return nullptr;
         }
 
         inline const JsonBooleanValue* JsonValue::AsBoolean() const
         {
             if (kBoolean == m_Type)
-                return static_cast<const JsonBooleanValue*>(this);
+                return &m_Value.m_Boolean;
             return nullptr;
         }
 
         inline const JsonStringValue* JsonValue::AsString() const
         {
             if (kString == m_Type)
-                return static_cast<const JsonStringValue*>(this);
+                return &m_Value.m_String;
             return nullptr;
         }
 
         inline const JsonNumberValue* JsonValue::AsNumber() const
         {
             if (kNumber == m_Type)
-                return static_cast<const JsonNumberValue*>(this);
+                return &m_Value.m_Number;
             return nullptr;
         }
 
-        inline const JsonValue* JsonValue::Elem(int index) const
+        inline const JsonLinkedValue* JsonValue::Head(i32& count) const
         {
             const JsonArrayValue* array = AsArray();
-            ASSERT(index < array->m_Count);
-            return array->m_Values[index];
+            ASSERT(array);
+            count = array->m_Count;
+            return array->m_LinkedList;
         }
 
         inline double JsonValue::GetNumber() const
         {
             const JsonNumberValue* num = AsNumber();
             ASSERT(num);
-            return num->m_Number;
+            return num->m_F64;
         }
 
         inline const char* JsonValue::GetString() const
@@ -144,9 +176,9 @@ namespace ncore
         // which is allocated from 'scratch'.
         // All necessary JSON values and their properties are allocated from 'allocator', you can thus free str/end as well as 'scratch' after calling
         // this function.
-        const JsonValue* JsonParse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
+        const JsonValue* Parse(char const* str, char const* end, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore
 
 #endif // __CJSON_JSON_H__

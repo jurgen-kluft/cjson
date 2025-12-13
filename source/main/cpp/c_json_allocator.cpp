@@ -1,88 +1,65 @@
 #include "cbase/c_allocator.h"
-#include "cbase/c_context.h"
 #include "cbase/c_memory.h"
 #include "cjson/c_json_allocator.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
-        JsonAllocator* CreateAllocator(u32 size, const char* name)
-        {
-            JsonAllocator* alloc = g_construct<JsonAllocator>(g_current_context().system_alloc());
-            alloc->Init(size, name);
-            return alloc;
-        }
-
-        JsonAllocator* CreateAllocator(void* mem, u32 len, const char* name)
-        {
-            JsonAllocator* alloc = g_construct<JsonAllocator>(g_current_context().system_alloc());
-            alloc->Init(mem, len, name);
-            return alloc;
-        }
-
-
-        void DestroyAllocator(JsonAllocator* alloc)
-        {
-            alloc->Destroy();
-            g_destruct(g_current_context().system_alloc(), alloc);
-        }
-
         JsonAllocatorScope::JsonAllocatorScope(JsonAllocator* a)
             : m_Allocator(a)
-            , m_Cursor(a->m_Cursor)
+            , m_Size(a->m_Size)
         {
         }
 
-        JsonAllocatorScope::~JsonAllocatorScope() { m_Allocator->m_Cursor = m_Cursor ; }
+        JsonAllocatorScope::~JsonAllocatorScope() { m_Allocator->m_Size = m_Size; }
 
-        void JsonAllocator::Init(s32 max_size, const char* debug_name)
+        void JsonAllocator::Init(alloc_t* alloc, s64 max_size, const char* debug_name)
         {
-            this->m_Pointer     = static_cast<char*>(g_allocate_array<char>(g_current_context().system_alloc(), max_size));
-            this->m_Cursor      = this->m_Pointer;
-            this->m_Size        = max_size;
-            this->m_Owner       = 0;
-            this->m_DebugName   = debug_name;
+            this->m_Alloc     = alloc;
+            this->m_Pointer   = static_cast<char*>(g_allocate_array<char>(alloc, max_size));
+            this->m_Size      = 0;
+            this->m_Capacity  = max_size;
+            this->m_DebugName = debug_name;
             Reset();
         }
 
-        void JsonAllocator::Init(void* mem, u32 len, const char* debug_name)
+        void JsonAllocator::Init(void* mem, s64 len, const char* debug_name)
         {
-            this->m_Pointer     = (char*)mem;
-            this->m_Cursor      = this->m_Pointer;
-            this->m_Size        = len;
-            this->m_Owner       = 1;
-            this->m_DebugName   = debug_name;
+            this->m_Alloc     = nullptr;
+            this->m_Pointer   = (char*)mem;
+            this->m_Size      = 0;
+            this->m_Capacity  = len;
+            this->m_DebugName = debug_name;
             Reset();
         }
 
         void JsonAllocator::Destroy()
         {
-            if (this->m_Owner != 0)
+            if (this->m_Alloc != nullptr)
             {
-                g_deallocate_array(g_current_context().system_alloc(), this->m_Pointer);
+                g_deallocate_array(this->m_Alloc, this->m_Pointer);
+                this->m_Alloc = nullptr;
             }
-            this->m_Pointer = nullptr;
-            this->m_Cursor  = nullptr;
-            this->m_Size    = 0;
-            this->m_Owner   = 0;
+            this->m_Pointer   = nullptr;
+            this->m_Size      = 0;
+            this->m_Capacity  = 0;
+            this->m_DebugName = nullptr;
         }
 
-        char* JsonAllocator::Allocate(s32 size, s32 align)
+        char* JsonAllocator::Allocate(s64 size, s16 alignment)
         {
-            ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
-            ASSERT(align > 0);                  // Alignment must be non-zero
-
+            ASSERT(alignment <= (s16)sizeof(void*));
             // Compute aligned offset.
-            s32 const cursor = (s32)(this->m_Cursor - this->m_Pointer);
-            s32 const offset = (cursor + align - 1) & ~(align - 1);
-
+            const s64 align  = sizeof(void*); // Pointer size alignment
+            const s64 cursor = this->m_Size;
+            const s64 offset = (cursor + align - 1) & ~(align - 1);
             ASSERT(0 == (offset & (align - 1)));
 
-            if ((offset + size) <= this->m_Size) // See if we have space.
+            if ((offset + size) <= this->m_Capacity) // See if we have space.
             {
-                char* ptr      = this->m_Pointer + offset;
-                this->m_Cursor = ptr + size;
+                char* ptr    = this->m_Pointer + offset;
+                this->m_Size = offset + size;
                 return ptr;
             }
             else
@@ -92,34 +69,30 @@ namespace ncore
             }
         }
 
-        char* JsonAllocator::CheckOut(char*& end, s32 align)
+        char* JsonAllocator::CheckOut(char*& end)
         {
-            ASSERT(0 == (align & (align - 1))); // Alignment must be power of two
-            ASSERT(align > 0);                  // Alignment must be non-zero
-
             // Compute aligned offset.
-            s32 const cursor = (s32)(this->m_Cursor - this->m_Pointer);
-            s32 const offset = (cursor + align - 1) & ~(align - 1);
-
+            const s64 align  = sizeof(void*); // Pointer size alignment
+            const s64 cursor = this->m_Size;
+            const s64 offset = (cursor + align - 1) & ~(align - 1);
             ASSERT(0 == (offset & (align - 1)));
-
-            char* ptr      = this->m_Pointer + offset;
-            end            = ptr + (this->m_Size - offset);
-            this->m_Cursor = ptr;
+            char* ptr    = this->m_Pointer + offset;
+            end          = this->m_Pointer + this->m_Capacity;
+            this->m_Size = offset;
             return ptr;
         }
 
         void JsonAllocator::Commit(char* ptr)
         {
-            ASSERT((ptr >= this->m_Cursor) && (ptr <= (this->m_Pointer + this->m_Size)));
-            this->m_Cursor = (char*)ptr;
+            ASSERT((ptr >= this->m_Pointer) && (ptr <= (this->m_Pointer + this->m_Capacity)));
+            this->m_Size = (s64)(ptr - this->m_Pointer);
         }
 
         void JsonAllocator::Reset()
         {
-            this->m_Cursor = this->m_Pointer;
-			nmem::memset(this->m_Pointer, 0xCD, this->m_Size);
+            this->m_Size = 0;
+            nmem::memset(this->m_Pointer, 0xCD, this->m_Capacity);
         }
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore

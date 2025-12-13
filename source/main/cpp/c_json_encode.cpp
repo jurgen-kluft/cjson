@@ -3,14 +3,14 @@
 #include "cbase/c_memory.h"
 #include "cbase/c_printf.h"
 #include "cbase/c_runes.h"
-#include "cjson/c_json.h"
+#include "cjson/c_json_parser.h"
 #include "cjson/c_json_utils.h"
 #include "cjson/c_json_encode.h"
 #include "cjson/c_json_decode.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         static bool member_as_bool(const JsonMember& member)
         {
@@ -166,13 +166,15 @@ namespace ncore
                 {
                     u64 const    eval  = member_as_enum(member);
                     const char** estrs = enum_type->m_enum_strs;
+                    const u64*   evalues = enum_type->m_enum_values;
+                    const i32    ecount = enum_type->m_enum_count;
                     if (enum_type->m_to_str != nullptr)
                     {
-                        enum_type->m_to_str(eval, estrs, m_json_text, m_json_text_end);
+                        enum_type->m_to_str(eval, estrs, evalues, ecount, m_json_text, m_json_text_end);
                     }
                     else
                     {
-                        EnumToString(eval, estrs, m_json_text, m_json_text_end);
+                        EnumToString(eval, estrs, evalues, ecount, m_json_text, m_json_text_end);
                     }
                 }
 

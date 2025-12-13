@@ -5,37 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            "name": "(lldb) Launch debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/macos-clang-debug-test/xjson_test",
+            "program": "${workspaceFolder}/target/clay/build/darwin-arm64-debug-dev-test/unittest_cjson/unittest_cjson",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": true,
-            "console": "internalConsole",
-            "MIMode": "lldb"
-        },
-        {
-            "name": "clang++ - Build and debug active file",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/target/macos-clang-debug-test/xjson_test",
-            "sourceFileMap": {  },
-            "symbolOptions": {
-                "searchPaths": [
-                    "${workspaceFolder}/target/macos-clang-debug-test"
-                ]
-            },
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": true,
-            "console": "internalConsole",
+            "cwd": "${fileDirname}",
+            "environment": [
+
+            ],
             "MIMode": "lldb",
-            "preLaunchTask": "C/C++: clang++ build active file"
+            "filterStdout": true
         }
     ]
 }

@@ -3,16 +3,25 @@
 #include "cbase/c_memory.h"
 #include "cbase/c_printf.h"
 #include "cbase/c_runes.h"
-#include "cjson/c_json.h"
+#include "cjson/c_json_parser.h"
 #include "cjson/c_json_utils.h"
 #include "cjson/c_json_allocator.h"
 #include "cjson/c_json_decode.h"
-#include "cjson/c_json_lexer.h"
+#include "cjson/c_json_parser_lexer.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
+        class JsonSystemTypeDef : public JsonTypeDescr
+        {
+        public:
+            JsonSystemTypeDef(const char* _name, s16 _sizeof, s16 _align_of)
+                : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::SystemType)
+            {
+            }
+        };
+
         static JsonSystemTypeDef sJsonTypeDescrBool("bool", sizeof(bool), alignof(bool));
         static JsonSystemTypeDef sJsonTypeDescrInt8("s8", sizeof(s8), alignof(s8));
         static JsonSystemTypeDef sJsonTypeDescrInt16("s16", sizeof(s16), alignof(s16));
@@ -99,9 +108,35 @@ namespace ncore
                 m_copy = default_copy_fn;
         }
 
-        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
+        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count)
             : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::EnumType)
+            , m_enum_count(enum_count)
             , m_enum_strs(_enum_strs)
+            , m_enum_values(_enum_values)
+            , m_to_str(nullptr)
+            , m_from_str(nullptr)
+        {
+            if (m_to_str == nullptr)
+                m_to_str = EnumToString;
+            if (m_from_str == nullptr)
+                m_from_str = EnumFromString;
+        }
+
+        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
+            : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::EnumType)
+            , m_enum_count(0)
+            , m_enum_strs(nullptr)
+            , m_enum_values(nullptr)
+            , m_to_str(_enum_to_str)
+            , m_from_str(_enum_from_str)
+        {
+        }
+
+        JsonEnumTypeDef::JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str)
+            : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::EnumType)
+            , m_enum_count(enum_count)
+            , m_enum_strs(_enum_strs)
+            , m_enum_values(_enum_values)
             , m_to_str(_enum_to_str)
             , m_from_str(_enum_from_str)
         {
@@ -109,6 +144,21 @@ namespace ncore
                 m_to_str = EnumToString;
             if (m_from_str == nullptr)
                 m_from_str = EnumFromString;
+        }
+
+        JsonFlagsTypeDef::JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count)
+            : JsonEnumTypeDef(_name, _sizeof, _align_of, _enum_strs, _enum_values, enum_count, FlagsToString, FlagsFromString)
+        {
+        }
+
+        JsonFlagsTypeDef::JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, JsonFlagsToStringFn _enum_to_str, JsonFlagsFromStringFn _enum_from_str)
+            : JsonEnumTypeDef(_name, _sizeof, _align_of, _enum_to_str, _enum_from_str)
+        {
+        }
+
+        JsonFlagsTypeDef::JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count, JsonFlagsToStringFn _enum_to_str, JsonFlagsFromStringFn _enum_from_str)
+            : JsonEnumTypeDef(_name, _sizeof, _align_of, _enum_strs, _enum_values, enum_count, _enum_to_str, _enum_from_str)
+        {
         }
 
         static void json_alloc_object(JsonTypeDescr const* descr, JsonAllocator* alloc, s32 n, void*& ptr)
@@ -169,7 +219,7 @@ namespace ncore
             return o;
         }
 
-        void JsonMember::set_string(JsonObject const& object, const char* str)
+        void JsonMember::set_string(JsonObject const& object, const char* str, const char* end)
         {
             if (has_descr())
             {
@@ -188,7 +238,7 @@ namespace ncore
             }
         }
 
-        void JsonMember::set_enum(JsonObject const& object, const char* str)
+        void JsonMember::set_enum(JsonObject const& object, const char* str, const char* end)
         {
             if (has_descr())
             {
@@ -209,7 +259,7 @@ namespace ncore
                 JsonEnumTypeDef* etd = m_descr->m_typedescr->as_enum_type();
 
                 u64 value = 0;
-                etd->m_from_str(str, etd->m_enum_strs, value);
+                etd->m_from_str(str, etd->m_enum_strs, etd->m_enum_values, etd->m_enum_count, value);
 
                 if (is_enum16())
                     *((u16*)m_data_ptr) = (u16)value;
@@ -291,40 +341,42 @@ namespace ncore
             }
         }
 
-        JsonMember JsonObject::get_member(const char* name) const
+        JsonMember JsonObject::get_member(const char* name, const char* name_end) const
         {
             JsonMember member;
             if (m_descr != nullptr)
             {
                 JsonObjectTypeDef* objdef = m_descr->as_object_type();
-
                 for (s32 i = 0; i < objdef->m_member_count; ++i)
                 {
                     const char* n1 = name;
                     const char* n2 = objdef->m_members[i].m_name;
-                    while (true)
+                    while (*n2 != 0)
                     {
                         if (*n1 != *n2)
                             break;
-
-                        if (*n1 == 0)
-                        {
-                            member.m_descr = &objdef->m_members[i];
-                            return member;
-                        }
                         n1++;
                         n2++;
+                        if (n1 == name_end)
+                        {
+                            if (*n2 == 0)
+                            {
+                                member.m_descr = &objdef->m_members[i];
+                                return member;
+                            }
+                            break;
+                        }
                     }
                 }
             }
             return member;
         }
 
-    } // namespace json
+    } // namespace njson
 
     namespace json_decoder
     {
-        using namespace json;
+        using namespace njson;
 
         struct JsonState
         {
@@ -361,11 +413,13 @@ namespace ncore
 
         static JsonError* MakeJsonError(JsonState* state, const char* error)
         {
-            state->m_ErrorMessage = state->m_Allocator->AllocateArray<char>(1024);
-            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
-            crunes_t fmt = make_crunes("line %d: %s");
+            state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(1024);
+            runes_t  errmsg       = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + 1024 - 1);
+            crunes_t fmt          = ascii::make_crunes("line %d: %s");
             sprintf(errmsg, fmt, va_t(state->m_Lexer.m_LineNumber), va_t(error));
-            return nullptr;
+            JsonError* jsonError      = state->m_Scratch->Allocate<JsonError>();
+            jsonError->m_ErrorMessage = state->m_ErrorMessage;
+            return jsonError;
         }
 
         static JsonError* JsonDecodeValue(JsonState* json_state, JsonObject& object, JsonMember& member);
@@ -397,7 +451,7 @@ namespace ncore
                         if (!JsonLexerExpect(lexer, kJsonLexNameSeparator))
                             return MakeJsonError(json_state, "expected ':'");
 
-                        JsonMember member = object.get_member(l.m_String);
+                        JsonMember member = object.get_member(l.m_String.m_Str, l.m_String.m_Str + l.m_String.m_Len);
                         JsonError* err    = JsonDecodeValue(json_state, object, member);
                         if (err != nullptr)
                             return err;
@@ -548,24 +602,24 @@ namespace ncore
                             count = 127;
 
                         ptr_t const offset = (ptr_t)member.m_descr->m_size8 - (ptr_t)obj_type_def->m_default;
-                        s8*        size8  = (s8*)((ptr_t)object.m_instance + offset);
-                        *size8            = (s8)count;
+                        s8*         size8  = (s8*)((ptr_t)object.m_instance + offset);
+                        *size8             = (s8)count;
                     }
                     else if (member.is_array_ptr_size16())
                     {
                         if (count > 32767)
                             count = 32767;
                         ptr_t const offset = (ptr_t)member.m_descr->m_size16 - (ptr_t)obj_type_def->m_default;
-                        s16*       size16 = (s16*)((ptr_t)object.m_instance + offset);
-                        *size16           = (s16)count;
+                        s16*        size16 = (s16*)((ptr_t)object.m_instance + offset);
+                        *size16            = (s16)count;
                     }
                     else if (member.is_array_ptr_size32())
                     {
                         if (count > 2147483647)
                             count = 2147483647;
                         ptr_t const offset = (ptr_t)member.m_descr->m_size32 - (ptr_t)obj_type_def->m_default;
-                        s32*       size32 = (s32*)((ptr_t)object.m_instance + offset);
-                        *size32           = count;
+                        s32*        size32 = (s32*)((ptr_t)object.m_instance + offset);
+                        *size32            = count;
                     }
                     array = alloc->Allocate(count * (member.m_descr->m_typedescr->m_sizeof), member.m_descr->m_typedescr->m_alignof);
                 }
@@ -712,31 +766,53 @@ namespace ncore
 
                 case kJsonLexString:
                 {
-                    if (member.has_descr() && (!member.is_string() && !member.is_enum()))
-                        return MakeJsonError(json_state, "encountered json string but class member is not the same type");
-
                     if (member.has_descr())
                     {
                         if (member.is_string())
                         {
                             json_state->m_NumberOfStrings += 1;
-                            member.set_string(object, l.m_String);
+                            member.set_string(object, l.m_String.m_Str, l.m_String.m_Str + l.m_String.m_Len);
                         }
                         else if (member.is_enum())
                         {
                             json_state->m_NumberOfEnums += 1;
-                            member.set_enum(object, l.m_String);
+                            member.set_enum(object, l.m_String.m_Str, l.m_String.m_Str + l.m_String.m_Len);
+                        }
+                        else
+                        {
+                            JsonNumber  number;
+                            const char* str     = l.m_String.m_Str;
+                            const char* str_end = str + l.m_String.m_Len;
+                            if (ParseHexNumber(str, str_end, number) || ParseNumber(str, str_end, number))
+                            {
+                                if (member.is_float())
+                                {
+                                    json_state->m_NumberOfNumbers += 1;
+                                    member.set_number(object, json_state->m_Allocator, number);
+                                }
+                                else if (member.is_integer())
+                                {
+                                    json_state->m_NumberOfNumbers += 1;
+                                    member.set_number(object, json_state->m_Allocator, number);
+                                }
+                                else
+                                {
+                                    return MakeJsonError(json_state, "encountered json string but class member is not the same type");
+                                }
+                            }
+                            else
+                            {
+                                return MakeJsonError(json_state, "encountered json string but class member is not the same type");
+                            }
                         }
                     }
                     else
                     {
-                        json_state->m_NumberOfStrings += 1;
+                        json_state->m_NumberOfNumbers += 1;
                     }
-
                     JsonLexerSkip(&json_state->m_Lexer);
                     break;
                 }
-
                 case kJsonLexNumber:
                 {
                     if (member.has_descr() && !member.is_number())
@@ -759,7 +835,7 @@ namespace ncore
                     json_state->m_NumberOfBooleans += 1;
                     if (member.has_descr())
                     {
-                        member.set_bool(object, json_state->m_Allocator, l.m_Boolean);
+                        member.set_bool(object, json_state->m_Allocator, l.m_Number.m_S64 != 0);
                     }
 
                     JsonLexerSkip(&json_state->m_Lexer);
@@ -804,8 +880,8 @@ namespace ncore
 
     } // namespace json_decoder
 
-    namespace json
+    namespace njson
     {
         bool JsonDecode(char const* str, char const* end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message) { return json_decoder::JsonDecode(str, end, json_root, allocator, scratch, error_message); }
-    } // namespace json
+    } // namespace njson
 } // namespace ncore

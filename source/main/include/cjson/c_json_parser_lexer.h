@@ -2,14 +2,14 @@
 #define __CJSON_JSON_LEXER_H__
 #include "ccore/c_target.h"
 #ifdef USE_PRAGMA_ONCE
-#pragma once
+#    pragma once
 #endif
 
 #include "cjson/c_json_utils.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         enum JsonLexemeType
         {
@@ -28,14 +28,23 @@ namespace ncore
             kJsonLexNumber         = 12,
         };
 
+        struct JsonString
+        {
+            u32   m_Len;
+            char* m_Str;
+        };
+
         struct JsonLexeme
         {
+            JsonLexeme() : m_Type(kJsonLexInvalid), m_Number() {}
+            JsonLexeme(JsonLexemeType type) : m_Type(type), m_Number() {}
+            JsonLexeme(JsonLexemeType type, JsonNumber number) : m_Type(type), m_Number(number) {}
+
             JsonLexemeType m_Type;
             union
             {
-                bool       m_Boolean;
                 JsonNumber m_Number;
-                char*      m_String;
+                JsonString m_String;
             };
         };
 
@@ -69,7 +78,7 @@ namespace ncore
         void       JsonLexerSkip(JsonLexerState* state);
         JsonLexeme JsonLexerNext(JsonLexerState* state);
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore
 
 #endif // __CJSON_JSON_LEXER_H__

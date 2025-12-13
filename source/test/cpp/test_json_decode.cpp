@@ -1,7 +1,7 @@
 #include "ccore/c_target.h"
 #include "cbase/c_memory.h"
 #include "cbase/c_runes.h"
-#include "cjson/c_json.h"
+#include "cjson/c_json_parser.h"
 #include "cjson/c_json_allocator.h"
 #include "cjson/c_json_decode.h"
 #include "cjson/c_json_encode.h"
@@ -42,22 +42,22 @@ struct key_t
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
-template <> void json::JsonObjectTypeRegisterFields<key_t>(key_t& base, json::JsonFieldDescr*& members, s32& member_count)
+template <> void njson::JsonObjectTypeRegisterFields<key_t>(key_t& base, njson::JsonFieldDescr*& members, s32& member_count)
 {
-    static json::JsonFieldDescr s_members[] = {
-        json::JsonFieldDescr("nob", base.m_nob),
-        json::JsonFieldDescr("index", base.m_index),
-        json::JsonFieldDescr("label", base.m_label),
-        json::JsonFieldDescr("w", base.m_w),
-        json::JsonFieldDescr("h", base.m_h),
-        json::JsonFieldDescr("cap_color", base.m_capcolor, base.m_capcolor_size),
-        json::JsonFieldDescr("txt_color", base.m_txtcolor, base.m_txtcolor_size),
-        json::JsonFieldDescr("led_color", base.m_ledcolor, base.m_ledcolor_size),
+    static njson::JsonFieldDescr s_members[] = {
+        njson::JsonFieldDescr("nob", base.m_nob),
+        njson::JsonFieldDescr("index", base.m_index),
+        njson::JsonFieldDescr("label", base.m_label),
+        njson::JsonFieldDescr("w", base.m_w),
+        njson::JsonFieldDescr("h", base.m_h),
+        njson::JsonFieldDescr("cap_color", base.m_capcolor, base.m_capcolor_size),
+        njson::JsonFieldDescr("txt_color", base.m_txtcolor, base.m_txtcolor_size),
+        njson::JsonFieldDescr("led_color", base.m_ledcolor, base.m_ledcolor_size),
     };
     members      = s_members;
-    member_count = sizeof(s_members) / sizeof(json::JsonFieldDescr);
+    member_count = sizeof(s_members) / sizeof(njson::JsonFieldDescr);
 }
-static json::JsonObjectTypeDeclr<key_t> json_key("key");
+static njson::JsonObjectTypeDeclr<key_t> json_key("key");
 
 struct keygroup_t
 {
@@ -85,33 +85,34 @@ struct keygroup_t
 };
 
 // You can provide to and from string functions, if not the default to and from string functions are used.
-//                          Bit      0       1         2       3       4        5        6       7
-static const char* enum_strs[] = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd", nullptr};
-static json::JsonEnumTypeDef json_keygroup_enum("keygroup_enum", sizeof(u16), alignof(u16), enum_strs);
+//                                       Bit      0       1       2       3       4       5       6       7
+static const u64               enum_values[] = {1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 7};
+static const char*             enum_strs[]   = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd"};
+static njson::JsonFlagsTypeDef json_keygroup_enum("keygroup_enum", sizeof(u16), alignof(u16), enum_strs, enum_values, DARRAYSIZE(enum_values));
 
-template <> void json::JsonObjectTypeRegisterFields<keygroup_t>(keygroup_t& base, json::JsonFieldDescr*& members, s32& member_count)
+template <> void njson::JsonObjectTypeRegisterFields<keygroup_t>(keygroup_t& base, njson::JsonFieldDescr*& members, s32& member_count)
 {
-    static json::JsonFieldDescr s_members[] = {
-        json::JsonFieldDescr("name", base.m_name),
-        json::JsonFieldDescr("x", base.m_x),
-        json::JsonFieldDescr("y", base.m_y),
-        json::JsonFieldDescr("w", base.m_w),
-        json::JsonFieldDescr("h", base.m_h),
-        json::JsonFieldDescr("sw", base.m_sw),
-        json::JsonFieldDescr("sh", base.m_sh),
-        json::JsonFieldDescr("enum", base.m_enum, json_keygroup_enum),
-        json::JsonFieldDescr("r", base.m_r),
-        json::JsonFieldDescr("c", base.m_c),
-        json::JsonFieldDescr("a", base.m_a),
-        json::JsonFieldDescr("cap_color", base.m_capcolor, base.m_capcolor_size),
-        json::JsonFieldDescr("txt_color", base.m_txtcolor, base.m_txtcolor_size),
-        json::JsonFieldDescr("led_color", base.m_ledcolor, base.m_ledcolor_size),
-        json::JsonFieldDescr("keys", base.m_keys, base.m_nb_keys, json_key),
+    static njson::JsonFieldDescr s_members[] = {
+        njson::JsonFieldDescr("name", base.m_name),
+        njson::JsonFieldDescr("x", base.m_x),
+        njson::JsonFieldDescr("y", base.m_y),
+        njson::JsonFieldDescr("w", base.m_w),
+        njson::JsonFieldDescr("h", base.m_h),
+        njson::JsonFieldDescr("sw", base.m_sw),
+        njson::JsonFieldDescr("sh", base.m_sh),
+        njson::JsonFieldDescr("enum", base.m_enum, json_keygroup_enum),
+        njson::JsonFieldDescr("r", base.m_r),
+        njson::JsonFieldDescr("c", base.m_c),
+        njson::JsonFieldDescr("a", base.m_a),
+        njson::JsonFieldDescr("cap_color", base.m_capcolor, base.m_capcolor_size),
+        njson::JsonFieldDescr("txt_color", base.m_txtcolor, base.m_txtcolor_size),
+        njson::JsonFieldDescr("led_color", base.m_ledcolor, base.m_ledcolor_size),
+        njson::JsonFieldDescr("keys", base.m_keys, base.m_nb_keys, json_key),
     };
     members      = s_members;
-    member_count = sizeof(s_members) / sizeof(json::JsonFieldDescr);
+    member_count = sizeof(s_members) / sizeof(njson::JsonFieldDescr);
 }
-static json::JsonObjectTypeDeclr<keygroup_t> json_keygroup("keygroup");
+static njson::JsonObjectTypeDeclr<keygroup_t> json_keygroup("keygroup");
 
 static const float sColorDarkGrey[] = {0.1f, 0.1f, 0.1f, 1.0f};
 static const float sColorWhite[]    = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -152,24 +153,24 @@ struct keyboard_t
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
-template <> void json::JsonObjectTypeRegisterFields<keyboard_t>(keyboard_t& base, json::JsonFieldDescr*& members, s32& member_count)
+template <> void njson::JsonObjectTypeRegisterFields<keyboard_t>(keyboard_t& base, njson::JsonFieldDescr*& members, s32& member_count)
 {
-    static json::JsonFieldDescr s_members[] = {
-        json::JsonFieldDescr("name", base.m_name),
-        json::JsonFieldDescr("scale", base.m_scale),
-        json::JsonFieldDescr("key_width", base.m_w),
-        json::JsonFieldDescr("key_height", base.m_h),
-        json::JsonFieldDescr("key_spacing_x", base.m_sw),
-        json::JsonFieldDescr("key_spacing_y", base.m_sh),
-        json::JsonFieldDescr("cap_color", base.m_capcolor, 4),
-        json::JsonFieldDescr("txt_color", base.m_txtcolor, 4),
-        json::JsonFieldDescr("led_color", base.m_ledcolor, 4),
-        json::JsonFieldDescr("keygroups", base.m_keygroups, base.m_nb_keygroups, json_keygroup),
+    static njson::JsonFieldDescr s_members[] = {
+        njson::JsonFieldDescr("name", base.m_name),
+        njson::JsonFieldDescr("scale", base.m_scale),
+        njson::JsonFieldDescr("key_width", base.m_w),
+        njson::JsonFieldDescr("key_height", base.m_h),
+        njson::JsonFieldDescr("key_spacing_x", base.m_sw),
+        njson::JsonFieldDescr("key_spacing_y", base.m_sh),
+        njson::JsonFieldDescr("cap_color", base.m_capcolor, 4),
+        njson::JsonFieldDescr("txt_color", base.m_txtcolor, 4),
+        njson::JsonFieldDescr("led_color", base.m_ledcolor, 4),
+        njson::JsonFieldDescr("keygroups", base.m_keygroups, base.m_nb_keygroups, json_keygroup),
     };
     members      = s_members;
-    member_count = sizeof(s_members) / sizeof(json::JsonFieldDescr);
+    member_count = sizeof(s_members) / sizeof(njson::JsonFieldDescr);
 }
-static json::JsonObjectTypeDeclr<keyboard_t> json_keyboard("keyboard");
+static njson::JsonObjectTypeDeclr<keyboard_t> json_keyboard("keyboard");
 
 struct keyboard_root_t
 {
@@ -179,46 +180,51 @@ struct keyboard_root_t
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
-template <> void json::JsonObjectTypeRegisterFields<keyboard_root_t>(keyboard_root_t& base, json::JsonFieldDescr*& members, s32& member_count)
+template <> void njson::JsonObjectTypeRegisterFields<keyboard_root_t>(keyboard_root_t& base, njson::JsonFieldDescr*& members, s32& member_count)
 {
-    static json::JsonFieldDescr s_members[] = {
-        json::JsonFieldDescr("keyboard", base.m_keyboard, json_keyboard),
+    static njson::JsonFieldDescr s_members[] = {
+        njson::JsonFieldDescr("keyboard", base.m_keyboard, json_keyboard),
     };
     members      = s_members;
-    member_count = sizeof(s_members) / sizeof(json::JsonFieldDescr);
+    member_count = sizeof(s_members) / sizeof(njson::JsonFieldDescr);
 }
 
-static json::JsonObjectTypeDeclr<keyboard_root_t> json_keyboards_root("root");
+static njson::JsonObjectTypeDeclr<keyboard_root_t> json_keyboards_root("root");
 
-UNITTEST_SUITE_BEGIN(cjson_decode)
+UNITTEST_SUITE_BEGIN(json_decode)
 {
     UNITTEST_FIXTURE(decode)
     {
         UNITTEST_FIXTURE_SETUP() {}
         UNITTEST_FIXTURE_TEARDOWN() {}
 
+        UNITTEST_ALLOCATOR;
+
         UNITTEST_TEST(test)
         {
             keyboard_root_t root;
 
-            json::JsonObject json_root;
+            njson::JsonObject json_root;
             json_root.m_descr    = &json_keyboards_root;
             json_root.m_instance = &root;
 
-            json::JsonAllocator* alloc   = json::CreateAllocator(1024 * 1024);
-            json::JsonAllocator* scratch = json::CreateAllocator(64 * 1024);
+            njson::JsonAllocator alloc;
+            njson::JsonAllocator scratch;
+            alloc.Init(Allocator, 1024 * 1024, "json allocator");
+            scratch.Init(Allocator, 64 * 1024, "json scratch allocator");
 
             char const* error_message = nullptr;
-            bool        ok            = json::JsonDecode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, alloc, scratch, error_message);
+            bool        ok            = njson::JsonDecode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, &alloc, &scratch, error_message);
             CHECK_TRUE(ok);
 
-            scratch->Reset();
+            scratch.Reset();
 
-            char* json_text = alloc->m_Cursor;
-            ok              = json::JsonEncode(json_root, json_text, json_text + alloc->m_Size, error_message);
+            char* json_text     = alloc.m_Pointer + alloc.m_Size;
+            char* json_text_end = alloc.m_Pointer + alloc.m_Capacity;
+            ok                  = njson::JsonEncode(json_root, json_text, json_text_end, error_message);
 
-            json::DestroyAllocator(alloc);
-            json::DestroyAllocator(scratch);
+            alloc.Destroy();
+            scratch.Destroy();
         }
     }
 }

@@ -2,14 +2,14 @@
 #include "cbase/c_context.h"
 #include "cbase/c_printf.h"
 #include "cbase/c_runes.h"
-#include "cjson/c_json.h"
+#include "cjson/c_json_parser.h"
 #include "cjson/c_json_utils.h"
 #include "cjson/c_json_allocator.h"
-#include "cjson/c_json_lexer.h"
+#include "cjson/c_json_parser_lexer.h"
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         void JsonLexerStateInit(JsonLexerState* self, char const* buffer, char const* end, JsonAllocator* alloc, JsonAllocator* scratch)
         {
@@ -20,17 +20,17 @@ namespace ncore
             self->m_LineNumber           = 1;
             self->m_Lexeme.m_Type        = kJsonLexInvalid;
             self->m_ErrorMessage         = nullptr;
-            self->m_ValueSeparatorLexeme = {kJsonLexValueSeparator, {0}};
-            self->m_NameSeparatorLexeme  = {kJsonLexNameSeparator, {0}};
-            self->m_BeginObjectLexeme    = {kJsonLexBeginObject, {0}};
-            self->m_EndObjectLexeme      = {kJsonLexEndObject, {0}};
-            self->m_BeginArrayLexeme     = {kJsonLexBeginArray, {0}};
-            self->m_EndArrayLexeme       = {kJsonLexEndArray, {0}};
-            self->m_NullLexeme           = {kJsonLexNull, {0}};
-            self->m_EofLexeme            = {kJsonLexEof, {0}};
-            self->m_ErrorLexeme          = {kJsonLexError, {0}};
-            self->m_TrueLexeme           = {kJsonLexBoolean, {true}};
-            self->m_FalseLexeme          = {kJsonLexBoolean, {false}};
+            self->m_ValueSeparatorLexeme = JsonLexeme(kJsonLexValueSeparator);
+            self->m_NameSeparatorLexeme  = JsonLexeme(kJsonLexNameSeparator);
+            self->m_BeginObjectLexeme    = JsonLexeme(kJsonLexBeginObject);
+            self->m_EndObjectLexeme      = JsonLexeme(kJsonLexEndObject);
+            self->m_BeginArrayLexeme     = JsonLexeme(kJsonLexBeginArray);
+            self->m_EndArrayLexeme       = JsonLexeme(kJsonLexEndArray);
+            self->m_NullLexeme           = JsonLexeme(kJsonLexNull);
+            self->m_EofLexeme            = JsonLexeme(kJsonLexEof);
+            self->m_ErrorLexeme          = JsonLexeme(kJsonLexError);
+            self->m_TrueLexeme           = JsonLexeme(kJsonLexBoolean, JsonNumber(kJsonNumber_bool, 1));
+            self->m_FalseLexeme          = JsonLexeme(kJsonLexBoolean, JsonNumber(kJsonNumber_bool, 0));
         }
 
         static JsonLexeme JsonLexerError(JsonLexerState* state, const char* error)
@@ -38,45 +38,43 @@ namespace ncore
             ASSERT(state->m_ErrorMessage == nullptr);
             int const len         = ascii::strlen(error) + 32;
             state->m_ErrorMessage = state->m_Scratch->AllocateArray<char>(len + 1);
-            runes_t  errmsg = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + len);
-            crunes_t fmt = make_crunes("line %d: %s");
+            runes_t  errmsg       = ascii::make_runes(state->m_ErrorMessage, state->m_ErrorMessage + len);
+            crunes_t fmt          = ascii::make_crunes("line %d: %s");
             sprintf(errmsg, fmt, va_t(state->m_LineNumber), va_t(error));
             return state->m_ErrorLexeme;
         }
 
         static JsonLexeme GetNumberLexeme(JsonLexerState* state)
         {
-            char const* start = state->m_Cursor;
-            char const* end   = state->m_End;
-
-            JsonLexeme result;
-            result.m_Type      = kJsonLexNumber;
-            char const* cursor = ParseNumber(start, end, result.m_Number);
-
-            if (result.m_Number.m_Type == kJsonNumber_unknown)
+            char const* str = state->m_Cursor;
+            char const* end = state->m_End;
+            JsonLexeme  result;
+            result.m_Type = kJsonLexNumber;
+            if (!ParseNumber(str, end, result.m_Number))
                 return JsonLexerError(state, "illegal number");
 
-            state->m_Cursor = cursor;
-            return start != cursor ? result : JsonLexerError(state, "bad number");
+            state->m_Cursor = str;
+            return result;
         }
 
         static JsonLexeme GetStringLexeme(JsonLexerState* state)
         {
             char const* rptr = state->m_Cursor;
-
-            char c = PeekAsciiChar(rptr, state->m_End);
+            char        c    = PeekAsciiChar(rptr, state->m_End);
             if ('\"' != c)
             {
                 return JsonLexerError(state, "expecting string delimiter '\"'");
             }
             rptr++;
 
-            char* wend = nullptr;
-            char* wptr = (char*)state->m_Alloc->CheckOut(wend);
+            char* wend   = nullptr;
+            char* wptr   = (char*)state->m_Alloc->CheckOut(wend);
+            char* wstart = wptr;
 
             JsonLexeme result;
-            result.m_Type   = kJsonLexString;
-            result.m_String = wptr;
+            result.m_Type         = kJsonLexString;
+            result.m_String.m_Len = 0;
+            result.m_String.m_Str = nullptr;
 
             while (true)
             {
@@ -156,9 +154,15 @@ namespace ncore
                 }
             }
 
+            state->m_Cursor = rptr;
             state->m_Alloc->Commit(wptr);
 
-            state->m_Cursor = rptr;
+            if (wptr > wstart)
+            {
+                result.m_String.m_Str = wstart;
+                result.m_String.m_Len = (u32)((wptr - 1) - result.m_String.m_Str);
+            }
+
             return result;
         }
 
@@ -305,5 +309,5 @@ namespace ncore
             return false;
         }
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore

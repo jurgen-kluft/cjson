@@ -7,7 +7,7 @@
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         struct JsonObject;
         bool JsonEncode(JsonObject& json_root, char* json_text, char const* json_text_end, char const*& error_message);

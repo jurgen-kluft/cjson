@@ -9,18 +9,23 @@
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         enum JsonNumberType
         {
             kJsonNumber_unknown = 0x0,
-            kJsonNumber_s64     = 0x1,
-            kJsonNumber_u64     = 0x2,
-            kJsonNumber_f64     = 0x4,
+            kJsonNumber_bool    = 0x1,
+            kJsonNumber_s64     = 0x2,
+            kJsonNumber_u64     = 0x4,
+            kJsonNumber_f64     = 0x8,
         };
 
         struct JsonNumber
         {
+            JsonNumber() : m_Type(kJsonNumber_unknown), m_U64(0) {}
+            JsonNumber(JsonNumberType type) : m_Type(type), m_U64(0) {}
+            JsonNumber(JsonNumberType type, s64 s) : m_Type(type), m_U64(s) {}
+
             u32 m_Type;
             union
             {
@@ -30,7 +35,9 @@ namespace ncore
             };
         };
 
-        char const* ParseNumber(char const* str, char const* end, JsonNumber& out_number);
+        bool ParseHexNumber(char const*& str, char const* end, JsonNumber& out_number);
+        bool ParseNumber(char const*& str, char const* end, JsonNumber& out_number);
+
         bool        JsonNumberIsValid(JsonNumber const& number);
         s64         JsonNumberAsInt64(JsonNumber const& number);
         u64         JsonNumberAsUInt64(JsonNumber const& number);
@@ -52,8 +59,11 @@ namespace ncore
             return '\0';
         }
 
-        void  EnumToString(u64 e, const char** enum_strs, char*& str, const char* end);
-        void  EnumFromString(const char*& str, const char** enum_strs, u64& out_e);
+        void  EnumToString(u64 e, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& str, const char* end);
+        void  EnumFromString(const char*& str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_e);
+
+        void  FlagsToString(u64 e, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& str, const char* end);
+        void  FlagsFromString(const char*& str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_e);
 
     } // namespace json
 } // namespace ncore

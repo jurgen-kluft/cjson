@@ -6,7 +6,7 @@
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         uchar8_t PeekUtf8Char(const char* str, const char* end)
         {
@@ -113,87 +113,137 @@ namespace ncore
             return false;
         }
 
-        char const* ParseNumber(char const* str, char const* end, JsonNumber& out_number)
+        // Parses a hexadecimal number from the string, returns the updated string pointer
+        bool ParseHexNumber(char const*& str, char const* _end, JsonNumber& out_number)
+        {
+            // Should we scan for the end of the number first?
+            const char* iter     = str;
+            const char* iter_end = iter;
+            while (iter_end < _end)
+            {
+                char c = PeekAsciiChar(iter_end, _end);
+                // whitespace, comma, array or object end indicates end of number
+                if (ascii::is_whitespace(c) || c == ',' || c == ']' || c == '}')
+                    break;
+            }
+
+            // Does it have a "0x" prefix?
+            if ((iter_end - iter) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
+            {
+                iter += 2;
+            }
+
+            out_number.m_Type = kJsonNumber_unknown;
+            out_number.m_U64  = 0;
+            while (iter < iter_end)
+            {
+                const i16 hex = ascii::hex_to_number(*iter);
+                if (hex < 0)
+                    return false;
+                out_number.m_U64 = (out_number.m_U64 << 4) + hex;
+
+                iter++;
+            }
+            out_number.m_Type = kJsonNumber_u64;
+
+            str = iter_end;
+            return true;
+        }
+
+        bool ParseNumber(char const*& str, char const* _end, JsonNumber& out_number)
         {
             out_number.m_Type = kJsonNumber_unknown;
 
             u64 integer = 0;
             f64 number  = 0.0;
 
+            const char* iter = str;
+
+            // Should we scan for the end of the number first?
+            const char* iter_end = iter;
+            while (iter_end < _end)
+            {
+                const char ce = PeekAsciiChar(iter_end, _end);
+                // whitespace, comma, array or object end indicates end of number
+                if (ascii::is_whitespace(ce) || ce == ',' || ce == ']' || ce == '}')
+                    break;
+                iter_end++;
+            }
+
             // If the number is negative
             s64  sign = 1;
-            char c    = PeekAsciiChar(str, end);
+            char c    = PeekAsciiChar(iter, iter_end);
             if (c == '-')
             {
                 sign = -1;
-                str++;
+                iter++;
             }
 
             // Parse the integer part.
-            while (str < end)
+            while (iter < iter_end)
             {
-                c = PeekAsciiChar(str, end);
+                c = PeekAsciiChar(iter, iter_end);
                 if (c < '0' || c > '9')
                 {
                     break;
                 }
                 integer = integer * 10 + (c - '0');
-                str++;
+                iter++;
             }
 
             number = (f64)integer;
             number *= sign;
 
             // Parse the decimal part.
-            c = PeekAsciiChar(str, end);
-            if (str < end && c == '.')
+            c = PeekAsciiChar(iter, iter_end);
+            if (iter < iter_end && c == '.')
             {
-                str++;
+                iter++;
                 f64 decimal = 0.0;
                 f64 div     = 1.0;
-                while (str < end)
+                while (iter < iter_end)
                 {
-                    c = PeekAsciiChar(str, end);
+                    c = PeekAsciiChar(iter, iter_end);
                     if (c < '0' || c > '9')
                     {
                         break;
                     }
                     decimal = decimal * 10.0 + (c - '0');
                     div *= 10.0;
-                    str++;
+                    iter++;
                 }
                 number += decimal / div;
 
                 out_number.m_Type = kJsonNumber_f64;
-                out_number.m_F64 = number;
+                out_number.m_F64  = number;
             }
 
             // Parse the exponent part.
-            c = PeekAsciiChar(str, end);
-            if (str < end && (c == 'e' || c == 'E'))
+            c = PeekAsciiChar(iter, iter_end);
+            if (iter < iter_end && (c == 'e' || c == 'E'))
             {
-                str++;
+                iter++;
 
                 s32 esign    = 1;
                 s32 exponent = 0;
-                c            = PeekAsciiChar(str, end);
-                if (str < end && (c == '+' || c == '-'))
+                c            = PeekAsciiChar(iter, iter_end);
+                if (iter < iter_end && (c == '+' || c == '-'))
                 {
                     if (c == '-')
                     {
                         esign = -1;
                     }
-                    str++;
+                    iter++;
                 }
-                while (str < end)
+                while (iter < iter_end)
                 {
-                    c = PeekAsciiChar(str, end);
+                    c = PeekAsciiChar(iter, iter_end);
                     if (c < '0' || c > '9')
                     {
                         break;
                     }
                     exponent = exponent * 10 + (c - '0');
-                    str++;
+                    iter++;
                 }
                 if (exponent > 308)
                 {
@@ -213,7 +263,7 @@ namespace ncore
                 }
 
                 out_number.m_Type = kJsonNumber_f64;
-                out_number.m_F64 = number;
+                out_number.m_F64  = number;
             }
 
             if (out_number.m_Type == kJsonNumber_unknown)
@@ -222,7 +272,7 @@ namespace ncore
                 {
                     out_number.m_Type = kJsonNumber_u64;
                     if (integer <= 9223372036854775807ul)
-                        out_number.m_Type |= kJsonNumber_s64;
+                        out_number.m_Type = kJsonNumber_s64;
                     out_number.m_U64 = (u64)integer;
                 }
                 else
@@ -232,22 +282,26 @@ namespace ncore
                 }
             }
 
-            return str;
+            // Should iter not end up at iter_end, we have a problem?
+            ASSERT(iter <= iter_end);
+
+            str = iter;
+            return true;
         }
 
         bool JsonNumberIsValid(JsonNumber const& number) { return number.m_Type != kJsonNumber_unknown; }
 
         s64 JsonNumberAsInt64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type == kJsonNumber_s64)
             {
                 return number.m_S64;
             }
-            else if (number.m_Type & kJsonNumber_u64)
+            else if (number.m_Type == kJsonNumber_u64)
             {
                 return (s64)number.m_U64;
             }
-            else if (number.m_Type & kJsonNumber_f64)
+            else if (number.m_Type == kJsonNumber_f64)
             {
                 return (s64)number.m_F64;
             }
@@ -259,15 +313,15 @@ namespace ncore
 
         u64 JsonNumberAsUInt64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type == kJsonNumber_s64)
             {
                 return (u64)(s64)number.m_S64;
             }
-            else if (number.m_Type & kJsonNumber_u64)
+            else if (number.m_Type == kJsonNumber_u64)
             {
                 return number.m_U64;
             }
-            else if (number.m_Type & kJsonNumber_f64)
+            else if (number.m_Type == kJsonNumber_f64)
             {
                 return (u64)number.m_F64;
             }
@@ -279,15 +333,15 @@ namespace ncore
 
         f64 JsonNumberAsFloat64(JsonNumber const& number)
         {
-            if (number.m_Type & kJsonNumber_s64)
+            if (number.m_Type == kJsonNumber_s64)
             {
                 return (f64)number.m_S64;
             }
-            else if (number.m_Type & kJsonNumber_u64)
+            else if (number.m_Type == kJsonNumber_u64)
             {
                 return (f64)number.m_U64;
             }
-            else if (number.m_Type & kJsonNumber_f64)
+            else if (number.m_Type == kJsonNumber_f64)
             {
                 return number.m_F64;
             }
@@ -297,93 +351,160 @@ namespace ncore
             }
         }
 
-
-        static void json_write_str(char*& dst, char const* end, char const* str)
+        inline static void json_write_str(char*& dst, char const* end, char const* str)
         {
-            while (dst < end && *str)
+            while (dst < end && *str != '\0')
             {
                 *dst++ = *str++;
             }
             *dst = '\0';
         }
 
-        void EnumToString(u64 e, const char** enum_strs, char*& str, const char* end)
+        void EnumToString(u64 e, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& str, const char* end)
         {
+            i32 i = 0;
+            while (e != enum_values[i] && i < enum_count)
+            {
+                i++;
+            }
+
+            char* dst = str;
+            if (i >= enum_count || enum_strs[i] == nullptr)
+            {
+                // Not found
+                json_write_str(dst, end, "unknown");
+                str = dst;
+                return;
+            }
+
+            json_write_str(dst, end, enum_strs[i]);
+            str = dst;
+        }
+
+        void FlagsToString(u64 e, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& str, const char* end)
+        {
+            if (enum_strs == nullptr || enum_values == nullptr)
+            {
+                return;
+            }
+
             char* begin = str;
             char* dst   = begin;
 
-            s16 i = 0;
-            while (e != 0 && (enum_strs[i] != nullptr))
+            i32 i = 0;
+            while (e != 0 && i < enum_count)
             {
-                u16 bit = (u16)(e & 1);
-                if (bit != 0)
+                if ((e & enum_values[i]) != 0)
                 {
                     json_write_str(dst, end, enum_strs[i]);
                 }
 
                 i++;
                 e = e >> 1;
-
                 if (e != 0)
                 {
                     json_write_str(dst, end, "|");
                 }
             }
-
-            *dst = '\0';
             str = dst;
         }
 
-        static bool JsonEnumEqual(const char*& enum_str, const char* str)
+        static bool JsonEnumEqual(const char*& enum_str, const char* enum_str_end, const char* str)
         {
             const char* estr = enum_str;
-            while (true)
+            while (estr < enum_str_end)
             {
-                char ec = *estr;
-                char c = *str;
-                if ((ec == '\0' || ec == '|') && c == '\0')
-                    break;
-
+                const char c = *str;
                 if (c == '\0')
                     return false;
 
+                const char ec = *estr;
                 if (ec != c)
                 {
-                    ec = nrunes::to_lower(ec);
-                    c = nrunes::to_lower(c);
-                    if (ec != c)
+                    if (nrunes::to_lower(ec) != nrunes::to_lower(c))
                         return false;
                 }
-                estr++;
                 str++;
+                estr++;
             }
             enum_str = estr;
-            return true;
+            return *str == '\0';
         }
 
-        void EnumFromString(const char*& str, const char** enum_strs, u64& out_e)
+        void EnumFromString(const char*& str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_e)
         {
+            if (enum_strs == nullptr || enum_values == nullptr)
+            {
+                out_e = 0;
+                return;
+            }
+
+            out_e = 0;
+            while (*str != '\0' && nrunes::is_whitespace(*str))
+                str++;
+            if (*str == ',' || *str == ']' || *str == '}' || *str == '\0')
+                return;
+
+            const char* str_end = str;
+            while (*str_end != '\0')
+            {
+                const char c = *str_end;
+                if (nrunes::is_whitespace(c))
+                    break;
+                if (c == ',' || c == ']' || c == '}')
+                    break;
+                str_end++;
+            }
+
+            s32 e = 0;
+            while (e < enum_count)
+            {
+                if (JsonEnumEqual(str, str_end, enum_strs[e]))
+                {
+                    out_e = enum_values[e];
+                    return;
+                }
+                e++;
+            }
+        }
+
+        void FlagsFromString(const char*& str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_e)
+        {
+            if (enum_strs == nullptr || enum_values == nullptr)
+            {
+                out_e = 0;
+                return;
+            }
+
+            out_e = 0;
             while (true)
             {
                 while (*str != '\0' && nrunes::is_whitespace(*str))
-                {
                     str++;
-                }
-                if (*str == '\0')
+                if (*str == ',' || *str == ']' || *str == '}' || *str == '\0')
                     break;
-
                 if (*str == '|')
                 {
                     str++;
                     continue;
                 }
+                const char* str_end = str;
+                while (*str_end != '\0')
+                {
+                    const char c = *str_end;
+                    if (nrunes::is_whitespace(c))
+                        break;
+                    if (c == '|' || c == ',' || c == ']' || c == '}')
+                        break;
+                    str_end++;
+                }
 
                 s32 e = 0;
-                while (enum_strs[e] != nullptr)
+                while (e < enum_count)
                 {
-                    if (JsonEnumEqual(str, enum_strs[e]))
+                    if (JsonEnumEqual(str, str_end, enum_strs[e]))
                     {
-                        out_e |= (u64)1 << e;
+                        out_e = out_e | enum_values[e];
                         break;
                     }
                     e++;
@@ -391,6 +512,5 @@ namespace ncore
             }
         }
 
-
-    } // namespace json
+    } // namespace njson
 } // namespace ncore

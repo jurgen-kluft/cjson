@@ -2,20 +2,22 @@
 #define __CJSON_JSON_DECODE_H__
 #include "ccore/c_target.h"
 #ifdef USE_PRAGMA_ONCE
-#pragma once
+#    pragma once
 #endif
 
 namespace ncore
 {
-    namespace json
+    namespace njson
     {
         struct JsonAllocator;
 
         typedef void (*JsonAllocatorFn)(JsonAllocator* alloc, s32 count, void*& p);
         typedef void (*JsonPlacementNewFn)(void* dst);
         typedef void (*JsonCopyFn)(void* _dst, void* _src, s16 _sizeof);
-        typedef void (*JsonEnumToStringFn)(u64 in_enum, const char** enum_strs, char*& out_str, char const* out_end);
-        typedef void (*JsonEnumFromStringFn)(const char*& in_str, const char** enum_strs, u64& out_enum);
+        typedef void (*JsonEnumToStringFn)(u64 in_enum, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& out_str, char const* out_end);
+        typedef void (*JsonEnumFromStringFn)(const char*& in_str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_enum);
+        typedef void (*JsonFlagsToStringFn)(u64 in_enum, const char** enum_strs, const u64* enum_values, i32 enum_count, char*& out_str, char const* out_end);
+        typedef void (*JsonFlagsFromStringFn)(const char*& in_str, const char** enum_strs, const u64* enum_values, i32 enum_count, u64& out_enum);
 
         struct JsonType
         {
@@ -85,15 +87,6 @@ namespace ncore
             JsonPlacementNewFn get_placement_new_fn() const;
         };
 
-        class JsonSystemTypeDef : public JsonTypeDescr
-        {
-        public:
-            JsonSystemTypeDef(const char* _name, s16 _sizeof, s16 _align_of)
-                : JsonTypeDescr(_name, _sizeof, _align_of, JsonTypeDescr::SystemType)
-            {
-            }
-        };
-
         class JsonObjectTypeDef : public JsonTypeDescr
         {
         public:
@@ -109,25 +102,41 @@ namespace ncore
         template <typename T> class JsonObjectTypeDeclr : public JsonObjectTypeDef
         {
         public:
-            T m_default;
-
+            static T& default_object()
+            {
+                static T default_instance;
+                return default_instance;
+            }
             static void placement_new(void* ptr) { new (ptr) T(); }
 
             JsonObjectTypeDeclr(const char* name)
-                : JsonObjectTypeDef(name, &m_default, sizeof(T), alignof(T), 0, nullptr, placement_new, nullptr)
-                , m_default()
+                : JsonObjectTypeDef(name, &default_object(), sizeof(T), alignof(T), 0, nullptr, placement_new, nullptr)
             {
-                JsonObjectTypeRegisterFields<T>(m_default, m_members, m_member_count);
+                JsonObjectTypeRegisterFields<T>(default_object(), m_members, m_member_count);
             }
         };
 
+        // Enumeration type, stored as u16, u32 or u64
         class JsonEnumTypeDef : public JsonTypeDescr
         {
         public:
-            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, JsonEnumToStringFn _enum_to_str = nullptr, JsonEnumFromStringFn _enum_from_str = nullptr);
+            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count);
+            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str);
+            JsonEnumTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count, JsonEnumToStringFn _enum_to_str, JsonEnumFromStringFn _enum_from_str);
+            i32                  m_enum_count;
             const char**         m_enum_strs;
+            const u64*           m_enum_values; // TODO use this
             JsonEnumToStringFn   m_to_str;
             JsonEnumFromStringFn m_from_str;
+        };
+
+        // Flags are like Enums, but can be combined using bitwise OR
+        class JsonFlagsTypeDef : public JsonEnumTypeDef
+        {
+        public:
+            JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count);
+            JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, JsonFlagsToStringFn _enum_to_str, JsonFlagsFromStringFn _enum_from_str);
+            JsonFlagsTypeDef(const char* _name, s16 _sizeof, s16 _align_of, const char** _enum_strs, const u64* _enum_values, i32 enum_count, JsonFlagsToStringFn _enum_to_str, JsonFlagsFromStringFn _enum_from_str);
         };
 
         extern JsonTypeDescr const* JsonTypeDescrBool;
@@ -143,6 +152,20 @@ namespace ncore
         extern JsonTypeDescr const* JsonTypeDescrFloat64;
         extern JsonTypeDescr const* JsonTypeDescrString;
         extern JsonTypeDescr const* JsonTypeDescrEnum16;
+
+        // There are only a handfull of JSON value types:
+        // - string
+        // - number (integer, double, bool)
+        // - array
+        // - map
+        // - object
+        // But we can have a JsonField and Value with a specific conversion:
+        // - IPv4       -> u32
+        // - MacAddress -> u64
+        // - GUID       -> u8[N]
+        struct JsonValueDescr
+        {
+        };
 
         struct JsonFieldDescr
         {
@@ -288,6 +311,24 @@ namespace ncore
             JsonFieldDescr(const char* name, u16& member)
                 : m_type(JsonType::TypeUInt16)
                 , m_typedescr(JsonTypeDescrUInt16)
+                , m_name(name)
+                , m_member(&member)
+                , m_size32(nullptr)
+            {
+            }
+
+            JsonFieldDescr(const char* name, u32& member)
+                : m_type(JsonType::TypeUInt32)
+                , m_typedescr(JsonTypeDescrUInt32)
+                , m_name(name)
+                , m_member(&member)
+                , m_size32(nullptr)
+            {
+            }
+
+            JsonFieldDescr(const char* name, u64& member)
+                : m_type(JsonType::TypeUInt64)
+                , m_typedescr(JsonTypeDescrUInt64)
                 , m_name(name)
                 , m_member(&member)
                 , m_size32(nullptr)
@@ -540,8 +581,12 @@ namespace ncore
             inline bool  is_uint32() const { return (m_descr->m_type & JsonType::TypeUInt32) == JsonType::TypeUInt32; }
             inline bool  is_uint64() const { return (m_descr->m_type & JsonType::TypeUInt64) == JsonType::TypeUInt64; }
             inline u32   all_int() const { return (m_descr->m_type & (JsonType::TypeInt8 | JsonType::TypeInt16 | JsonType::TypeInt32 | JsonType::TypeInt64)); }
+            inline bool  is_unsigned_integer() const { return (m_descr->m_type & (JsonType::TypeUInt8 | JsonType::TypeUInt16 | JsonType::TypeUInt32 | JsonType::TypeUInt64)) != 0; }
+            inline bool  is_signed_integer() const { return (m_descr->m_type & (JsonType::TypeInt8 | JsonType::TypeInt16 | JsonType::TypeInt32 | JsonType::TypeInt64)) != 0; }
+            inline bool  is_integer() const { return is_unsigned_integer() || is_signed_integer(); }
             inline bool  is_f32() const { return (m_descr->m_type & JsonType::TypeF32) == JsonType::TypeF32; }
             inline bool  is_f64() const { return (m_descr->m_type & JsonType::TypeF64) == JsonType::TypeF64; }
+            inline bool  is_float() const { return (m_descr->m_type & (JsonType::TypeF32 | JsonType::TypeF64)) != 0; }
             inline bool  is_number() const { return (m_descr->m_type & JsonType::TypeNumber) != 0; }
             inline bool  is_string() const { return (m_descr->m_type & JsonType::TypeString) == JsonType::TypeString; }
             inline bool  is_enum() const { return (m_descr->m_type & JsonType::TypeEnum) != 0; }
@@ -560,8 +605,8 @@ namespace ncore
             JsonObject get_object(JsonObject const&, JsonAllocator*);
             void*      get_member_ptr(JsonObject const&);
             void*      get_value_ptr(JsonObject const&);
-            void       set_string(JsonObject const&, const char*);
-            void       set_enum(JsonObject const&, const char*);
+            void       set_string(JsonObject const&, const char* str, const char* str_end);
+            void       set_enum(JsonObject const&, const char* str, const char* str_end);
             void       set_number(JsonObject const&, JsonAllocator*, JsonNumber const&);
             void       set_bool(JsonObject const&, JsonAllocator*, bool);
         };
@@ -575,12 +620,12 @@ namespace ncore
             }
             JsonTypeDescr const* m_descr;
             void*                m_instance;
-            JsonMember           get_member(const char* name) const;
+            JsonMember           get_member(const char* name, const char* name_end) const;
         };
 
         bool JsonDecode(char const* json, char const* json_end, JsonObject& json_root, JsonAllocator* allocator, JsonAllocator* scratch, char const*& error_message);
 
-    } // namespace json
+    } // namespace njson
 } // namespace ncore
 
 #endif // __CJSON_JSON_DECODE_H__
