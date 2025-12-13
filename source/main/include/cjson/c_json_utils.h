@@ -35,6 +35,7 @@ namespace ncore
             };
         };
 
+        bool ParseBoolean(char const* str, char const* end);
         bool ParseHexNumber(char const*& str, char const* end, JsonNumber& out_number);
         bool ParseNumber(char const*& str, char const* end, JsonNumber& out_number);
 

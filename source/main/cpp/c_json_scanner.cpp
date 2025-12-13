@@ -89,12 +89,15 @@ namespace ncore
                             if (value == nullptr)
                                 return nullptr;
 
-                            JsonNamedValue* named_value = alloc->Allocate<JsonNamedValue>();
-                            named_value->m_Name         = l.m_Str;
-                            named_value->m_Value        = value;
+                            JsonNamedValue*  named_value = alloc->Allocate<JsonNamedValue>();
+                            JsonStringValue* name        = alloc->Allocate<JsonStringValue>();
+                            name->m_String               = l.m_Str;
+                            name->m_End                  = l.m_Str + l.m_Len;
+                            named_value->m_Name          = name;
+                            named_value->m_Value         = value;
 
                             JsonLinkedNamedValue* linked_value = alloc->Allocate<JsonLinkedNamedValue>();
-                            linked_value->m_Value              = named_value;
+                            linked_value->m_NamedValue         = named_value;
                             linked_value->m_Next               = result->m_Value.m_Object.m_LinkedList;
 
                             result->m_Value.m_Object.m_LinkedList = linked_value;

@@ -113,6 +113,87 @@ namespace ncore
             return false;
         }
 
+        bool ParseBoolean(char const* str, char const* end)
+        {
+            // A boolean can have a couple of forms:
+            // - true/false, True/False, TRUE/FALSE
+            // - 1/0
+            // - on/off, On/Off, ON/OFF
+            // - yes/no, Yes/No, YES/NO
+            u64         vb   = 0;
+            const char* iter = str;
+            while (iter < end)
+            {
+                char c = PeekAsciiChar(iter, end);
+                if (ascii::is_whitespace(c) || c == ',' || c == ']' || c == '}')
+                    break;
+                vb = (vb << 8) | (u8)ascii::to_lower(c);
+                iter++;
+            }
+
+            const i32 strlen = (i32)(iter - str);
+            if (strlen == 1)
+            {
+                // Check for 1/0
+                if (vb == '1')
+                {
+                    str = iter;
+                    return true;
+                }
+                else if (vb == '0')
+                {
+                    str = iter;
+                    return false;
+                }
+            }
+            else if (strlen == 2)
+            {
+                // Check for on/off
+                if (vb == ((u64)'o' << 8 | (u64)'n'))
+                {
+                    str = iter;
+                    return true;
+                }
+                else if (vb == (((u64)'n' << 8) | (u64)'o'))
+                {
+                    str = iter;
+                    return false;
+                }
+            }
+            else if (strlen == 3)
+            {
+                // Check for yes/no
+                if (vb == ((u64)'y' << 16 | (u64)'e' << 8 | (u64)'s'))
+                {
+                    str = iter;
+                    return true;
+                }
+                else if (vb == ((u64)'o' << 16 | (u64)'f' << 8 | (u64)'f'))
+                {
+                    str = iter;
+                    return false;
+                }
+            }
+            else if (strlen == 4)
+            {
+                // Check for true/false
+                if (vb == ((u64)'t' << 24 | (u64)'r' << 16 | (u64)'u' << 8 | (u64)'e'))
+                {
+                    str = iter;
+                    return true;
+                }
+            }
+            else if (strlen == 5)
+            {
+                if (vb == ((u64)'f' << 32 | (u64)'a' << 24 | (u64)'l' << 16 | (u64)'s' << 8 | (u64)'e'))
+                {
+                    str = iter;
+                    return false;
+                }
+            }
+            return false;
+        }
+
         // Parses a hexadecimal number from the string, returns the updated string pointer
         bool ParseHexNumber(char const*& str, char const* _end, JsonNumber& out_number)
         {

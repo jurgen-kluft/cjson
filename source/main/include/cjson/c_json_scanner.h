@@ -44,13 +44,13 @@ namespace ncore
 
             struct JsonNamedValue
             {
-                const char*      m_Name;
-                const JsonValue* m_Value;
+                const JsonStringValue* m_Name;
+                const JsonValue*       m_Value;
             };
 
             struct JsonLinkedNamedValue
             {
-                const JsonNamedValue* m_Value;
+                const JsonNamedValue* m_NamedValue;
                 JsonLinkedNamedValue* m_Next;
             };
 
@@ -86,6 +86,7 @@ namespace ncore
                 inline bool IsObject() const { return m_Type == kObject; }
                 inline bool IsString() const { return m_Type == kString; }
                 inline bool IsNumber() const { return m_Type == kNumber; }
+                inline bool IsBoolean() const { return m_Type == kBoolean; }
                 inline bool IsNull() const { return m_Type == kNull; }
 
                 const struct JsonObjectValue* AsObject() const;
