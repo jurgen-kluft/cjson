@@ -13,6 +13,13 @@ namespace ncore
 
         namespace ndecoder
         {
+            // TODO: replace with 'typedef u32 result_t', and define
+            // #define RESULT_VALID(r)      ((r) == 3)
+            // #define RESULT_OK(r)         (((r)&1) == 1)
+            // #define RESULT_NOT_OK(r)     (((r)&1) == 0)
+            // #define RESULT_END(r)        (((r)&2) == 2)
+            // #define RESULT_NOT_END(r)    (((r)&2) == 0)
+
             struct result_t
             {
                 inline result_t()

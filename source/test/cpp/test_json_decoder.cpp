@@ -269,6 +269,8 @@ UNITTEST_SUITE_BEGIN(json_decoder)
             njson::ndecoder::decoder_t* decoder = njson::ndecoder::create_decoder(&scratch, &alloc, (const char*)kyria_json, (const char*)kyria_json + kyria_json_len);
             json_decode_keyboard_root(decoder, &root);
 
+            // TODO: validate keyboard_root_t and all members
+
             alloc.Destroy();
             scratch.Destroy();
         }

@@ -378,24 +378,20 @@ namespace ncore
 
             result_t read_object_end(decoder_t* d)
             {
-                if (d->m_CurrentState->m_ObjectMember == nullptr)
-                {
-                    pop_state(d);
-                    return result_t(true, true);
-                }
+                ASSERT(d->m_CurrentState->m_ObjectMember != nullptr);
 
                 d->m_CurrentState->m_ObjectMember = d->m_CurrentState->m_ObjectMember->m_Next;
                 d->m_CurrentState->m_Index += 1;
 
-                if (d->m_CurrentState->m_ObjectMember != nullptr)
-                {
-                    d->m_CurrentState->m_Value = d->m_CurrentState->m_ObjectMember->m_NamedValue->m_Value;
-                }
-                else
+                result_t result(true, d->m_CurrentState->m_ObjectMember == nullptr);
+                if (result.end())
                 {
                     d->m_CurrentState->m_Value = nullptr;
+                    pop_state(d);
+                    return result;
                 }
-                return result_t(true, false);
+                d->m_CurrentState->m_Value = d->m_CurrentState->m_ObjectMember->m_NamedValue->m_Value;
+                return result;
             }
 
             result_t read_array_begin(decoder_t* d, i32& out_size)
@@ -428,26 +424,22 @@ namespace ncore
 
             result_t read_array_end(decoder_t* d)
             {
-                if (d->m_CurrentState->m_ArrayElement == nullptr)
-                {
-                    pop_state(d);
-                    return result_t(true, true);
-                }
+                ASSERT(d->m_CurrentState->m_ArrayElement != nullptr);
 
                 d->m_CurrentState->m_ArrayElement = d->m_CurrentState->m_ArrayElement->m_Next;
                 d->m_CurrentState->m_Index += 1;
 
                 // Return whether we are at the end of this array
-                if (d->m_CurrentState->m_ArrayElement != nullptr)
-                {
-                    d->m_CurrentState->m_Value = d->m_CurrentState->m_ArrayElement->m_Value;
-                }
-                else
+                result_t result(true, d->m_CurrentState->m_ArrayElement == nullptr);
+                if (result.end())
                 {
                     d->m_CurrentState->m_Value = nullptr;
+                    pop_state(d);
+                    return result;
                 }
 
-                return result_t(true, false);
+                d->m_CurrentState->m_Value = d->m_CurrentState->m_ArrayElement->m_Value;
+                return result;
             }
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
