@@ -41,20 +41,40 @@ struct key_t
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
+struct decoder_members_t
+{
+    struct member_t
+    {
+        i32 m_count; // 1 == single value, >1 == array
+        i32 m_type;
+        union
+        {
+            bool*        m_bool;
+            ncore::s8*   m_i8;
+            ncore::s16*  m_i16;
+            ncore::i32*  m_i32;
+            ncore::i64*  m_i64;
+            ncore::u8*   m_u8;
+            ncore::u16*  m_u16;
+            ncore::u32*  m_u32;
+            ncore::u64*  m_u64;
+            float*       m_f32;
+            char*        m_char;
+            const char** m_string;
+        };
+    };
+
+    void add(const char* name, bool* out_value) {}
+};
+
 static void json_decode_key(njson::ndecoder::decoder_t* d, key_t* out_key)
 {
     njson::ndecoder::field_t  field;
     njson::ndecoder::result_t result;
-
-    // Expecting an object start
     result = njson::ndecoder::read_until_object_end(d);
-    ASSERT(result.ok);
-
-    while (!result.end)
+    while (result.ok && !result.end)
     {
-        field  = njson::ndecoder::decode_field(d);
-        result = njson::ndecoder::read_until_object_end(d);
-
+        field = njson::ndecoder::decode_field(d);
         if (njson::ndecoder::field_equal(field, "nob"))
         {
             njson::ndecoder::decode_bool(d, out_key->m_nob);
@@ -93,6 +113,7 @@ static void json_decode_key(njson::ndecoder::decoder_t* d, key_t* out_key)
             njson::ndecoder::decode_array_f32(d, out_key->m_ledcolor, array_size, 4);
             out_key->m_ledcolor_size = (ncore::s8)array_size;
         }
+        result = njson::ndecoder::read_until_object_end(d);
     }
 }
 
@@ -129,16 +150,10 @@ static void json_decode_keygroup(njson::ndecoder::decoder_t* d, keygroup_t* out_
 {
     njson::ndecoder::field_t  field;
     njson::ndecoder::result_t result;
-
-    // Expecting an object start
     result = njson::ndecoder::read_until_object_end(d);
-    ASSERT(result.ok);
-
-    while (!result.end)
+    while (result.ok && !result.end)
     {
-        field  = njson::ndecoder::decode_field(d);
-        result = njson::ndecoder::read_until_object_end(d);
-
+        field = njson::ndecoder::decode_field(d);
         if (njson::ndecoder::field_equal(field, "name"))
         {
             njson::ndecoder::decode_string(d, out_keygroup->m_name);
@@ -212,6 +227,7 @@ static void json_decode_keygroup(njson::ndecoder::decoder_t* d, keygroup_t* out_
                 result = njson::ndecoder::read_until_array_end(d, array_size);
             }
         }
+        result = njson::ndecoder::read_until_object_end(d);
     }
 }
 
@@ -258,16 +274,10 @@ static void json_decode_keyboard(njson::ndecoder::decoder_t* d, keyboard_t* out_
 {
     njson::ndecoder::field_t  field;
     njson::ndecoder::result_t result;
-
-    // Expecting an object start
     result = njson::ndecoder::read_until_object_end(d);
-    ASSERT(result.ok);
-
-    while (!result.end)
+    while (result.ok && !result.end)
     {
-        field  = njson::ndecoder::decode_field(d);
-        result = njson::ndecoder::read_until_object_end(d);
-
+        field = njson::ndecoder::decode_field(d);
         if (njson::ndecoder::field_equal(field, "name"))
         {
             njson::ndecoder::decode_string(d, out_keyboard->m_name);
@@ -319,6 +329,7 @@ static void json_decode_keyboard(njson::ndecoder::decoder_t* d, keyboard_t* out_
         {
             njson::ndecoder::decode_carray_f32(d, out_keyboard->m_ledcolor, 4);
         }
+        result = njson::ndecoder::read_until_object_end(d);
     }
 }
 
@@ -335,20 +346,16 @@ static void json_decode_keyboard_root(njson::ndecoder::decoder_t* d, keyboard_ro
     njson::ndecoder::field_t  field;
     njson::ndecoder::result_t result;
 
-    // Expecting an object start
     result = njson::ndecoder::read_until_object_end(d);
-    ASSERT(result.ok);
-
-    while (!result.end)
+    while (result.ok && !result.end)
     {
-        field  = njson::ndecoder::decode_field(d);
-        result = njson::ndecoder::read_until_object_end(d);
-
+        field = njson::ndecoder::decode_field(d);
         if (njson::ndecoder::field_equal(field, "keyboard"))
         {
             out_root->m_keyboard = d->m_DecoderAllocator->Allocate<keyboard_t>();
             json_decode_keyboard(d, out_root->m_keyboard);
         }
+        result = njson::ndecoder::read_until_object_end(d);
     }
 }
 
