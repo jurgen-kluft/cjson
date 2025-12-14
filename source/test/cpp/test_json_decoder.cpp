@@ -41,79 +41,24 @@ struct key_t
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
 
-struct decoder_members_t
-{
-    struct member_t
-    {
-        i32 m_count; // 1 == single value, >1 == array
-        i32 m_type;
-        union
-        {
-            bool*        m_bool;
-            ncore::s8*   m_i8;
-            ncore::s16*  m_i16;
-            ncore::i32*  m_i32;
-            ncore::i64*  m_i64;
-            ncore::u8*   m_u8;
-            ncore::u16*  m_u16;
-            ncore::u32*  m_u32;
-            ncore::u64*  m_u64;
-            float*       m_f32;
-            char*        m_char;
-            const char** m_string;
-        };
-    };
-
-    void add(const char* name, bool* out_value) {}
-};
-
 static void json_decode_key(njson::ndecoder::decoder_t* d, key_t* out_key)
 {
-    njson::ndecoder::field_t  field;
-    njson::ndecoder::result_t result;
-    result = njson::ndecoder::read_until_object_end(d);
-    while (result.ok && !result.end)
+    njson::ndecoder::result_t result = njson::ndecoder::read_object_begin(d);
+    if (result.not_ok() || result.end())
+        return;
+    njson::ndecoder::decoder_add_member(d, "nob", &out_key->m_nob);
+    njson::ndecoder::decoder_add_member(d, "index", &out_key->m_index);
+    njson::ndecoder::decoder_add_member(d, "label", &out_key->m_label);
+    njson::ndecoder::decoder_add_member(d, "w", &out_key->m_w);
+    njson::ndecoder::decoder_add_member(d, "h", &out_key->m_h);
+    njson::ndecoder::decoder_add_member(d, "cap_color", &out_key->m_capcolor, &out_key->m_capcolor_size, 4);
+    njson::ndecoder::decoder_add_member(d, "txt_color", &out_key->m_txtcolor, &out_key->m_txtcolor_size, 4);
+    njson::ndecoder::decoder_add_member(d, "led_color", &out_key->m_ledcolor, &out_key->m_ledcolor_size, 4);
+    while (result.valid())
     {
-        field = njson::ndecoder::decode_field(d);
-        if (njson::ndecoder::field_equal(field, "nob"))
-        {
-            njson::ndecoder::decode_bool(d, out_key->m_nob);
-        }
-        else if (njson::ndecoder::field_equal(field, "index"))
-        {
-            njson::ndecoder::decode_i16(d, out_key->m_index);
-        }
-        else if (njson::ndecoder::field_equal(field, "label"))
-        {
-            njson::ndecoder::decode_string(d, out_key->m_label);
-        }
-        else if (njson::ndecoder::field_equal(field, "w"))
-        {
-            njson::ndecoder::decode_f32(d, out_key->m_w);
-        }
-        else if (njson::ndecoder::field_equal(field, "h"))
-        {
-            njson::ndecoder::decode_f32(d, out_key->m_h);
-        }
-        else if (njson::ndecoder::field_equal(field, "cap_color"))
-        {
-            i32 array_size;
-            njson::ndecoder::decode_array_f32(d, out_key->m_capcolor, array_size, 4);
-            out_key->m_capcolor_size = (ncore::s8)array_size;
-        }
-        else if (njson::ndecoder::field_equal(field, "txt_color"))
-        {
-            i32 array_size;
-            njson::ndecoder::decode_array_f32(d, out_key->m_txtcolor, array_size, 4);
-            out_key->m_txtcolor_size = (ncore::s8)array_size;
-        }
-        else if (njson::ndecoder::field_equal(field, "led_color"))
-        {
-            i32 array_size;
-            njson::ndecoder::decode_array_f32(d, out_key->m_ledcolor, array_size, 4);
-            out_key->m_ledcolor_size = (ncore::s8)array_size;
-        }
-        result = njson::ndecoder::read_until_object_end(d);
+        njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
+        njson::ndecoder::decoder_decode_member(d, field);
+        result = njson::ndecoder::read_object_end(d);
     }
 }
 
@@ -143,91 +88,55 @@ struct keygroup_t
 };
 
 //                                       Bit      0       1       2       3       4       5       6       7
-static const u64   enum_values[] = {1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 7};
-static const char* enum_strs[]   = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd"};
+static const u16   flag_values[] = {1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 7};
+static const char* flag_strs[]   = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd"};
 
 static void json_decode_keygroup(njson::ndecoder::decoder_t* d, keygroup_t* out_keygroup)
 {
-    njson::ndecoder::field_t  field;
-    njson::ndecoder::result_t result;
-    result = njson::ndecoder::read_until_object_end(d);
-    while (result.ok && !result.end)
+    njson::ndecoder::result_t result = njson::ndecoder::read_object_begin(d);
+    if (result.not_ok() || result.end())
+        return;
+
+    njson::ndecoder::decoder_add_member(d, "name", &out_keygroup->m_name);
+    njson::ndecoder::decoder_add_member(d, "x", &out_keygroup->m_x);
+    njson::ndecoder::decoder_add_member(d, "y", &out_keygroup->m_y);
+    njson::ndecoder::decoder_add_member(d, "w", &out_keygroup->m_w);
+    njson::ndecoder::decoder_add_member(d, "h", &out_keygroup->m_h);
+    njson::ndecoder::decoder_add_member(d, "sw", &out_keygroup->m_sw);
+    njson::ndecoder::decoder_add_member(d, "sh", &out_keygroup->m_sh);
+    njson::ndecoder::decoder_add_flag_member(d, "enum", flag_strs, flag_values, DARRAYSIZE(flag_values), &out_keygroup->m_enum);
+    njson::ndecoder::decoder_add_member(d, "r", &out_keygroup->m_r);
+    njson::ndecoder::decoder_add_member(d, "c", &out_keygroup->m_c);
+    njson::ndecoder::decoder_add_member(d, "a", &out_keygroup->m_a);
+    njson::ndecoder::decoder_add_member(d, "cap_color", &out_keygroup->m_capcolor, &out_keygroup->m_capcolor_size, 4);
+    njson::ndecoder::decoder_add_member(d, "txt_color", &out_keygroup->m_txtcolor, &out_keygroup->m_txtcolor_size, 4);
+    njson::ndecoder::decoder_add_member(d, "led_color", &out_keygroup->m_ledcolor, &out_keygroup->m_ledcolor_size, 4);
+
+    while (result.valid())
     {
-        field = njson::ndecoder::decode_field(d);
-        if (njson::ndecoder::field_equal(field, "name"))
+        njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
+        if (!njson::ndecoder::decoder_decode_member(d, field))
         {
-            njson::ndecoder::decode_string(d, out_keygroup->m_name);
-        }
-        else if (njson::ndecoder::field_equal(field, "x"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_x);
-        }
-        else if (njson::ndecoder::field_equal(field, "y"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_y);
-        }
-        else if (njson::ndecoder::field_equal(field, "w"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_w);
-        }
-        else if (njson::ndecoder::field_equal(field, "h"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_h);
-        }
-        else if (njson::ndecoder::field_equal(field, "sw"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_sw);
-        }
-        else if (njson::ndecoder::field_equal(field, "sh"))
-        {
-            njson::ndecoder::decode_f32(d, out_keygroup->m_sh);
-        }
-        else if (njson::ndecoder::field_equal(field, "enum"))
-        {
-            u64 enum_value = 0;
-            njson::ndecoder::decode_enum(d, enum_value, enum_strs, enum_values, DARRAYSIZE(enum_values));
-            out_keygroup->m_enum = (ncore::u16)enum_value;
-        }
-        else if (njson::ndecoder::field_equal(field, "r"))
-        {
-            njson::ndecoder::decode_i16(d, out_keygroup->m_r);
-        }
-        else if (njson::ndecoder::field_equal(field, "c"))
-        {
-            njson::ndecoder::decode_i16(d, out_keygroup->m_c);
-        }
-        else if (njson::ndecoder::field_equal(field, "a"))
-        {
-            njson::ndecoder::decode_i16(d, out_keygroup->m_a);
-        }
-        else if (njson::ndecoder::field_equal(field, "cap_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keygroup->m_capcolor, out_keygroup->m_capcolor_size);
-        }
-        else if (njson::ndecoder::field_equal(field, "txt_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keygroup->m_txtcolor, out_keygroup->m_txtcolor_size);
-        }
-        else if (njson::ndecoder::field_equal(field, "led_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keygroup->m_ledcolor, out_keygroup->m_ledcolor_size);
-        }
-        else if (njson::ndecoder::field_equal(field, "keys"))
-        {
-            i32                       array_size;
-            i32                       array_index = 0;
-            njson::ndecoder::result_t result      = njson::ndecoder::read_until_array_end(d, array_size);
-            out_keygroup->m_nb_keys               = (ncore::s16)array_size;
-            out_keygroup->m_keys                  = d->m_DecoderAllocator->AllocateArray<key_t>(array_size);
-            while (result.ok && !result.end)
+            if (njson::ndecoder::field_equal(field, "keys"))
             {
-                if (array_index < array_size)
-                    json_decode_key(d, &out_keygroup->m_keys[array_index]);
-                array_index++;
-                result = njson::ndecoder::read_until_array_end(d, array_size);
+                i32                       array_size;
+                njson::ndecoder::result_t result = njson::ndecoder::read_array_begin(d, array_size);
+                if (result.valid())
+                {
+                    out_keygroup->m_nb_keys = (ncore::s16)array_size;
+                    out_keygroup->m_keys    = d->m_DecoderAllocator->AllocateArray<key_t>(array_size);
+                    i32 array_index         = 0;
+                    while (result.valid())
+                    {
+                        if (array_index < array_size)
+                            json_decode_key(d, &out_keygroup->m_keys[array_index]);
+                        array_index++;
+                        result = njson::ndecoder::read_array_end(d);
+                    }
+                }
             }
         }
-        result = njson::ndecoder::read_until_object_end(d);
+        result = njson::ndecoder::read_object_end(d);
     }
 }
 
@@ -272,64 +181,44 @@ struct keyboard_t
 
 static void json_decode_keyboard(njson::ndecoder::decoder_t* d, keyboard_t* out_keyboard)
 {
-    njson::ndecoder::field_t  field;
-    njson::ndecoder::result_t result;
-    result = njson::ndecoder::read_until_object_end(d);
-    while (result.ok && !result.end)
+    njson::ndecoder::result_t result = njson::ndecoder::read_object_begin(d);
+    if (result.not_ok() || result.end())
+        return;
+
+    njson::ndecoder::decoder_add_member(d, "name", &out_keyboard->m_name);
+    njson::ndecoder::decoder_add_member(d, "cap_color", out_keyboard->m_capcolor, 4);
+    njson::ndecoder::decoder_add_member(d, "txt_color", out_keyboard->m_txtcolor, 4);
+    njson::ndecoder::decoder_add_member(d, "led_color", out_keyboard->m_ledcolor, 4);
+    njson::ndecoder::decoder_add_member(d, "scale", &out_keyboard->m_scale);
+    njson::ndecoder::decoder_add_member(d, "w", &out_keyboard->m_w);
+    njson::ndecoder::decoder_add_member(d, "h", &out_keyboard->m_h);
+    njson::ndecoder::decoder_add_member(d, "sw", &out_keyboard->m_sw);
+    njson::ndecoder::decoder_add_member(d, "sh", &out_keyboard->m_sh);
+    while (result.valid())
     {
-        field = njson::ndecoder::decode_field(d);
-        if (njson::ndecoder::field_equal(field, "name"))
+        njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
+        if (!njson::ndecoder::decoder_decode_member(d, field))
         {
-            njson::ndecoder::decode_string(d, out_keyboard->m_name);
-        }
-        else if (njson::ndecoder::field_equal(field, "keygroup"))
-        {
-            i32                       array_size;
-            i32                       array_index = 0;
-            njson::ndecoder::result_t result      = njson::ndecoder::read_until_array_end(d, array_size);
-            out_keyboard->m_nb_keygroups          = (ncore::s16)array_size;
-            out_keyboard->m_keygroups             = d->m_DecoderAllocator->AllocateArray<keygroup_t>(array_size);
-            while (result.ok && !result.end)
+            if (njson::ndecoder::field_equal(field, "keygroups"))
             {
-                if (array_index < array_size)
-                    json_decode_keygroup(d, &out_keyboard->m_keygroups[array_index]);
-                array_index++;
-                result = njson::ndecoder::read_until_array_end(d, array_size);
+                i32                       array_size;
+                njson::ndecoder::result_t result = njson::ndecoder::read_array_begin(d, array_size);
+                if (result.valid())
+                {
+                    out_keyboard->m_nb_keygroups = (ncore::s16)array_size;
+                    out_keyboard->m_keygroups    = d->m_DecoderAllocator->AllocateArray<keygroup_t>(array_size);
+                    i32 array_index              = 0;
+                    while (result.valid())
+                    {
+                        if (array_index < array_size)
+                            json_decode_keygroup(d, &out_keyboard->m_keygroups[array_index]);
+                        array_index++;
+                        result = njson::ndecoder::read_array_end(d);
+                    }
+                }
             }
         }
-        else if (njson::ndecoder::field_equal(field, "scale"))
-        {
-            njson::ndecoder::decode_f32(d, out_keyboard->m_scale);
-        }
-        else if (njson::ndecoder::field_equal(field, "w"))
-        {
-            njson::ndecoder::decode_f32(d, out_keyboard->m_w);
-        }
-        else if (njson::ndecoder::field_equal(field, "h"))
-        {
-            njson::ndecoder::decode_f32(d, out_keyboard->m_h);
-        }
-        else if (njson::ndecoder::field_equal(field, "sw"))
-        {
-            njson::ndecoder::decode_f32(d, out_keyboard->m_sw);
-        }
-        else if (njson::ndecoder::field_equal(field, "sh"))
-        {
-            njson::ndecoder::decode_f32(d, out_keyboard->m_sh);
-        }
-        else if (njson::ndecoder::field_equal(field, "cap_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keyboard->m_capcolor, 4);
-        }
-        else if (njson::ndecoder::field_equal(field, "txt_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keyboard->m_txtcolor, 4);
-        }
-        else if (njson::ndecoder::field_equal(field, "led_color"))
-        {
-            njson::ndecoder::decode_carray_f32(d, out_keyboard->m_ledcolor, 4);
-        }
-        result = njson::ndecoder::read_until_object_end(d);
+        result = njson::ndecoder::read_object_end(d);
     }
 }
 
@@ -343,19 +232,19 @@ struct keyboard_root_t
 
 static void json_decode_keyboard_root(njson::ndecoder::decoder_t* d, keyboard_root_t* out_root)
 {
-    njson::ndecoder::field_t  field;
-    njson::ndecoder::result_t result;
+    njson::ndecoder::result_t result = njson::ndecoder::read_object_begin(d);
+    if (result.not_ok() || result.end())
+        return;
 
-    result = njson::ndecoder::read_until_object_end(d);
-    while (result.ok && !result.end)
+    while (result.valid())
     {
-        field = njson::ndecoder::decode_field(d);
+        njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
         if (njson::ndecoder::field_equal(field, "keyboard"))
         {
             out_root->m_keyboard = d->m_DecoderAllocator->Allocate<keyboard_t>();
             json_decode_keyboard(d, out_root->m_keyboard);
         }
-        result = njson::ndecoder::read_until_object_end(d);
+        result = njson::ndecoder::read_object_end(d);
     }
 }
 
