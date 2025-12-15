@@ -13,33 +13,17 @@ namespace ncore
 
         namespace ndecoder
         {
-            // TODO: replace with 'typedef u32 result_t', and define
-            // #define RESULT_VALID(r)      ((r) == 3)
-            // #define RESULT_OK(r)         (((r)&1) == 1)
-            // #define RESULT_NOT_OK(r)     (((r)&1) == 0)
-            // #define RESULT_END(r)        (((r)&2) == 2)
-            // #define RESULT_NOT_END(r)    (((r)&2) == 0)
+            typedef u32 result_t;
+            inline bool NotOk(result_t r) { return (((r) & 1) == 0); }
+            inline bool Ended(result_t r) { return (((r) & 2) == 2); }
+            inline bool OkAndEnded(result_t r) { return (((r) & 3) == 3); }
+            inline bool OkAndNotEnded(result_t r) { return (((r) & 3) == 1); }
 
-            struct result_t
-            {
-                inline result_t()
-                    : m_result(0)
-                {
-                }
-                inline result_t(bool ok, bool end)
-                    : m_result((ok ? 1 : 0) | (end ? 2 : 0))
-                {
-                }
-
-                inline bool ok() const { return (m_result & 1) == 1; }
-                inline bool not_ok() const { return (m_result & 1) == 0; }
-                inline bool end() const { return (m_result & 2) == 2; }
-                inline bool not_end() const { return (m_result & 2) == 0; }
-                inline bool valid() const { return (m_result & 3) == 1; } // valid means ok and not end
-
-            private:
-                u32 m_result;
-            };
+            const result_t ResultInvalid       = 0;
+            const result_t ResultOk            = 1;
+            const result_t ResultEnded         = 2;
+            const result_t ResultOkAndNotEnded = 1;
+            const result_t ResultOkAndEnded    = 3;
 
             struct state_t;
             struct state_array_t;
@@ -53,6 +37,34 @@ namespace ncore
 
             decoder_t* create_decoder(JsonAllocator* scratch_allocator, JsonAllocator* decoder_allocator, const char* json, const char* json_end);
             void       destroy_decoder(decoder_t*& d);
+
+            enum EType
+            {
+                TYPE_INVALID = 0,
+                TYPE_BOOL,
+                TYPE_I8,
+                TYPE_I16,
+                TYPE_I32,
+                TYPE_I64,
+                TYPE_U8,
+                TYPE_U16,
+                TYPE_U32,
+                TYPE_U64,
+                TYPE_F32,
+                TYPE_CHAR,
+                TYPE_STRING,
+                TYPE_BOOL_ARRAY,
+                TYPE_I8_ARRAY,
+                TYPE_I16_ARRAY,
+                TYPE_I32_ARRAY,
+                TYPE_I64_ARRAY,
+                TYPE_U8_ARRAY,
+                TYPE_U16_ARRAY,
+                TYPE_U32_ARRAY,
+                TYPE_U64_ARRAY,
+                TYPE_F32_ARRAY,
+                TYPE_CHAR_ARRAY
+            };
 
             void decode_bool(decoder_t* d, bool& out_value);
             void decode_i16(decoder_t* d, i16& out_value);
@@ -117,17 +129,59 @@ namespace ncore
             void decoder_add_member(decoder_t* d, const char* name, f32** out_value, i8* out_len, i32 max_len = -1);
             void decoder_add_member(decoder_t* d, const char* name, char** out_value, i32* out_len, i32 max_len = -1);
 
-            void decoder_add_enum_member(decoder_t* d, const char* name, const char** enum_strs, const void* enum_values, i8 sizeof_enum_value, i32 enum_count, bool as_flags, void* out_value, i8 sizeof_out_value);
-
-            template <typename T> void decoder_add_enum_member(decoder_t* d, const char* name, const char** enum_strs, const T* enum_values, i32 enum_count, T* out_value)
+            struct decoder_enum_t
             {
-                decoder_add_enum_member(d, name, enum_strs, enum_values, sizeof(T), enum_count, false, out_value, sizeof(T));
-            }
+                const char** m_enum_strs;
+                union
+                {
+                    void const*       m_values_void;
+                    ncore::u8 const*  m_values_u8;
+                    ncore::u16 const* m_values_u16;
+                    ncore::u32 const* m_values_u32;
+                    ncore::u64 const* m_values_u64;
+                };
+                i32 m_enum_count;
+                i16 m_value_type;
+                i16 m_as_flags;
 
-            template <typename T> void decoder_add_flag_member(decoder_t* d, const char* name, const char** flag_strs, const T* flag_values, i32 flag_count, T* out_value)
-            {
-                decoder_add_enum_member(d, name, flag_strs, flag_values, sizeof(T), flag_count, true, out_value, sizeof(T));
-            }
+                decoder_enum_t(const char** enum_strs, const u8* enum_values, i32 enum_count, bool as_flags = false)
+                    : m_enum_strs(enum_strs)
+                    , m_values_u8(enum_values)
+                    , m_enum_count(enum_count)
+                    , m_value_type(TYPE_U8)
+                    , m_as_flags(as_flags ? 1 : 0)
+                {
+                }
+                decoder_enum_t(const char** enum_strs, const u16* enum_values, i32 enum_count, bool as_flags = false)
+                    : m_enum_strs(enum_strs)
+                    , m_values_u16(enum_values)
+                    , m_enum_count(enum_count)
+                    , m_value_type(TYPE_U16)
+                    , m_as_flags(as_flags ? 1 : 0)
+                {
+                }
+                decoder_enum_t(const char** enum_strs, const u32* enum_values, i32 enum_count, bool as_flags = false)
+                    : m_enum_strs(enum_strs)
+                    , m_values_u32(enum_values)
+                    , m_enum_count(enum_count)
+                    , m_value_type(TYPE_U32)
+                    , m_as_flags(as_flags ? 1 : 0)
+                {
+                }
+                decoder_enum_t(const char** enum_strs, const u64* enum_values, i32 enum_count, bool as_flags = false)
+                    : m_enum_strs(enum_strs)
+                    , m_values_u64(enum_values)
+                    , m_enum_count(enum_count)
+                    , m_value_type(TYPE_U64)
+                    , m_as_flags(as_flags ? 1 : 0)
+                {
+                }
+            };
+
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u8* out_value);
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u16* out_value);
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u32* out_value);
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u64* out_value);
 
             result_t read_object_begin(decoder_t* d);
             result_t read_object_end(decoder_t* d);
@@ -136,6 +190,11 @@ namespace ncore
 
             struct field_t
             {
+                field_t(const char* name, const char* end)
+                    : m_Name(name)
+                    , m_End(end)
+                {
+                }
                 const char* m_Name;
                 const char* m_End;
 
@@ -163,7 +222,7 @@ namespace ncore
             template <typename TDecodeFn> void decode_object(decoder_t* d, const TDecodeFn* decode_fn)
             {
                 result_t result = read_object_begin(d);
-                while (result.valid())
+                while (OkAndNotEnded(result))
                 {
                     field_t field = decode_field(d);
                     decode_fn(d, field);

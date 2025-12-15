@@ -232,7 +232,7 @@ namespace ncore
             template <typename T> void decode_array_integer(decoder_t* d, T*& out_array, i32& out_array_size, i32 out_array_maxsize)
             {
                 result_t result = read_array_begin(d, out_array_size);
-                if (!result.valid())
+                if (NotOk(result))
                 {
                     out_array      = nullptr;
                     out_array_size = 0;
@@ -245,7 +245,7 @@ namespace ncore
                 out_array = d->m_DecoderAllocator->AllocateArray<T>(out_array_size);
 
                 i32 array_index = 0;
-                while (result.valid())
+                while (OkAndNotEnded(result))
                 {
                     u64 value;
                     decode_u64(d, value);
@@ -275,7 +275,7 @@ namespace ncore
                 out_array_size  = (u32)array_size;
                 out_array       = d->m_DecoderAllocator->AllocateArray<f32>(out_array_size);
                 i32 array_index = 0;
-                while (result.ok() && result.not_end())
+                while (OkAndNotEnded(result))
                 {
                     float color_component;
                     decode_f32(d, color_component);
@@ -290,10 +290,10 @@ namespace ncore
             {
                 i32      array_size;
                 result_t result = read_array_begin(d, array_size);
-                if (!result.valid())
+                if (NotOk(result))
                     return;
                 i32 array_index = 0;
-                while (result.ok() && result.not_end())
+                while (OkAndNotEnded(result))
                 {
                     u64 value;
                     decode_u64(d, value);
@@ -318,10 +318,10 @@ namespace ncore
             {
                 i32      array_size;
                 result_t result = read_array_begin(d, array_size);
-                if (!result.valid())
+                if (NotOk(result))
                     return;
                 i32 array_index = 0;
-                while (result.ok() && result.not_end())
+                while (OkAndNotEnded(result))
                 {
                     if (array_index < (i32)out_array_maxlen)
                     {
@@ -339,7 +339,7 @@ namespace ncore
                 i32      array_size;
                 result_t result      = read_array_begin(d, array_size);
                 i32      array_index = 0;
-                while (result.ok() && result.not_end())
+                while (OkAndNotEnded(result))
                 {
                     float color_component;
                     decode_f32(d, color_component);
@@ -350,35 +350,78 @@ namespace ncore
                 }
             }
 
-            void decode_enum(decoder_t* d, u8& out_enum_value, const char** enum_strs, const u8* enum_values, i32 enum_count, bool as_flags)
+            i32 decode_find_enum(decoder_t* d, const char** enum_strs, i32 enum_count)
             {
-                // TODO
-                // Not implemented yet
+                state_t* state = d->m_CurrentState;
+                if (state->m_Value != nullptr && state->m_Value->IsString())
+                {
+                    const nscanner::JsonStringValue* str_value = state->m_Value->AsString();
+                    if (str_value != nullptr)
+                    {
+                        field_t field(str_value->m_String, str_value->m_End);
+                        for (i32 i = 0; i < enum_count; i++)
+                        {
+                            if (field_equal(field, enum_strs[i]))
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                }
+                return -1;
             }
-            void decode_enum(decoder_t* d, u16& out_enum_value, const char** enum_strs, const u16* enum_values, i32 enum_count, bool as_flags)
+
+            // decode_find_flag: find a flag in a string separated by "|", this should be called repeatedly until all
+            // flags are found flags appear in the string in the following format:
+            //           "Flag1|Flag2|Flag3"
+            // each flag is separated by a '|'
+            bool decode_find_flag(const char** enum_strs, i32 enum_count, field_t& flag, i32& out_enum_index)
             {
-                // TODO
-                // Not implemented yet
+                if (flag.m_Name >= flag.m_End)
+                    return false;
+
+                const char* flag_end = flag.m_Name;
+                while (flag_end < flag.m_End && *flag_end != '|')
+                    ++flag_end;
+
+                field_t flag_field(flag.m_Name, flag_end);
+                flag.m_Name = flag_end + 1; // Move to next flag
+
+                // Compare with each enum string
+                out_enum_index = -1;
+                for (i32 i = 0; i < enum_count; i++)
+                {
+                    if (field_equal(flag_field, enum_strs[i]))
+                    {
+                        out_enum_index = i;
+                        break;
+                    }
+                }
+                return true;
             }
-            void decode_enum(decoder_t* d, u32& out_enum_value, const char** enum_strs, const u32* enum_values, i32 enum_count, bool as_flags)
+
+            field_t decode_string_as_field(decoder_t* d)
             {
-                // TODO
-                // Not implemented yet
-            }
-            void decode_enum(decoder_t* d, u64& out_enum_value, const char** enum_strs, const u64* enum_values, i32 enum_count, bool as_flags)
-            {
-                // TODO
-                // Not implemented yet
+                state_t* state = d->m_CurrentState;
+                if (state->m_Value != nullptr && state->m_Value->IsString())
+                {
+                    const nscanner::JsonStringValue* str_value = state->m_Value->AsString();
+                    if (str_value != nullptr)
+                    {
+                        return field_t(str_value->m_String, str_value->m_End);
+                    }
+                }
+                return field_t(nullptr, nullptr);
             }
 
             result_t read_object_begin(decoder_t* d)
             {
                 if (d->m_CurrentState == nullptr)
-                    return result_t(false, true);
+                    return ResultInvalid;
                 if (!d->m_CurrentState->m_Value->IsObject())
-                    return result_t(false, true);
+                    return ResultInvalid;
                 if (d->m_CurrentState->m_Value->AsObject()->m_LinkedList == nullptr)
-                    return result_t(true, true);
+                    return ResultOkAndEnded;
 
                 state_t* new_state = push_state(d, d->m_CurrentState, nullptr);
 
@@ -392,7 +435,7 @@ namespace ncore
                 if (new_state->m_ObjectMember != nullptr)
                     new_state->m_Value = new_state->m_ObjectMember->m_NamedValue->m_Value;
 
-                return result_t(true, new_state->m_ObjectMember == nullptr);
+                return new_state->m_ObjectMember == nullptr ? ResultOkAndEnded : ResultOkAndNotEnded;
             }
 
             result_t read_object_end(decoder_t* d)
@@ -402,8 +445,8 @@ namespace ncore
                 d->m_CurrentState->m_ObjectMember = d->m_CurrentState->m_ObjectMember->m_Next;
                 d->m_CurrentState->m_Index += 1;
 
-                result_t result(true, d->m_CurrentState->m_ObjectMember == nullptr);
-                if (result.end())
+                result_t result = d->m_CurrentState->m_ObjectMember == nullptr ? ResultOkAndEnded : ResultOkAndNotEnded;
+                if (Ended(result))
                 {
                     d->m_CurrentState->m_Value = nullptr;
                     pop_state(d);
@@ -416,11 +459,11 @@ namespace ncore
             result_t read_array_begin(decoder_t* d, i32& out_size)
             {
                 if (d->m_CurrentState == nullptr)
-                    return result_t(false, true);
+                    return ResultInvalid;
                 if (!d->m_CurrentState->m_Value->IsArray())
-                    return result_t(false, true);
+                    return ResultInvalid;
                 if (d->m_CurrentState->m_Value->AsArray()->m_LinkedList == nullptr)
-                    return result_t(true, true);
+                    return ResultOkAndEnded;
 
                 state_t* new_state = push_state(d, d->m_CurrentState, nullptr);
 
@@ -435,10 +478,10 @@ namespace ncore
                 {
                     new_state->m_Value = new_state->m_ArrayElement->m_Value;
                     out_size           = new_state->m_Size;
-                    return result_t(true, false);
+                    return ResultOkAndNotEnded;
                 }
                 out_size = 0;
-                return result_t(true, true);
+                return ResultOkAndEnded;
             }
 
             result_t read_array_end(decoder_t* d)
@@ -449,8 +492,8 @@ namespace ncore
                 d->m_CurrentState->m_Index += 1;
 
                 // Return whether we are at the end of this array
-                result_t result(true, d->m_CurrentState->m_ArrayElement == nullptr);
-                if (result.end())
+                const result_t result = (d->m_CurrentState->m_ArrayElement == nullptr) ? ResultOkAndEnded : ResultOkAndNotEnded;
+                if (Ended(result))
                 {
                     d->m_CurrentState->m_Value = nullptr;
                     pop_state(d);
@@ -463,36 +506,6 @@ namespace ncore
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
-            // ----------------------------------------------------------------------------------------------------------------------------------------
-            // Member type definitions
-            enum EMemberType
-            {
-                TYPE_INVALID = 0,
-                TYPE_BOOL,
-                TYPE_I8,
-                TYPE_I16,
-                TYPE_I32,
-                TYPE_I64,
-                TYPE_U8,
-                TYPE_U16,
-                TYPE_U32,
-                TYPE_U64,
-                TYPE_F32,
-                TYPE_CHAR,
-                TYPE_STRING,
-                TYPE_BOOL_ARRAY,
-                TYPE_I8_ARRAY,
-                TYPE_I16_ARRAY,
-                TYPE_I32_ARRAY,
-                TYPE_I64_ARRAY,
-                TYPE_U8_ARRAY,
-                TYPE_U16_ARRAY,
-                TYPE_U32_ARRAY,
-                TYPE_U64_ARRAY,
-                TYPE_F32_ARRAY,
-                TYPE_CHAR_ARRAY
-            };
-
             enum EMemberStructureType
             {
                 STRUCTURE_TYPE_INVALID = 0,
@@ -567,20 +580,20 @@ namespace ncore
                     ncore::u64* m_u64_size;
                 };
             };
+
             struct member_enum_t
             {
-                const char* m_name;       // member name
-                i32         m_enum_count; // number of enum values
-                i8          m_info[4];    // is flags[0] / member type[2] / structure type[3]
-
-                const char** m_enum_strs; // array of enum strings
+                const char*           m_name;       // member name
+                i32                   m_enum_count; // number of enum values
+                i8                    m_info[4];    // structure type[3]
+                decoder_enum_t const* m_enum;
                 union
                 {
-                    void*       m_values_void;
-                    ncore::u8*  m_values_u8;  // array of enum values, u8
-                    ncore::u16* m_values_u16; // array of enum values, u16
-                    ncore::u32* m_values_u32; // array of enum values, u32
-                    ncore::u64* m_values_u64; // array of enum values, u64
+                    void*       m_enum_void;
+                    ncore::u8*  m_enum_u8;
+                    ncore::u16* m_enum_u16;
+                    ncore::u32* m_enum_u32;
+                    ncore::u64* m_enum_u64;
                 };
             };
 
@@ -609,18 +622,13 @@ namespace ncore
                     state->m_StackAllocatorEnd = nullptr;
                 }
 
-                field_t field;
                 if (state->m_ObjectMember != nullptr)
                 {
-                    field.m_Name = state->m_ObjectMember->m_NamedValue->m_Name->m_String;
-                    field.m_End  = state->m_ObjectMember->m_NamedValue->m_Name->m_End;
+                    const char* name = state->m_ObjectMember->m_NamedValue->m_Name->m_String;
+                    const char* end  = state->m_ObjectMember->m_NamedValue->m_Name->m_End;
+                    return field_t(name, end);
                 }
-                else
-                {
-                    field.m_Name = nullptr;
-                    field.m_End  = nullptr;
-                }
-                return field;
+                return field_t(nullptr, nullptr);
             }
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -698,23 +706,87 @@ namespace ncore
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // Enum members
+            void decode_enum(decoder_t* d, member_enum_t const* e, u64& out_enum_value)
+            {
+                out_enum_value = 0;
+                if (e->m_info[1] == 1)
+                {
+                    field_t flags = decode_string_as_field(d);
+                    i32     enum_index;
+                    while (decode_find_flag(e->m_enum->m_enum_strs, e->m_enum_count, flags, enum_index))
+                    {
+                        if (enum_index >= 0 && enum_index < e->m_enum_count)
+                        {
+                            switch (e->m_info[2])
+                            {
+                                case TYPE_U8: out_enum_value |= e->m_enum_u8[enum_index]; break;
+                                case TYPE_U16: out_enum_value |= e->m_enum_u16[enum_index]; break;
+                                case TYPE_U32: out_enum_value |= e->m_enum_u32[enum_index]; break;
+                                case TYPE_U64: out_enum_value |= e->m_enum_u64[enum_index]; break;
+                                default: break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    const i32 enum_index = decode_find_enum(d, e->m_enum->m_enum_strs, e->m_enum_count);
+                    if (enum_index >= 0 && enum_index < e->m_enum_count)
+                    {
+                        switch (e->m_info[2])
+                        {
+                            case TYPE_U8: out_enum_value = e->m_enum_u8[enum_index]; break;
+                            case TYPE_U16: out_enum_value = e->m_enum_u16[enum_index]; break;
+                            case TYPE_U32: out_enum_value = e->m_enum_u32[enum_index]; break;
+                            case TYPE_U64: out_enum_value = e->m_enum_u64[enum_index]; break;
+                            default: break;
+                        }
+                    }
+                }
+            }
 
-            void decoder_add_enum_member(decoder_t* d, const char* name, const char** enum_strs, const void* enum_values, i8 sizeof_enum_value, i32 enum_count, bool as_flags, void* out_value, i8 sizeof_out_value)
+            member_enum_t* decoder_add_enum(decoder_t* d, const char* name, decoder_enum_t const* de)
             {
                 if (d->m_CurrentState->m_Members == nullptr)
                 {
                     d->m_CurrentState->m_Members     = (member_t*)d->m_StackAllocator->CheckOut(d->m_CurrentState->m_StackAllocatorEnd);
                     d->m_CurrentState->m_MemberCount = 0;
                 }
-                member_t* m             = &d->m_CurrentState->m_Members[d->m_CurrentState->m_MemberCount++];
-                m->m_enum.m_name        = name;
-                m->m_enum.m_enum_count  = enum_count;
-                m->m_enum.m_info[0]     = as_flags ? 1 : 0;
-                m->m_enum.m_info[1]     = sizeof_out_value;
-                m->m_enum.m_info[2]     = TYPE_U8 + sizeof_enum_value;
-                m->m_enum.m_info[3]     = STRUCTURE_TYPE_ENUM;
-                m->m_enum.m_enum_strs   = enum_strs;
-                m->m_enum.m_values_void = (void*)enum_values;
+                member_t*      m  = &d->m_CurrentState->m_Members[d->m_CurrentState->m_MemberCount++];
+                member_enum_t* em = &m->m_enum;
+                em->m_name        = name;
+                em->m_enum_count  = de->m_enum_count;
+                em->m_info[0]     = 0;
+                em->m_info[1]     = de->m_as_flags ? 1 : 0;
+                em->m_info[2]     = TYPE_INVALID;
+                em->m_info[3]     = STRUCTURE_TYPE_ENUM;
+                em->m_enum        = de;
+                return em;
+            }
+
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* de, u8* out_value)
+            {
+                member_enum_t* em = decoder_add_enum(d, name, de);
+                em->m_info[2]     = TYPE_U8;
+                em->m_enum_u8     = out_value;
+            }
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u16* out_value)
+            {
+                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                em->m_info[2]     = TYPE_U16;
+                em->m_enum_u16    = out_value;
+            }
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u32* out_value)
+            {
+                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                em->m_info[2]     = TYPE_U32;
+                em->m_enum_u32    = out_value;
+            }
+            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u64* out_value)
+            {
+                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                em->m_info[2]     = TYPE_U64;
+                em->m_enum_u64    = out_value;
             }
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -973,35 +1045,17 @@ namespace ncore
                         }
                         case STRUCTURE_TYPE_ENUM:
                         {
-                            const bool as_flags = (member->m_enum.m_info[0] != 0);
+                            u64 enum_value = 0;
+                            decode_enum(d, &member->m_enum, enum_value);
                             switch (member->m_enum.m_info[2]) // member type
                             {
-                                case TYPE_U8:
-                                {
-                                    u8 out_enum_value = 0;
-                                    decode_enum(d, out_enum_value, member->m_enum.m_enum_strs, member->m_enum.m_values_u8, member->m_enum.m_enum_count, as_flags);
-                                    return true;
-                                }
-                                case TYPE_U16:
-                                {
-                                    u16 out_enum_value = 0;
-                                    decode_enum(d, out_enum_value, member->m_enum.m_enum_strs, member->m_enum.m_values_u16, member->m_enum.m_enum_count, as_flags);
-                                    return true;
-                                }
-                                case TYPE_U32:
-                                {
-                                    u32 out_enum_value = 0;
-                                    decode_enum(d, out_enum_value, member->m_enum.m_enum_strs, member->m_enum.m_values_u32, member->m_enum.m_enum_count, as_flags);
-                                    return true;
-                                }
-                                case TYPE_U64:
-                                {
-                                    u64 out_enum_value = 0;
-                                    decode_enum(d, out_enum_value, member->m_enum.m_enum_strs, member->m_enum.m_values_u64, member->m_enum.m_enum_count, as_flags);
-                                    return true;
-                                }
+                                case TYPE_U8: *member->m_enum.m_enum_u8 = (u8)enum_value; break;
+                                case TYPE_U16: *member->m_enum.m_enum_u16 = (u16)enum_value; break;
+                                case TYPE_U32: *member->m_enum.m_enum_u32 = (u32)enum_value; break;
+                                case TYPE_U64: *member->m_enum.m_enum_u64 = (u64)enum_value; break;
+                                default: return false;
                             }
-                            break;
+                            return true;
                         }
                     }
                 }
