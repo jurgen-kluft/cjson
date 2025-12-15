@@ -10,8 +10,8 @@
 
 using namespace ncore;
 
-extern unsigned char kyria_json[];
-extern unsigned int  kyria_json_len;
+extern unsigned char data_kyria[];
+extern unsigned int  data_kyria_len;
 
 struct key_t
 {
@@ -214,7 +214,7 @@ UNITTEST_SUITE_BEGIN(json_decode)
             scratch.Init(Allocator, 64 * 1024, "json scratch allocator");
 
             char const* error_message = nullptr;
-            bool        ok            = njson::JsonDecode((const char*)kyria_json, (const char*)kyria_json + kyria_json_len, json_root, &alloc, &scratch, error_message);
+            bool        ok            = njson::JsonDecode((const char*)data_kyria, (const char*)data_kyria + data_kyria_len, json_root, &alloc, &scratch, error_message);
             CHECK_TRUE(ok);
 
             scratch.Reset();

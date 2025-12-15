@@ -314,6 +314,25 @@ namespace ncore
             void decode_carray_i32(decoder_t* d, i32* out_array, i32 out_array_maxlen) { decode_carray_integer<i32>(d, out_array, out_array_maxlen); }
             void decode_carray_i64(decoder_t* d, i64* out_array, i32 out_array_maxlen) { decode_carray_integer<i64>(d, out_array, out_array_maxlen); }
             void decode_carray_char(decoder_t* d, char* out_array, i32 out_array_maxlen) { decode_carray_integer<char>(d, out_array, out_array_maxlen); }
+            void decode_carray_string(decoder_t* d, const char** out_array, i32 out_array_maxlen)
+            {
+                i32      array_size;
+                result_t result = read_array_begin(d, array_size);
+                if (!result.valid())
+                    return;
+                i32 array_index = 0;
+                while (result.ok() && result.not_end())
+                {
+                    if (array_index < (i32)out_array_maxlen)
+                    {
+                        const char* str_value;
+                        decode_string(d, str_value);
+                        out_array[array_index] = str_value;
+                    }
+                    array_index++;
+                    result = read_array_end(d);
+                }
+            }
 
             void decode_carray_f32(decoder_t* d, f32* out_array, i32 out_array_maxlen)
             {
@@ -477,9 +496,9 @@ namespace ncore
             enum EMemberStructureType
             {
                 STRUCTURE_TYPE_INVALID = 0,
-                STRUCTURE_TYPE_BASIC,
-                STRUCTURE_TYPE_ARRAY,
-                STRUCTURE_TYPE_ENUM
+                STRUCTURE_TYPE_BASIC   = 'B',
+                STRUCTURE_TYPE_ARRAY   = 'A',
+                STRUCTURE_TYPE_ENUM    = 'E'
             };
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -509,6 +528,8 @@ namespace ncore
                     char*        m_member_char;
                     const char** m_member_string;
                 };
+
+                void* m_dummy;
             };
             struct member_array_t
             {
@@ -617,9 +638,12 @@ namespace ncore
                 member_t* m              = &d->m_CurrentState->m_Members[d->m_CurrentState->m_MemberCount++];
                 m->m_basic.m_name        = name;
                 m->m_basic.m_count       = size_max;
+                m->m_basic.m_info[0]     = 0;
+                m->m_basic.m_info[1]     = 0;
                 m->m_basic.m_info[2]     = member_type;
                 m->m_basic.m_info[3]     = STRUCTURE_TYPE_BASIC;
                 m->m_basic.m_member_void = member_ptr;
+                m->m_basic.m_dummy       = nullptr;
             }
 
             void decoder_add_member(decoder_t* d, const char* name, bool* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_BOOL, out_value); }
@@ -649,11 +673,13 @@ namespace ncore
                 }
                 member_t* m             = &d->m_CurrentState->m_Members[d->m_CurrentState->m_MemberCount++];
                 m->m_array.m_name       = name;
+                m->m_array.m_size       = size_max; // -1 == unbounded, otherwise maximum size of the array
+                m->m_array.m_info[0]    = 0;
                 m->m_array.m_info[1]    = size_type;
                 m->m_array.m_info[2]    = member_type;
                 m->m_array.m_info[3]    = STRUCTURE_TYPE_ARRAY;
                 m->m_array.m_void_array = array_ptr;
-                m->m_array.m_size       = size_max; // -1 == unbounded, otherwise maximum size of the array
+                m->m_array.m_void_size  = size_ptr;
             }
 
             void decoder_add_member(decoder_t* d, const char* name, u8** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_U8_ARRAY, (void**)out_value, TYPE_I32, out_len); }
@@ -684,6 +710,7 @@ namespace ncore
                 m->m_enum.m_name        = name;
                 m->m_enum.m_enum_count  = enum_count;
                 m->m_enum.m_info[0]     = as_flags ? 1 : 0;
+                m->m_enum.m_info[1]     = sizeof_out_value;
                 m->m_enum.m_info[2]     = TYPE_U8 + sizeof_enum_value;
                 m->m_enum.m_info[3]     = STRUCTURE_TYPE_ENUM;
                 m->m_enum.m_enum_strs   = enum_strs;
@@ -702,9 +729,10 @@ namespace ncore
                 member_t* member = nullptr;
                 for (i32 i = 0; i < state->m_MemberCount; i++)
                 {
-                    if (field_equal(field, state->m_Members[i].m_basic.m_name))
+                    member_t* m = &state->m_Members[i];
+                    if (field_equal(field, m->m_basic.m_name))
                     {
-                        member = &state->m_Members[i];
+                        member = m;
                         break;
                     }
                 }
@@ -715,75 +743,142 @@ namespace ncore
                     {
                         case STRUCTURE_TYPE_BASIC:
                         {
-                            switch (member->m_basic.m_info[2]) // member type
+                            if (member->m_basic.m_count == 0)
                             {
-                                case TYPE_BOOL:
+                                // single value
+                                switch (member->m_basic.m_info[2])
                                 {
-                                    bool* out_value = member->m_basic.m_member_bool;
-                                    decode_bool(d, *out_value);
-                                    return true;
+                                    case TYPE_BOOL:
+                                    {
+                                        bool* out_value = member->m_basic.m_member_bool;
+                                        decode_bool(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_I8:
+                                    {
+                                        i8* out_value = member->m_basic.m_member_i8;
+                                        decode_i8(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_I16:
+                                    {
+                                        i16* out_value = member->m_basic.m_member_i16;
+                                        decode_i16(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_I32:
+                                    {
+                                        i32* out_value = member->m_basic.m_member_i32;
+                                        decode_i32(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_I64:
+                                    {
+                                        i64* out_value = member->m_basic.m_member_i64;
+                                        decode_i64(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_U8:
+                                    {
+                                        u8* out_value = member->m_basic.m_member_u8;
+                                        decode_u8(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_U16:
+                                    {
+                                        u16* out_value = member->m_basic.m_member_u16;
+                                        decode_u16(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_U32:
+                                    {
+                                        u32* out_value = member->m_basic.m_member_u32;
+                                        decode_u32(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_U64:
+                                    {
+                                        u64* out_value = member->m_basic.m_member_u64;
+                                        decode_u64(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_F32:
+                                    {
+                                        f32* out_value = member->m_basic.m_member_f32;
+                                        decode_f32(d, *out_value);
+                                        return true;
+                                    }
+                                    case TYPE_STRING:
+                                    {
+                                        const char** out_value = member->m_basic.m_member_string;
+                                        decode_string(d, *out_value);
+                                        return true;
+                                    }
+                                    default: return false;
                                 }
-                                case TYPE_I8:
+                            }
+                            else
+                            {
+                                // c-style array
+                                switch (member->m_basic.m_info[2])
                                 {
-                                    i8* out_value = member->m_basic.m_member_i8;
-                                    decode_i8(d, *out_value);
-                                    return true;
+                                    case TYPE_BOOL:
+                                    {
+                                        decode_carray_bool(d, member->m_basic.m_member_bool, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_I8:
+                                    {
+                                        decode_carray_i8(d, member->m_basic.m_member_i8, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_I16:
+                                    {
+                                        decode_carray_i16(d, member->m_basic.m_member_i16, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_I32:
+                                    {
+                                        decode_carray_i32(d, member->m_basic.m_member_i32, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_I64:
+                                    {
+                                        decode_carray_i64(d, member->m_basic.m_member_i64, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_U8:
+                                    {
+                                        decode_carray_u8(d, member->m_basic.m_member_u8, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_U16:
+                                    {
+                                        decode_carray_u16(d, member->m_basic.m_member_u16, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_U32:
+                                    {
+                                        decode_carray_u32(d, member->m_basic.m_member_u32, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_U64:
+                                    {
+                                        decode_carray_u64(d, member->m_basic.m_member_u64, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_F32:
+                                    {
+                                        decode_carray_f32(d, member->m_basic.m_member_f32, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    case TYPE_STRING:
+                                    {
+                                        decode_carray_string(d, member->m_basic.m_member_string, member->m_basic.m_count);
+                                        return true;
+                                    }
+                                    default: return false;
                                 }
-                                case TYPE_I16:
-                                {
-                                    i16* out_value = member->m_basic.m_member_i16;
-                                    decode_i16(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_I32:
-                                {
-                                    i32* out_value = member->m_basic.m_member_i32;
-                                    decode_i32(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_I64:
-                                {
-                                    i64* out_value = member->m_basic.m_member_i64;
-                                    decode_i64(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_U8:
-                                {
-                                    u8* out_value = member->m_basic.m_member_u8;
-                                    decode_u8(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_U16:
-                                {
-                                    u16* out_value = member->m_basic.m_member_u16;
-                                    decode_u16(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_U32:
-                                {
-                                    u32* out_value = member->m_basic.m_member_u32;
-                                    decode_u32(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_U64:
-                                {
-                                    u64* out_value = member->m_basic.m_member_u64;
-                                    decode_u64(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_F32:
-                                {
-                                    f32* out_value = member->m_basic.m_member_f32;
-                                    decode_f32(d, *out_value);
-                                    return true;
-                                }
-                                case TYPE_STRING:
-                                {
-                                    const char** out_value = member->m_basic.m_member_string;
-                                    decode_string(d, *out_value);
-                                    return true;
-                                }
-                                default: return false;
                             }
                             break;
                         }
@@ -863,14 +958,14 @@ namespace ncore
 
                             switch (member->m_array.m_info[1]) // size type
                             {
-                                case TYPE_I8: out_array_size = (i8)out_array_size; break;
-                                case TYPE_I16: out_array_size = (i16)out_array_size; break;
-                                case TYPE_I32: out_array_size = (i32)out_array_size; break;
-                                case TYPE_I64: out_array_size = (i64)out_array_size; break;
-                                case TYPE_U8: out_array_size = (u8)out_array_size; break;
-                                case TYPE_U16: out_array_size = (u16)out_array_size; break;
-                                case TYPE_U32: out_array_size = (u32)out_array_size; break;
-                                case TYPE_U64: out_array_size = (u64)out_array_size; break;
+                                case TYPE_I8: *member->m_array.m_i8_size = (i8)out_array_size; break;
+                                case TYPE_I16: *member->m_array.m_i16_size = (i16)out_array_size; break;
+                                case TYPE_I32: *member->m_array.m_i32_size = (i32)out_array_size; break;
+                                case TYPE_I64: *member->m_array.m_i64_size = (i64)out_array_size; break;
+                                case TYPE_U8: *member->m_array.m_u8_size = (u8)out_array_size; break;
+                                case TYPE_U16: *member->m_array.m_u16_size = (u16)out_array_size; break;
+                                case TYPE_U32: *member->m_array.m_u32_size = (u32)out_array_size; break;
+                                case TYPE_U64: *member->m_array.m_u64_size = (u64)out_array_size; break;
                                 default: return false;
                             }
 

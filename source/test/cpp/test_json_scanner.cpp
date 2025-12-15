@@ -7,8 +7,8 @@
 
 using namespace ncore;
 
-extern unsigned char kyria_json[];
-extern unsigned int  kyria_json_len;
+extern unsigned char data_kyria[];
+extern unsigned int  data_kyria_len;
 
 UNITTEST_SUITE_BEGIN(json_scanner)
 {
@@ -21,8 +21,8 @@ UNITTEST_SUITE_BEGIN(json_scanner)
 
         UNITTEST_TEST(test)
         {
-            const char* json     = (const char*)kyria_json;
-            const char* json_end = json + kyria_json_len;
+            const char* json     = (const char*)data_kyria;
+            const char* json_end = json + data_kyria_len;
 
             njson::JsonAllocator lma;
             lma.Init(Allocator, 16384, "json_main");

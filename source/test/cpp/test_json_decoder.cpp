@@ -9,8 +9,8 @@
 
 using namespace ncore;
 
-extern unsigned char kyria_json[];
-extern unsigned int  kyria_json_len;
+extern unsigned char data_kyria[];
+extern unsigned int  data_kyria_len;
 
 struct key_t
 {
@@ -155,10 +155,10 @@ struct keyboard_t
         ncore::g_copy(m_txtcolor, sColorWhite);
         ncore::g_copy(m_ledcolor, sColorBlue);
         m_scale = 1.0f;
-        m_w     = 81.f;
-        m_h     = 81.f;
-        m_sw    = 9.f;
-        m_sh    = 9.f;
+        m_key_w = 81.f;
+        m_key_h = 81.f;
+        m_key_spacing_x = 9.f;
+        m_key_spacing_y = 9.f;
     }
 
     const char* m_name; // name of this keyboard
@@ -171,10 +171,10 @@ struct keyboard_t
     float m_txtcolor[4];
     float m_ledcolor[4];
     float m_scale;
-    float m_w;  // key width
-    float m_h;  // key height
-    float m_sw; // key spacing width
-    float m_sh; // key spacing height
+    float m_key_w;         // key width
+    float m_key_h;         // key height
+    float m_key_spacing_x; // key spacing width
+    float m_key_spacing_y; // key spacing height
 
     DCORE_CLASS_PLACEMENT_NEW_DELETE
 };
@@ -190,10 +190,10 @@ static void json_decode_keyboard(njson::ndecoder::decoder_t* d, keyboard_t* out_
     njson::ndecoder::decoder_add_member(d, "txt_color", out_keyboard->m_txtcolor, 4);
     njson::ndecoder::decoder_add_member(d, "led_color", out_keyboard->m_ledcolor, 4);
     njson::ndecoder::decoder_add_member(d, "scale", &out_keyboard->m_scale);
-    njson::ndecoder::decoder_add_member(d, "w", &out_keyboard->m_w);
-    njson::ndecoder::decoder_add_member(d, "h", &out_keyboard->m_h);
-    njson::ndecoder::decoder_add_member(d, "sw", &out_keyboard->m_sw);
-    njson::ndecoder::decoder_add_member(d, "sh", &out_keyboard->m_sh);
+    njson::ndecoder::decoder_add_member(d, "key_width", &out_keyboard->m_key_w);
+    njson::ndecoder::decoder_add_member(d, "key_height", &out_keyboard->m_key_h);
+    njson::ndecoder::decoder_add_member(d, "key_spacing_x", &out_keyboard->m_key_spacing_x);
+    njson::ndecoder::decoder_add_member(d, "key_spacing_y", &out_keyboard->m_key_spacing_y);
     while (result.valid())
     {
         njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
@@ -248,6 +248,67 @@ static void json_decode_keyboard_root(njson::ndecoder::decoder_t* d, keyboard_ro
     }
 }
 
+/*
+{
+    "keyboard":
+    {
+        "scale": 42,
+        "key_width": 1,
+        "key_height": 2,
+        "key_spacing_x": 0.125,
+        "key_spacing_y": 0.126,
+        "cap_color": [ 25,25,25,255 ],
+        "led_color": [ 251,252,253,254 ],
+        "txt_color": [ 241,242,243,244 ],
+        "keygroups": [
+            {
+                "name": "left thumb",
+                "x": 0.75,
+                "y": 1.55,
+                "w": -1.2,
+                "h": -1.5,
+                "sw": -1.7,
+                "sh": -1.9,
+                "enum": "RShift|RCtrl|RAlt|LShift|LCtrl|LAlt",
+                "cap_color": [ 25,26,26,255 ],
+                "led_color": [ 31,32.33,255 ],
+                "txt_color": [ 61,62,63,255 ],
+                "c": 2,
+                "r": 3,
+                "a": 0,
+                "keys": [
+                    { "label": "Esc", "index": 0, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 },
+                    { "label": "Q", "index": 1, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 },
+                    { "label": "Caps", "index": 12, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 },
+                    { "label": "A", "index": 13, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 },
+                    { "label": "Shift", "index": 24, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 },
+                    { "label": "Z", "index": 25, "nob": false, "cap_color": [ 25,25,25,255 ], "led_color": [ 255,255,255,255 ], "txt_color": [ 255,255,255,255 ], "w": 1, "h": 1 }
+                ]
+            },
+            {
+                "name": "right thumb",
+                "x": 7.875,
+                "y": 4.125,
+                "w": -1,
+                "h": -1,
+                "sw": -1,
+                "sh": -1,
+                "enum": "RShift|RCtrl|RAlt|RCmd|LShift|LCtrl|LAlt|LCmd",
+                "cap_color": [ 71,72.73,255 ],
+                "led_color": [ 91,92,93,255 ],
+                "txt_color": [ 111,112,113,255 ],
+                "c": 1,
+                "r": 2,
+                "a": 40,
+                "keys": [
+                    { "label": "Left", "index": 31, "nob": false, "cap_color": [ 1,2.3,255 ], "led_color": [ 4,5,6,255 ], "txt_color": [ 7,8,9,255 ], "w": 1, "h": 2 },
+                    { "label": "Down", "index": 44, "nob": true, "cap_color": [ 10,11,12,255 ], "led_color": [ 13,14,15,255 ], "txt_color": [ 16,17,18,255 ], "w": 4, "h": 5 }
+                ]
+            }
+        ]
+    }
+}
+*/
 UNITTEST_SUITE_BEGIN(json_decoder)
 {
     UNITTEST_FIXTURE(decode)
@@ -266,10 +327,24 @@ UNITTEST_SUITE_BEGIN(json_decoder)
             alloc.Init(Allocator, 1024 * 1024, "json allocator");
             scratch.Init(Allocator, 64 * 1024, "json scratch allocator");
 
-            njson::ndecoder::decoder_t* decoder = njson::ndecoder::create_decoder(&scratch, &alloc, (const char*)kyria_json, (const char*)kyria_json + kyria_json_len);
+            njson::ndecoder::decoder_t* decoder = njson::ndecoder::create_decoder(&scratch, &alloc, (const char*)data_kyria, (const char*)data_kyria + data_kyria_len);
             json_decode_keyboard_root(decoder, &root);
 
             // TODO: validate keyboard_root_t and all members
+            CHECK_EQUAL(true, root.m_keyboard != nullptr);
+            CHECK_EQUAL(42.0f, root.m_keyboard->m_scale);
+            CHECK_EQUAL(1, root.m_keyboard->m_key_w);
+            CHECK_EQUAL(2, root.m_keyboard->m_key_h);
+            CHECK_EQUAL(0.125f, root.m_keyboard->m_key_spacing_x);
+            CHECK_EQUAL(0.126f, root.m_keyboard->m_key_spacing_y);
+            CHECK_EQUAL(25.0f, root.m_keyboard->m_capcolor[0]);
+            CHECK_EQUAL(25.0f, root.m_keyboard->m_capcolor[1]);
+            CHECK_EQUAL(25.0f, root.m_keyboard->m_capcolor[2]);
+            CHECK_EQUAL(255.0f, root.m_keyboard->m_capcolor[3]);
+
+            CHECK_EQUAL(2, root.m_keyboard->m_nb_keygroups);
+            CHECK_EQUAL(6, root.m_keyboard->m_keygroups[0].m_nb_keys);
+            CHECK_EQUAL(2, root.m_keyboard->m_keygroups[1].m_nb_keys);
 
             alloc.Destroy();
             scratch.Destroy();

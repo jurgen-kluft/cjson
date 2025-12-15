@@ -83,6 +83,7 @@ namespace ncore
             void decode_carray_i32(decoder_t* d, i32* out_array, i32 out_array_maxlen);
             void decode_carray_i64(decoder_t* d, i64* out_array, i32 out_array_maxlen);
             void decode_carray_char(decoder_t* d, char* out_array, i32 out_array_maxlen);
+            void decode_carray_string(decoder_t* d, const char** out_array, i32 out_array_maxlen);
             void decode_carray_f32(decoder_t* d, f32* out_array, i32 out_array_maxlen);
 
             void decode_enum(decoder_t* d, u8& out_enum_value, const char** enum_strs, const u8* enum_values, i32 enum_count, bool as_flags);
@@ -91,18 +92,18 @@ namespace ncore
             void decode_enum(decoder_t* d, u64& out_enum_value, const char** enum_strs, const u64* enum_values, i32 enum_count, bool as_flags);
 
             // void decoder_begin_members(decoder_t* d, i32 capacity);
-            void decoder_add_member(decoder_t* d, const char* name, bool* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, u8* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, u16* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, u32* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, u64* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, i8* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, i16* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, i32* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, i64* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, f32* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, char* out_value, i32 out_value_len = 1);
-            void decoder_add_member(decoder_t* d, const char* name, const char** out_value, i32 out_value_len = 1);
+            void decoder_add_member(decoder_t* d, const char* name, bool* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, u8* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, u16* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, u32* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, u64* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, i8* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, i16* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, i32* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, i64* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, f32* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, char* out_value, i32 out_value_len = 0);
+            void decoder_add_member(decoder_t* d, const char* name, const char** out_value, i32 out_value_len = 0);
 
             void decoder_add_member(decoder_t* d, const char* name, u8** out_value, i32* out_len, i32 max_len = -1);
             void decoder_add_member(decoder_t* d, const char* name, u16** out_value, i32* out_len, i32 max_len = -1);
