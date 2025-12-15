@@ -369,6 +369,29 @@ namespace ncore
             return true;
         }
 
+        // Parses a MAC address in the form "XX:XX:XX:XX:XX:XX" or "XX-XX-XX-XX-XX-XX" where X is a hex digit
+        // The ':' or '-' separators are optional, so when we encounter them we just skip them
+        u64  ParseMacAddress(char const* str, char const* end)
+        {
+            u64 mac = 0;
+            const char* iter = str;
+            while (iter < end)
+            {
+                char c = *iter;
+                if (c == ':' || c == '-')
+                {
+                    iter++;
+                    continue;
+                }
+                i16 n = ascii::hex_to_number(c);
+                if (n >= 0)
+                    mac = (mac << 4) | n;
+                iter++;
+            }
+            return mac;
+        }
+
+
         bool JsonNumberIsValid(JsonNumber const& number) { return number.m_Type != kJsonNumber_unknown; }
 
         s64 JsonNumberAsInt64(JsonNumber const& number)

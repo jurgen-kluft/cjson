@@ -46,14 +46,14 @@ static void json_decode_key(njson::ndecoder::decoder_t* d, key_t* out_key)
     njson::ndecoder::result_t result = njson::ndecoder::read_object_begin(d);
     if (njson::ndecoder::NotOk(result))
         return;
-    njson::ndecoder::decoder_add_member(d, "nob", &out_key->m_nob);
-    njson::ndecoder::decoder_add_member(d, "index", &out_key->m_index);
-    njson::ndecoder::decoder_add_member(d, "label", &out_key->m_label);
-    njson::ndecoder::decoder_add_member(d, "w", &out_key->m_w);
-    njson::ndecoder::decoder_add_member(d, "h", &out_key->m_h);
-    njson::ndecoder::decoder_add_member(d, "cap_color", &out_key->m_capcolor, &out_key->m_capcolor_size, 4);
-    njson::ndecoder::decoder_add_member(d, "txt_color", &out_key->m_txtcolor, &out_key->m_txtcolor_size, 4);
-    njson::ndecoder::decoder_add_member(d, "led_color", &out_key->m_ledcolor, &out_key->m_ledcolor_size, 4);
+    njson::ndecoder::register_member(d, "nob", &out_key->m_nob);
+    njson::ndecoder::register_member(d, "index", &out_key->m_index);
+    njson::ndecoder::register_member(d, "label", &out_key->m_label);
+    njson::ndecoder::register_member(d, "w", &out_key->m_w);
+    njson::ndecoder::register_member(d, "h", &out_key->m_h);
+    njson::ndecoder::register_member(d, "cap_color", njson::ndecoder::array_type_t(&out_key->m_capcolor, 4), &out_key->m_capcolor_size);
+    njson::ndecoder::register_member(d, "txt_color", njson::ndecoder::array_type_t(&out_key->m_txtcolor, 4), &out_key->m_txtcolor_size);
+    njson::ndecoder::register_member(d, "led_color", njson::ndecoder::array_type_t(&out_key->m_ledcolor, 4), &out_key->m_ledcolor_size);
     while (njson::ndecoder::OkAndNotEnded(result))
     {
         njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
@@ -97,7 +97,7 @@ static const u32   flag_values_u32[] = {1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 
 static const u64   flag_values_u64[] = {1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 7};
 static const char* flag_strs[]       = {"LShift", "LCtrl", "LAlt", "LCmd", "RShift", "RCtrl", "RAlt", "RCmd"};
 
-static njson::ndecoder::decoder_enum_t s_decoder_enum_u8 = {flag_strs, flag_values_u8, DARRAYSIZE(flag_strs), true};
+static njson::ndecoder::decoder_enum_t s_decoder_enum_u8  = {flag_strs, flag_values_u8, DARRAYSIZE(flag_strs), true};
 static njson::ndecoder::decoder_enum_t s_decoder_enum_u16 = {flag_strs, flag_values_u16, DARRAYSIZE(flag_strs), true};
 static njson::ndecoder::decoder_enum_t s_decoder_enum_u32 = {flag_strs, flag_values_u32, DARRAYSIZE(flag_strs), true};
 static njson::ndecoder::decoder_enum_t s_decoder_enum_u64 = {flag_strs, flag_values_u64, DARRAYSIZE(flag_strs), true};
@@ -108,23 +108,23 @@ static void json_decode_keygroup(njson::ndecoder::decoder_t* d, keygroup_t* out_
     if (njson::ndecoder::NotOk(result))
         return;
 
-    njson::ndecoder::decoder_add_member(d, "name", &out_keygroup->m_name);
-    njson::ndecoder::decoder_add_member(d, "x", &out_keygroup->m_x);
-    njson::ndecoder::decoder_add_member(d, "y", &out_keygroup->m_y);
-    njson::ndecoder::decoder_add_member(d, "w", &out_keygroup->m_w);
-    njson::ndecoder::decoder_add_member(d, "h", &out_keygroup->m_h);
-    njson::ndecoder::decoder_add_member(d, "sw", &out_keygroup->m_sw);
-    njson::ndecoder::decoder_add_member(d, "sh", &out_keygroup->m_sh);
-    njson::ndecoder::decoder_add_enum_member(d, "enum8", &s_decoder_enum_u8, &out_keygroup->m_enum8);
-    njson::ndecoder::decoder_add_enum_member(d, "enum16", &s_decoder_enum_u16, &out_keygroup->m_enum16);
-    njson::ndecoder::decoder_add_enum_member(d, "enum32", &s_decoder_enum_u32, &out_keygroup->m_enum32);
-    njson::ndecoder::decoder_add_enum_member(d, "enum64", &s_decoder_enum_u64, &out_keygroup->m_enum64);
-    njson::ndecoder::decoder_add_member(d, "r", &out_keygroup->m_r);
-    njson::ndecoder::decoder_add_member(d, "c", &out_keygroup->m_c);
-    njson::ndecoder::decoder_add_member(d, "a", &out_keygroup->m_a);
-    njson::ndecoder::decoder_add_member(d, "cap_color", &out_keygroup->m_capcolor, &out_keygroup->m_capcolor_size, 4);
-    njson::ndecoder::decoder_add_member(d, "txt_color", &out_keygroup->m_txtcolor, &out_keygroup->m_txtcolor_size, 4);
-    njson::ndecoder::decoder_add_member(d, "led_color", &out_keygroup->m_ledcolor, &out_keygroup->m_ledcolor_size, 4);
+    njson::ndecoder::register_member(d, "name", &out_keygroup->m_name);
+    njson::ndecoder::register_member(d, "x", &out_keygroup->m_x);
+    njson::ndecoder::register_member(d, "y", &out_keygroup->m_y);
+    njson::ndecoder::register_member(d, "w", &out_keygroup->m_w);
+    njson::ndecoder::register_member(d, "h", &out_keygroup->m_h);
+    njson::ndecoder::register_member(d, "sw", &out_keygroup->m_sw);
+    njson::ndecoder::register_member(d, "sh", &out_keygroup->m_sh);
+    njson::ndecoder::register_member(d, "enum8", &s_decoder_enum_u8, &out_keygroup->m_enum8);
+    njson::ndecoder::register_member(d, "enum16", &s_decoder_enum_u16, &out_keygroup->m_enum16);
+    njson::ndecoder::register_member(d, "enum32", &s_decoder_enum_u32, &out_keygroup->m_enum32);
+    njson::ndecoder::register_member(d, "enum64", &s_decoder_enum_u64, &out_keygroup->m_enum64);
+    njson::ndecoder::register_member(d, "r", &out_keygroup->m_r);
+    njson::ndecoder::register_member(d, "c", &out_keygroup->m_c);
+    njson::ndecoder::register_member(d, "a", &out_keygroup->m_a);
+    njson::ndecoder::register_member(d, "cap_color", njson::ndecoder::array_type_t(&out_keygroup->m_capcolor, 4), &out_keygroup->m_capcolor_size);
+    njson::ndecoder::register_member(d, "txt_color", njson::ndecoder::array_type_t(&out_keygroup->m_txtcolor, 4), &out_keygroup->m_txtcolor_size);
+    njson::ndecoder::register_member(d, "led_color", njson::ndecoder::array_type_t(&out_keygroup->m_ledcolor, 4), &out_keygroup->m_ledcolor_size);
 
     while (njson::ndecoder::OkAndNotEnded(result))
     {
@@ -163,6 +163,7 @@ struct keyboard_t
     keyboard_t()
     {
         m_name         = "Kyria";
+        m_id           = 0;
         m_nb_keygroups = 0;
         m_keygroups    = nullptr;
         ncore::g_copy(m_capcolor, sColorDarkGrey);
@@ -176,6 +177,7 @@ struct keyboard_t
     }
 
     const char* m_name; // name of this keyboard
+    u64         m_id;
 
     ncore::s16  m_nb_keygroups;
     keygroup_t* m_keygroups;
@@ -199,15 +201,16 @@ static void json_decode_keyboard(njson::ndecoder::decoder_t* d, keyboard_t* out_
     if (njson::ndecoder::NotOk(result))
         return;
 
-    njson::ndecoder::decoder_add_member(d, "name", &out_keyboard->m_name);
-    njson::ndecoder::decoder_add_member(d, "cap_color", out_keyboard->m_capcolor, 4);
-    njson::ndecoder::decoder_add_member(d, "txt_color", out_keyboard->m_txtcolor, 4);
-    njson::ndecoder::decoder_add_member(d, "led_color", out_keyboard->m_ledcolor, 4);
-    njson::ndecoder::decoder_add_member(d, "scale", &out_keyboard->m_scale);
-    njson::ndecoder::decoder_add_member(d, "key_width", &out_keyboard->m_key_w);
-    njson::ndecoder::decoder_add_member(d, "key_height", &out_keyboard->m_key_h);
-    njson::ndecoder::decoder_add_member(d, "key_spacing_x", &out_keyboard->m_key_spacing_x);
-    njson::ndecoder::decoder_add_member(d, "key_spacing_y", &out_keyboard->m_key_spacing_y);
+    njson::ndecoder::register_member(d, "name", &out_keyboard->m_name);
+    njson::ndecoder::register_mac_addr(d, "id", &out_keyboard->m_id);
+    njson::ndecoder::register_member(d, "cap_color", njson::ndecoder::carray_type_t(out_keyboard->m_capcolor, DARRAYSIZE(out_keyboard->m_capcolor)));
+    njson::ndecoder::register_member(d, "txt_color", njson::ndecoder::carray_type_t(out_keyboard->m_txtcolor, DARRAYSIZE(out_keyboard->m_txtcolor)));
+    njson::ndecoder::register_member(d, "led_color", njson::ndecoder::carray_type_t(out_keyboard->m_ledcolor, DARRAYSIZE(out_keyboard->m_ledcolor)));
+    njson::ndecoder::register_member(d, "scale", &out_keyboard->m_scale);
+    njson::ndecoder::register_member(d, "key_width", &out_keyboard->m_key_w);
+    njson::ndecoder::register_member(d, "key_height", &out_keyboard->m_key_h);
+    njson::ndecoder::register_member(d, "key_spacing_x", &out_keyboard->m_key_spacing_x);
+    njson::ndecoder::register_member(d, "key_spacing_y", &out_keyboard->m_key_spacing_y);
     while (njson::ndecoder::OkAndNotEnded(result))
     {
         njson::ndecoder::field_t field = njson::ndecoder::decode_field(d);
@@ -347,6 +350,7 @@ UNITTEST_SUITE_BEGIN(json_decoder)
 
             // TODO: validate keyboard_root_t and all members
             CHECK_EQUAL(true, root.m_keyboard != nullptr);
+            CHECK_EQUAL("Kyria", root.m_keyboard->m_name);
             CHECK_EQUAL(42.0f, root.m_keyboard->m_scale);
             CHECK_EQUAL(1, root.m_keyboard->m_key_w);
             CHECK_EQUAL(2, root.m_keyboard->m_key_h);
@@ -358,12 +362,16 @@ UNITTEST_SUITE_BEGIN(json_decoder)
             CHECK_EQUAL(255.0f, root.m_keyboard->m_capcolor[3]);
 
             CHECK_EQUAL(2, root.m_keyboard->m_nb_keygroups);
+
+            CHECK_EQUAL(6, root.m_keyboard->m_keygroups[0].m_nb_keys);
+            CHECK_EQUAL("left thumb", root.m_keyboard->m_keygroups[0].m_name);
             CHECK_EQUAL((u8)0x77, root.m_keyboard->m_keygroups[0].m_enum8);
             CHECK_EQUAL((u16)0x77, root.m_keyboard->m_keygroups[0].m_enum16);
             CHECK_EQUAL((u32)0x77, root.m_keyboard->m_keygroups[0].m_enum32);
             CHECK_EQUAL((u64)0x77, root.m_keyboard->m_keygroups[0].m_enum64);
-            CHECK_EQUAL(6, root.m_keyboard->m_keygroups[0].m_nb_keys);
+
             CHECK_EQUAL(2, root.m_keyboard->m_keygroups[1].m_nb_keys);
+            CHECK_EQUAL("right thumb", root.m_keyboard->m_keygroups[1].m_name);
 
             alloc.Destroy();
             scratch.Destroy();

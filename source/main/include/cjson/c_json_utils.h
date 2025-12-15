@@ -38,6 +38,7 @@ namespace ncore
         bool ParseBoolean(char const* str, char const* end);
         bool ParseHexNumber(char const*& str, char const* end, JsonNumber& out_number);
         bool ParseNumber(char const*& str, char const* end, JsonNumber& out_number);
+        u64  ParseMacAddress(char const* str, char const* end);
 
         bool        JsonNumberIsValid(JsonNumber const& number);
         s64         JsonNumberAsInt64(JsonNumber const& number);

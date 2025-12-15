@@ -94,16 +94,16 @@ namespace ncore
                 }
             }
 
-            void decode_bool(decoder_t* d, bool& out_value)
+            bool decode_bool(decoder_t* d)
             {
                 const nscanner::JsonNumberValue* number = nullptr;
                 state_t*                         state  = d->m_CurrentState;
                 if (state->m_Value != nullptr && state->m_Value->IsBoolean())
                     number = state->m_Value->AsNumber();
-                out_value = (number != nullptr) ? ParseBoolean(number->m_String, number->m_End) : false;
+                return (number != nullptr) ? ParseBoolean(number->m_String, number->m_End) : false;
             }
 
-            void decode_i64(decoder_t* d, i64& out_value)
+            i64 decode_i64(decoder_t* d)
             {
                 const nscanner::JsonNumberValue* number = nullptr;
                 state_t*                         state  = d->m_CurrentState;
@@ -117,30 +117,13 @@ namespace ncore
                     const char* str = number->m_String;
                     ParseNumber(str, number->m_End, json_number);
                 }
-                out_value = JsonNumberAsInt64(json_number);
+                return JsonNumberAsInt64(json_number);
             }
-            void decode_i8(decoder_t* d, i8& out_value)
-            {
-                i64 temp_value;
-                decode_i64(d, temp_value);
-                out_value = (i8)temp_value;
-            }
+            i8  decode_i8(decoder_t* d) { return (i8)decode_i64(d); }
+            i16 decode_i16(decoder_t* d) { return (i16)decode_i64(d); }
+            i32 decode_i32(decoder_t* d) { return (i32)decode_i64(d); }
 
-            void decode_i16(decoder_t* d, i16& out_value)
-            {
-                i64 temp_value;
-                decode_i64(d, temp_value);
-                out_value = (i16)temp_value;
-            }
-
-            void decode_i32(decoder_t* d, i32& out_value)
-            {
-                i64 temp_value;
-                decode_i64(d, temp_value);
-                out_value = (i32)temp_value;
-            }
-
-            void decode_u64(decoder_t* d, u64& out_value)
+            u64 decode_u64(decoder_t* d)
             {
                 const nscanner::JsonNumberValue* number = nullptr;
                 state_t*                         state  = d->m_CurrentState;
@@ -154,30 +137,13 @@ namespace ncore
                     const char* str = number->m_String;
                     ParseNumber(str, number->m_End, json_number);
                 }
-                out_value = JsonNumberAsUInt64(json_number);
+                return JsonNumberAsUInt64(json_number);
             }
-            void decode_u8(decoder_t* d, u8& out_value)
-            {
-                u64 temp_value;
-                decode_u64(d, temp_value);
-                out_value = (u8)temp_value;
-            }
+            u8  decode_u8(decoder_t* d) { return (u8)decode_u64(d); }
+            u16 decode_u16(decoder_t* d) { return (u16)decode_u64(d); }
+            u32 decode_u32(decoder_t* d) { return (u32)decode_u64(d); }
 
-            void decode_u16(decoder_t* d, u16& out_value)
-            {
-                u64 temp_value;
-                decode_u64(d, temp_value);
-                out_value = (u16)temp_value;
-            }
-
-            void decode_u32(decoder_t* d, u32& out_value)
-            {
-                u64 temp_value;
-                decode_u64(d, temp_value);
-                out_value = (u32)temp_value;
-            }
-
-            void decode_f32(decoder_t* d, f32& out_value)
+            f32 decode_f32(decoder_t* d)
             {
                 const nscanner::JsonNumberValue* number = nullptr;
                 state_t*                         state  = d->m_CurrentState;
@@ -191,10 +157,24 @@ namespace ncore
                     const char* str = number->m_String;
                     ParseNumber(str, number->m_End, json_number);
                 }
-                out_value = (f32)JsonNumberAsFloat64(json_number);
+               return (f32)JsonNumberAsFloat64(json_number);
             }
 
-            void decode_string(decoder_t* d, const char*& out_str)
+            char decode_char(decoder_t* d)
+            {
+                const nscanner::JsonStringValue* str_value = nullptr;
+                state_t*                         state     = d->m_CurrentState;
+                if (state->m_Value != nullptr && state->m_Value->IsString())
+                    str_value = state->m_Value->AsString();
+                if (str_value != nullptr)
+                {
+                    const char* str = str_value->m_String;
+                    return *str;
+                }
+                return '\0';
+            }
+
+            char* decode_chars(decoder_t* d)
             {
                 const nscanner::JsonStringValue* str_value = nullptr;
                 state_t*                         state     = d->m_CurrentState;
@@ -208,12 +188,30 @@ namespace ncore
                     char*       str       = d->m_DecoderAllocator->AllocateArray<char>(str_len + 1);
                     nmem::memcpy(str, str_start, str_len);
                     str[str_len] = 0;
-                    out_str      = str;
+                    return str;
                 }
-                else
+                return nullptr;
+            }
+
+            const char* decode_string(decoder_t* d)
+            {
+                char* str = decode_chars(d);
+                return (str != nullptr) ? str : "";
+            }
+
+            u64 decode_mac_addr(decoder_t* d)
+            {
+                const nscanner::JsonStringValue* str_value = nullptr;
+                state_t*                         state     = d->m_CurrentState;
+                if (state->m_Value != nullptr && state->m_Value->IsString())
+                    str_value = state->m_Value->AsString();
+                if (str_value != nullptr)
                 {
-                    out_str = "";
+                    const char* str_start = str_value->m_String;
+                    const char* str_end   = str_value->m_End;
+                    return ParseMacAddress(str_start, str_end);
                 }
+                return 0;
             }
 
             void decode_cstring(decoder_t* d, char* out_str, i32 out_str_len)
@@ -257,8 +255,7 @@ namespace ncore
                 i32 array_index = 0;
                 while (OkAndNotEnded(result))
                 {
-                    u64 value;
-                    decode_u64(d, value);
+                    u64 value = decode_u64(d);
                     if (array_index < (i32)out_array_size)
                         out_array[array_index] = (T)value;
                     array_index++;
@@ -275,8 +272,6 @@ namespace ncore
             void decode_array_i16(decoder_t* d, i16*& out_array, i32& out_array_size, i32 out_array_maxsize) { decode_array_integer<i16>(d, out_array, out_array_size, out_array_maxsize); }
             void decode_array_i32(decoder_t* d, i32*& out_array, i32& out_array_size, i32 out_array_maxsize) { decode_array_integer<i32>(d, out_array, out_array_size, out_array_maxsize); }
             void decode_array_i64(decoder_t* d, i64*& out_array, i32& out_array_size, i32 out_array_maxsize) { decode_array_integer<i64>(d, out_array, out_array_size, out_array_maxsize); }
-            void decode_array_char(decoder_t* d, char*& out_array, i32& out_array_size, i32 out_array_maxsize) { decode_array_integer<char>(d, out_array, out_array_size, out_array_maxsize); }
-
             void decode_array_f32(decoder_t* d, f32*& out_array, i32& out_array_size, i32 out_array_maxsize)
             {
                 i32      array_size;
@@ -287,10 +282,36 @@ namespace ncore
                 i32 array_index = 0;
                 while (OkAndNotEnded(result))
                 {
-                    float color_component;
-                    decode_f32(d, color_component);
+                    float color_component =                     decode_f32(d);
                     if (array_index < (i32)out_array_size)
                         out_array[array_index] = color_component;
+                    array_index++;
+                    result = read_array_end(d);
+                }
+            }
+
+            void decode_array_char(decoder_t* d, char*& out_array, i32& out_array_size, i32 out_array_maxsize) { decode_array_integer<char>(d, out_array, out_array_size, out_array_maxsize); }
+
+            void decode_array_str(decoder_t* d, const char**& out_array, i32& out_array_size, i32 out_array_maxsize)
+            {
+                result_t result = read_array_begin(d, out_array_size);
+                if (NotOk(result))
+                {
+                    out_array      = nullptr;
+                    out_array_size = 0;
+                    return;
+                }
+                if (out_array_maxsize > 0)
+                {
+                    out_array_size = (out_array_size > (i32)out_array_maxsize) ? (i32)out_array_maxsize : out_array_size;
+                }
+                out_array = d->m_DecoderAllocator->AllocateArray<const char*>(out_array_size);
+
+                i32 array_index = 0;
+                while (OkAndNotEnded(result))
+                {
+                    if (array_index < (i32)out_array_size)
+                        out_array[array_index] = decode_string(d);
                     array_index++;
                     result = read_array_end(d);
                 }
@@ -305,8 +326,7 @@ namespace ncore
                 i32 array_index = 0;
                 while (OkAndNotEnded(result))
                 {
-                    u64 value;
-                    decode_u64(d, value);
+                    u64 value = decode_u64(d);
                     if (array_index < (i32)out_array_maxlen)
                         out_array[array_index] = (T)value;
                     array_index++;
@@ -324,7 +344,7 @@ namespace ncore
             void decode_carray_i32(decoder_t* d, i32* out_array, i32 out_array_maxlen) { decode_carray_integer<i32>(d, out_array, out_array_maxlen); }
             void decode_carray_i64(decoder_t* d, i64* out_array, i32 out_array_maxlen) { decode_carray_integer<i64>(d, out_array, out_array_maxlen); }
             void decode_carray_char(decoder_t* d, char* out_array, i32 out_array_maxlen) { decode_carray_integer<char>(d, out_array, out_array_maxlen); }
-            void decode_carray_string(decoder_t* d, const char** out_array, i32 out_array_maxlen)
+            void decode_carray_str(decoder_t* d, const char** out_array, i32 out_array_maxlen)
             {
                 i32      array_size;
                 result_t result = read_array_begin(d, array_size);
@@ -334,11 +354,7 @@ namespace ncore
                 while (OkAndNotEnded(result))
                 {
                     if (array_index < (i32)out_array_maxlen)
-                    {
-                        const char* str_value;
-                        decode_string(d, str_value);
-                        out_array[array_index] = str_value;
-                    }
+                        out_array[array_index] = decode_string(d);
                     array_index++;
                     result = read_array_end(d);
                 }
@@ -351,8 +367,7 @@ namespace ncore
                 i32      array_index = 0;
                 while (OkAndNotEnded(result))
                 {
-                    float color_component;
-                    decode_f32(d, color_component);
+                    float color_component = decode_f32(d);
                     if (array_index < (i32)out_array_maxlen)
                         out_array[array_index] = color_component;
                     array_index++;
@@ -532,7 +547,7 @@ namespace ncore
             {
                 const char* m_name;    // member name
                 i32         m_count;   // for array's, the maximum number of elements in the array
-                i8          m_info[4]; // member type[2] / structure type[3]
+                u8          m_info[4]; // member type[2] / structure type[3]
 
                 union
                 {
@@ -562,18 +577,19 @@ namespace ncore
 
                 union
                 {
-                    void**       m_void_array;
-                    bool**       m_bool_array;
-                    ncore::s8**  m_i8_array;
-                    ncore::s16** m_i16_array;
-                    ncore::i32** m_i32_array;
-                    ncore::i64** m_i64_array;
-                    ncore::u8**  m_u8_array;
-                    ncore::u16** m_u16_array;
-                    ncore::u32** m_u32_array;
-                    ncore::u64** m_u64_array;
-                    float**      m_f32_array;
-                    char**       m_char_array;
+                    void**        m_void_array;
+                    bool**        m_bool_array;
+                    ncore::s8**   m_i8_array;
+                    ncore::s16**  m_i16_array;
+                    ncore::i32**  m_i32_array;
+                    ncore::i64**  m_i64_array;
+                    ncore::u8**   m_u8_array;
+                    ncore::u16**  m_u16_array;
+                    ncore::u32**  m_u32_array;
+                    ncore::u64**  m_u64_array;
+                    float**       m_f32_array;
+                    char**        m_char_array;
+                    const char*** m_str_array;
                 };
 
                 union
@@ -641,12 +657,31 @@ namespace ncore
                 return field_t(nullptr, nullptr);
             }
 
+            bool field_equal(const field_t& field, const char* cmp_name)
+            {
+                ASSERT(field.is_valid());
+                const char* fptr = field.m_Name;
+                const char* cptr = cmp_name;
+                while (fptr < field.m_End && *cptr != 0 && ascii::to_lower(*fptr) == ascii::to_lower(*cptr))
+                {
+                    ++fptr;
+                    ++cptr;
+                }
+                return (fptr == field.m_End) && (*cptr == 0);
+            }
+
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // Basic members, single values or fixed size array's
+            enum EValueType
+            {
+                VTYPE_NUMBER  = 3, // Parse value as number
+                VTYPE_STRING  = 5, // Parse value as string
+                VTYPE_MACADDR = 7, // Parse value as MAC address (6 bytes -> u64)
+            };
 
-            static void set_basic_member(decoder_t* d, const char* name, i32 size_max, i16 member_type, void* member_ptr)
+            static void set_basic_member(decoder_t* d, const char* name, i32 size_max, u8 member_type, void* member_ptr, u8 value_type)
             {
                 if (d->m_CurrentState->m_Members == nullptr)
                 {
@@ -657,25 +692,67 @@ namespace ncore
                 m->m_basic.m_name        = name;
                 m->m_basic.m_count       = size_max;
                 m->m_basic.m_info[0]     = 0;
-                m->m_basic.m_info[1]     = 0;
+                m->m_basic.m_info[1]     = value_type;
                 m->m_basic.m_info[2]     = member_type;
                 m->m_basic.m_info[3]     = STRUCTURE_TYPE_BASIC;
                 m->m_basic.m_member_void = member_ptr;
                 m->m_basic.m_dummy       = nullptr;
             }
 
-            void decoder_add_member(decoder_t* d, const char* name, bool* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_BOOL, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, u8* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_U8, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, u16* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_U16, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, u32* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_U32, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, u64* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_U64, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, i8* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_I8, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, i16* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_I16, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, i32* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_I32, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, i64* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_I64, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, f32* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_F32, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, char* out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_CHAR, out_value); }
-            void decoder_add_member(decoder_t* d, const char* name, const char** out_value, i32 out_value_maxlen) { set_basic_member(d, name, out_value_maxlen, TYPE_STRING, out_value); }
+            // clang-format off
+            system_type_t::system_type_t(bool* out_value) : m_bool(out_value), m_type(TYPE_BOOL), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(u8* out_value)  : m_u8(out_value), m_type(TYPE_U8), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(u16* out_value)  : m_u16(out_value), m_type(TYPE_U16), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(u32* out_value)  : m_u32(out_value), m_type(TYPE_U32), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(u64* out_value)  : m_u64(out_value), m_type(TYPE_U64), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(i8* out_value)  : m_i8(out_value), m_type(TYPE_I8), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(i16* out_value)  : m_i16(out_value), m_type(TYPE_I16), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(i32* out_value)  : m_i32(out_value), m_type(TYPE_I32), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(i64* out_value)  : m_i64(out_value), m_type(TYPE_I64), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(f32* out_value)  : m_f32(out_value), m_type(TYPE_F32), m_value_type(VTYPE_NUMBER) {}
+            system_type_t::system_type_t(char* out_value)  : m_char(out_value), m_type(TYPE_CHAR), m_value_type(VTYPE_STRING) {}
+            system_type_t::system_type_t(const char** out_value)  : m_str(out_value), m_type(TYPE_STRING), m_value_type(VTYPE_STRING) {}
+            // clang-format on
+
+            void register_member(decoder_t* d, const char* name, system_type_t type) { set_basic_member(d, name, 0, type.m_type, type.m_void, type.m_value_type); }
+
+            void register_mac_addr(decoder_t* d, const char* name, system_type_t type)
+            {
+                ASSERT(type.m_type == TYPE_U64);
+                set_basic_member(d, name, 0, type.m_type, type.m_void, VTYPE_MACADDR);
+            }
+
+            // clang-format off
+            carray_type_t::carray_type_t(bool* out_value, i32 out_value_len) : m_bool(out_value), m_type(TYPE_BOOL), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(u8* out_value, i32 out_value_len)  : m_u8(out_value), m_type(TYPE_U8), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(u16* out_value, i32 out_value_len)  : m_u16(out_value), m_type(TYPE_U16), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(u32* out_value, i32 out_value_len)  : m_u32(out_value), m_type(TYPE_U32), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(u64* out_value, i32 out_value_len)  : m_u64(out_value), m_type(TYPE_U64), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(i8* out_value, i32 out_value_len)  : m_i8(out_value), m_type(TYPE_I8), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(i16* out_value, i32 out_value_len)  : m_i16(out_value), m_type(TYPE_I16), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(i32* out_value, i32 out_value_len)  : m_i32(out_value), m_type(TYPE_I32), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(i64* out_value, i32 out_value_len)  : m_i64(out_value), m_type(TYPE_I64), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(f32* out_value, i32 out_value_len)  : m_f32(out_value), m_type(TYPE_F32), m_value_type(VTYPE_NUMBER) {}
+            carray_type_t::carray_type_t(char* out_value, i32 out_value_len)  : m_char(out_value), m_type(TYPE_CHAR), m_value_type(VTYPE_STRING) {}
+            carray_type_t::carray_type_t(const char** out_value, i32 out_value_len)  : m_str(out_value), m_type(TYPE_STRING), m_value_type(VTYPE_STRING) {}
+            // clang-format on
+
+            void register_member(decoder_t* d, const char* name, carray_type_t type) { set_basic_member(d, name, type.m_maxlen, type.m_type, type.m_void, type.m_value_type); }
+
+            // clang-format off
+            array_type_t::array_type_t(bool** out_value, i32 out_value_maxlen) : m_bool(out_value), m_type(TYPE_BOOL), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(u8** out_value, i32 out_value_maxlen)  : m_u8(out_value), m_type(TYPE_U8), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(u16** out_value, i32 out_value_maxlen)  : m_u16(out_value), m_type(TYPE_U16), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(u32** out_value, i32 out_value_maxlen)  : m_u32(out_value), m_type(TYPE_U32), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(u64** out_value, i32 out_value_maxlen)  : m_u64(out_value), m_type(TYPE_U64), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(i8** out_value, i32 out_value_maxlen)  : m_i8(out_value), m_type(TYPE_I8), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(i16** out_value, i32 out_value_maxlen)  : m_i16(out_value), m_type(TYPE_I16), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(i32** out_value, i32 out_value_maxlen)  : m_i32(out_value), m_type(TYPE_I32), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(i64** out_value, i32 out_value_maxlen)  : m_i64(out_value), m_type(TYPE_I64), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(f32** out_value, i32 out_value_maxlen)  : m_f32(out_value), m_type(TYPE_F32), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(char** out_value, i32 out_value_maxlen)  : m_char(out_value), m_type(TYPE_CHAR), m_maxlen(out_value_maxlen) {}
+            array_type_t::array_type_t(const char*** out_value, i32 out_value_maxlen)  : m_str(out_value), m_type(TYPE_STRING), m_maxlen(out_value_maxlen) {}
+            // clang-format on
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -700,17 +777,14 @@ namespace ncore
                 m->m_array.m_void_size  = size_ptr;
             }
 
-            void decoder_add_member(decoder_t* d, const char* name, u8** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_U8_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, u16** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_U16_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, u32** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_U32_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, u64** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_U64_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, i8** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_I8_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, i16** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_I16_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, i32** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_I32_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, i64** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_I64_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, f32** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_F32_ARRAY, (void**)out_value, TYPE_I32, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, f32** out_value, i8* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_F32_ARRAY, (void**)out_value, TYPE_I8, out_len); }
-            void decoder_add_member(decoder_t* d, const char* name, char** out_value, i32* out_len, i32 max_len) { set_array_member(d, name, max_len, TYPE_CHAR_ARRAY, (void**)out_value, TYPE_I32, out_len); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, u8* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_U8, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, u16* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_U16, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, u32* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_U32, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, u64* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_U64, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, i8* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_I8, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, i16* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_I16, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, i32* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_I32, out_array_size); }
+            void register_member(decoder_t* d, const char* name, array_type_t arraytype, i64* out_array_size) { set_array_member(d, name, arraytype.m_maxlen, arraytype.m_type, arraytype.m_void, TYPE_I64, out_array_size); }
 
             // ----------------------------------------------------------------------------------------------------------------------------------------
             // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -755,7 +829,7 @@ namespace ncore
                 }
             }
 
-            member_enum_t* decoder_add_enum(decoder_t* d, const char* name, decoder_enum_t const* de)
+            member_enum_t* register_enum(decoder_t* d, const char* name, decoder_enum_t const* de)
             {
                 if (d->m_CurrentState->m_Members == nullptr)
                 {
@@ -774,27 +848,27 @@ namespace ncore
                 return em;
             }
 
-            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* de, u8* out_value)
+            void register_member(decoder_t* d, const char* name, decoder_enum_t const* de, u8* out_value)
             {
-                member_enum_t* em = decoder_add_enum(d, name, de);
+                member_enum_t* em = register_enum(d, name, de);
                 em->m_info[2]     = TYPE_U8;
                 em->m_enum_u8     = out_value;
             }
-            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u16* out_value)
+            void register_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u16* out_value)
             {
-                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                member_enum_t* em = register_enum(d, name, decoder_enum);
                 em->m_info[2]     = TYPE_U16;
                 em->m_enum_u16    = out_value;
             }
-            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u32* out_value)
+            void register_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u32* out_value)
             {
-                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                member_enum_t* em = register_enum(d, name, decoder_enum);
                 em->m_info[2]     = TYPE_U32;
                 em->m_enum_u32    = out_value;
             }
-            void decoder_add_enum_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u64* out_value)
+            void register_member(decoder_t* d, const char* name, decoder_enum_t const* decoder_enum, u64* out_value)
             {
-                member_enum_t* em = decoder_add_enum(d, name, decoder_enum);
+                member_enum_t* em = register_enum(d, name, decoder_enum);
                 em->m_info[2]     = TYPE_U64;
                 em->m_enum_u64    = out_value;
             }
@@ -827,138 +901,58 @@ namespace ncore
                         {
                             if (member->m_basic.m_count == 0)
                             {
-                                // single value
-                                switch (member->m_basic.m_info[2])
+                                if (member->m_basic.m_info[1] == VTYPE_NUMBER)
                                 {
-                                    case TYPE_BOOL:
+                                    // single value
+                                    switch (member->m_basic.m_info[2])
                                     {
-                                        bool* out_value = member->m_basic.m_member_bool;
-                                        decode_bool(d, *out_value);
-                                        return true;
+                                        case TYPE_BOOL: *member->m_basic.m_member_bool = decode_bool(d); break;
+                                        case TYPE_I8: *member->m_basic.m_member_i8 = decode_i8(d); break;
+                                        case TYPE_I16: *member->m_basic.m_member_i16 = decode_i16(d); break;
+                                        case TYPE_I32: *member->m_basic.m_member_i32 = decode_i32(d); break;
+                                        case TYPE_I64: *member->m_basic.m_member_i64 = decode_i64(d); break;
+                                        case TYPE_U8: *member->m_basic.m_member_u8 = decode_u8(d); break;
+                                        case TYPE_U16: *member->m_basic.m_member_u16 = decode_u16(d); break;
+                                        case TYPE_U32: *member->m_basic.m_member_u32 = decode_u32(d); break;
+                                        case TYPE_U64: *member->m_basic.m_member_u64 = decode_u64(d); break;
+                                        case TYPE_F32: *member->m_basic.m_member_f32 = decode_f32(d); break;
                                     }
-                                    case TYPE_I8:
-                                    {
-                                        i8* out_value = member->m_basic.m_member_i8;
-                                        decode_i8(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_I16:
-                                    {
-                                        i16* out_value = member->m_basic.m_member_i16;
-                                        decode_i16(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_I32:
-                                    {
-                                        i32* out_value = member->m_basic.m_member_i32;
-                                        decode_i32(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_I64:
-                                    {
-                                        i64* out_value = member->m_basic.m_member_i64;
-                                        decode_i64(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_U8:
-                                    {
-                                        u8* out_value = member->m_basic.m_member_u8;
-                                        decode_u8(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_U16:
-                                    {
-                                        u16* out_value = member->m_basic.m_member_u16;
-                                        decode_u16(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_U32:
-                                    {
-                                        u32* out_value = member->m_basic.m_member_u32;
-                                        decode_u32(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_U64:
-                                    {
-                                        u64* out_value = member->m_basic.m_member_u64;
-                                        decode_u64(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_F32:
-                                    {
-                                        f32* out_value = member->m_basic.m_member_f32;
-                                        decode_f32(d, *out_value);
-                                        return true;
-                                    }
-                                    case TYPE_STRING:
-                                    {
-                                        const char** out_value = member->m_basic.m_member_string;
-                                        decode_string(d, *out_value);
-                                        return true;
-                                    }
-                                    default: return false;
                                 }
+                                else if (member->m_basic.m_info[1] == VTYPE_STRING)
+                                {
+                                    // single value
+                                    switch (member->m_basic.m_info[2])
+                                    {
+                                        case TYPE_CHAR: *member->m_basic.m_member_char = decode_char(d); break;
+                                        case TYPE_STRING: *member->m_basic.m_member_string = decode_string(d); break;
+                                        default: return false;
+                                    }
+                                }
+                                else if (member->m_basic.m_info[1] == VTYPE_MACADDR)
+                                {
+                                    // single MAC address (6 bytes stored in u64)
+                                    u64 mac_addr                  = decode_mac_addr(d);
+                                    *member->m_basic.m_member_u64 = mac_addr;
+                                }
+                                return true;
                             }
                             else
                             {
                                 // c-style array
                                 switch (member->m_basic.m_info[2])
                                 {
-                                    case TYPE_BOOL:
-                                    {
-                                        decode_carray_bool(d, member->m_basic.m_member_bool, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_I8:
-                                    {
-                                        decode_carray_i8(d, member->m_basic.m_member_i8, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_I16:
-                                    {
-                                        decode_carray_i16(d, member->m_basic.m_member_i16, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_I32:
-                                    {
-                                        decode_carray_i32(d, member->m_basic.m_member_i32, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_I64:
-                                    {
-                                        decode_carray_i64(d, member->m_basic.m_member_i64, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_U8:
-                                    {
-                                        decode_carray_u8(d, member->m_basic.m_member_u8, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_U16:
-                                    {
-                                        decode_carray_u16(d, member->m_basic.m_member_u16, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_U32:
-                                    {
-                                        decode_carray_u32(d, member->m_basic.m_member_u32, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_U64:
-                                    {
-                                        decode_carray_u64(d, member->m_basic.m_member_u64, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_F32:
-                                    {
-                                        decode_carray_f32(d, member->m_basic.m_member_f32, member->m_basic.m_count);
-                                        return true;
-                                    }
-                                    case TYPE_STRING:
-                                    {
-                                        decode_carray_string(d, member->m_basic.m_member_string, member->m_basic.m_count);
-                                        return true;
-                                    }
+                                    case TYPE_BOOL: decode_carray_bool(d, member->m_basic.m_member_bool, member->m_basic.m_count); break;
+                                    case TYPE_I8: decode_carray_i8(d, member->m_basic.m_member_i8, member->m_basic.m_count); break;
+                                    case TYPE_I16: decode_carray_i16(d, member->m_basic.m_member_i16, member->m_basic.m_count); break;
+                                    case TYPE_I32: decode_carray_i32(d, member->m_basic.m_member_i32, member->m_basic.m_count); break;
+                                    case TYPE_I64: decode_carray_i64(d, member->m_basic.m_member_i64, member->m_basic.m_count); break;
+                                    case TYPE_U8: decode_carray_u8(d, member->m_basic.m_member_u8, member->m_basic.m_count); break;
+                                    case TYPE_U16: decode_carray_u16(d, member->m_basic.m_member_u16, member->m_basic.m_count); break;
+                                    case TYPE_U32: decode_carray_u32(d, member->m_basic.m_member_u32, member->m_basic.m_count); break;
+                                    case TYPE_U64: decode_carray_u64(d, member->m_basic.m_member_u64, member->m_basic.m_count); break;
+                                    case TYPE_F32: decode_carray_f32(d, member->m_basic.m_member_f32, member->m_basic.m_count); break;
+                                    case TYPE_CHAR: decode_carray_char(d, member->m_basic.m_member_char, member->m_basic.m_count); break;
+                                    case TYPE_STRING: decode_carray_str(d, member->m_basic.m_member_string, member->m_basic.m_count); break;
                                     default: return false;
                                 }
                             }
@@ -969,72 +963,18 @@ namespace ncore
                             i32 out_array_size = 0;
                             switch (member->m_array.m_info[2]) // member type
                             {
-                                case TYPE_BOOL_ARRAY:
-                                {
-                                    bool** out_array = member->m_array.m_bool_array;
-                                    decode_array_bool(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_I8_ARRAY:
-                                {
-                                    i8** out_array = member->m_array.m_i8_array;
-                                    decode_array_i8(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_I16_ARRAY:
-                                {
-                                    i16** out_array = member->m_array.m_i16_array;
-                                    decode_array_i16(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_I32_ARRAY:
-                                {
-                                    i32** out_array = member->m_array.m_i32_array;
-                                    decode_array_i32(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_I64_ARRAY:
-                                {
-                                    i64** out_array = member->m_array.m_i64_array;
-                                    decode_array_i64(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_U8_ARRAY:
-                                {
-                                    u8** out_array = member->m_array.m_u8_array;
-                                    decode_array_u8(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_U16_ARRAY:
-                                {
-                                    u16** out_array = member->m_array.m_u16_array;
-                                    decode_array_u16(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_U32_ARRAY:
-                                {
-                                    u32** out_array = member->m_array.m_u32_array;
-                                    decode_array_u32(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_U64_ARRAY:
-                                {
-                                    u64** out_array = member->m_array.m_u64_array;
-                                    decode_array_u64(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_F32_ARRAY:
-                                {
-                                    f32** out_array = member->m_array.m_f32_array;
-                                    decode_array_f32(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
-                                case TYPE_CHAR_ARRAY:
-                                {
-                                    char** out_array = member->m_array.m_char_array;
-                                    decode_array_char(d, *out_array, out_array_size, member->m_array.m_size);
-                                }
-                                break;
+                                case TYPE_BOOL_ARRAY: decode_array_bool(d, *member->m_array.m_bool_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_I8_ARRAY: decode_array_i8(d, *member->m_array.m_i8_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_I16_ARRAY: decode_array_i16(d, *member->m_array.m_i16_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_I32_ARRAY: decode_array_i32(d, *member->m_array.m_i32_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_I64_ARRAY: decode_array_i64(d, *member->m_array.m_i64_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_U8_ARRAY: decode_array_u8(d, *member->m_array.m_u8_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_U16_ARRAY: decode_array_u16(d, *member->m_array.m_u16_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_U32_ARRAY: decode_array_u32(d, *member->m_array.m_u32_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_U64_ARRAY: decode_array_u64(d, *member->m_array.m_u64_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_F32_ARRAY: decode_array_f32(d, *member->m_array.m_f32_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_CHAR_ARRAY: decode_array_char(d, *member->m_array.m_char_array, out_array_size, member->m_array.m_size); break;
+                                case TYPE_STRING_ARRAY: decode_array_str(d, *member->m_array.m_str_array, out_array_size, member->m_array.m_size); break;
                                 default: return false;
                             }
 
