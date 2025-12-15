@@ -32,6 +32,7 @@ namespace ncore
             {
                 JsonAllocator* m_DecoderAllocator;
                 JsonAllocator* m_StackAllocator;
+                s64           m_StackAllocatorInitialSize;
                 state_t*       m_CurrentState;
             };
 

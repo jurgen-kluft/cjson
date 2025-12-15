@@ -343,6 +343,7 @@ UNITTEST_SUITE_BEGIN(json_decoder)
 
             njson::ndecoder::decoder_t* decoder = njson::ndecoder::create_decoder(&scratch, &alloc, (const char*)data_kyria, (const char*)data_kyria + data_kyria_len);
             json_decode_keyboard_root(decoder, &root);
+            njson::ndecoder::destroy_decoder(decoder);
 
             // TODO: validate keyboard_root_t and all members
             CHECK_EQUAL(true, root.m_keyboard != nullptr);
@@ -357,6 +358,10 @@ UNITTEST_SUITE_BEGIN(json_decoder)
             CHECK_EQUAL(255.0f, root.m_keyboard->m_capcolor[3]);
 
             CHECK_EQUAL(2, root.m_keyboard->m_nb_keygroups);
+            CHECK_EQUAL((u8)0x77, root.m_keyboard->m_keygroups[0].m_enum8);
+            CHECK_EQUAL((u16)0x77, root.m_keyboard->m_keygroups[0].m_enum16);
+            CHECK_EQUAL((u32)0x77, root.m_keyboard->m_keygroups[0].m_enum32);
+            CHECK_EQUAL((u64)0x77, root.m_keyboard->m_keygroups[0].m_enum64);
             CHECK_EQUAL(6, root.m_keyboard->m_keygroups[0].m_nb_keys);
             CHECK_EQUAL(2, root.m_keyboard->m_keygroups[1].m_nb_keys);
 

@@ -66,14 +66,17 @@ namespace ncore
 
             decoder_t* create_decoder(JsonAllocator* stack_allocator, JsonAllocator* decoder_allocator, const char* json, const char* json_end)
             {
+                const s64 allocator_initial_size = stack_allocator->m_Size;
+
                 const char*                errmsg = nullptr;
                 nscanner::JsonValue const* root   = nscanner::Scan(json, json_end, stack_allocator, errmsg);
                 if (errmsg != nullptr)
                     return nullptr;
 
-                decoder_t* d          = stack_allocator->Allocate<decoder_t>();
-                d->m_StackAllocator   = stack_allocator;
-                d->m_DecoderAllocator = decoder_allocator;
+                decoder_t* d                   = stack_allocator->Allocate<decoder_t>();
+                d->m_StackAllocator            = stack_allocator;
+                d->m_DecoderAllocator          = decoder_allocator;
+                d->m_StackAllocatorInitialSize = allocator_initial_size;
 
                 const s64 stackSize = d->m_StackAllocator->m_Size;
                 d->m_CurrentState   = stack_allocator->Allocate<state_t>();
@@ -82,7 +85,14 @@ namespace ncore
                 return d;
             }
 
-            void destroy_decoder(decoder_t*& d) {}
+            void destroy_decoder(decoder_t*& d)
+            {
+                if (d != nullptr)
+                {
+                    d->m_StackAllocator->m_Size = d->m_StackAllocatorInitialSize;
+                    d                           = nullptr;
+                }
+            }
 
             void decode_bool(decoder_t* d, bool& out_value)
             {
@@ -719,10 +729,10 @@ namespace ncore
                         {
                             switch (e->m_info[2])
                             {
-                                case TYPE_U8: out_enum_value |= e->m_enum_u8[enum_index]; break;
-                                case TYPE_U16: out_enum_value |= e->m_enum_u16[enum_index]; break;
-                                case TYPE_U32: out_enum_value |= e->m_enum_u32[enum_index]; break;
-                                case TYPE_U64: out_enum_value |= e->m_enum_u64[enum_index]; break;
+                                case TYPE_U8: out_enum_value |= e->m_enum->m_values_u8[enum_index]; break;
+                                case TYPE_U16: out_enum_value |= e->m_enum->m_values_u16[enum_index]; break;
+                                case TYPE_U32: out_enum_value |= e->m_enum->m_values_u32[enum_index]; break;
+                                case TYPE_U64: out_enum_value |= e->m_enum->m_values_u64[enum_index]; break;
                                 default: break;
                             }
                         }
@@ -735,10 +745,10 @@ namespace ncore
                     {
                         switch (e->m_info[2])
                         {
-                            case TYPE_U8: out_enum_value = e->m_enum_u8[enum_index]; break;
-                            case TYPE_U16: out_enum_value = e->m_enum_u16[enum_index]; break;
-                            case TYPE_U32: out_enum_value = e->m_enum_u32[enum_index]; break;
-                            case TYPE_U64: out_enum_value = e->m_enum_u64[enum_index]; break;
+                            case TYPE_U8: out_enum_value = e->m_enum->m_values_u8[enum_index]; break;
+                            case TYPE_U16: out_enum_value = e->m_enum->m_values_u16[enum_index]; break;
+                            case TYPE_U32: out_enum_value = e->m_enum->m_values_u32[enum_index]; break;
+                            case TYPE_U64: out_enum_value = e->m_enum->m_values_u64[enum_index]; break;
                             default: break;
                         }
                     }

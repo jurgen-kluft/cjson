@@ -273,7 +273,6 @@ namespace ncore
             }
 
             number = (f64)integer;
-            number *= sign;
 
             // Parse the decimal part.
             c = PeekAsciiChar(iter, iter_end);
@@ -296,7 +295,7 @@ namespace ncore
                 number += decimal / div;
 
                 out_number.m_Type = kJsonNumber_f64;
-                out_number.m_F64  = number;
+                out_number.m_F64  = number * (f64)sign;
             }
 
             // Parse the exponent part.
